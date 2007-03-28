@@ -1,0 +1,58 @@
+Source: consolekit
+Section: admin
+Priority: optional
+Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
+Uploaders: Michael Biebl <biebl@debian.org>
+Build-Depends: cdbs, debhelper (>= 5), autotools-dev, libdbus-glib-1-dev (>= 0.30), libglib2.0-dev (>= 2.7.0), libx11-dev (>= 1.0.0), xmlto, libpam0g-dev
+Standards-Version: 3.7.2
+XS-Vcs-Svn: svn://svn.debian.org/svn/pkg-utopia/packages/experimental/consolekit
+XS-Vcs-Browser: http://svn.debian.org/wsvn/pkg-utopia/packages/experimental/consolekit
+
+Package: consolekit
+Section: admin
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, dbus
+Recommends: libpam-ck-connector
+Description: framework for defining and tracking users, sessions and seats
+ ConsoleKit is a system daemon for tracking what users are logged
+ into the system and how they interact with the computer (e.g.
+ which keyboard and mouse they use).
+ .
+ It provides asynchronous notification via the system message bus.
+ .
+ This package provides the system daemon and tools to interact with it.
+
+Package: libck-connector0
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: ConsoleKit libraries
+ ConsoleKit is a system daemon for tracking what users are logged
+ into the system and how they interact with the computer (e.g.
+ which keyboard and mouse they use).
+ .
+ This package provides libraries.
+
+Package: libck-connector-dev
+Section: libdevel
+Architecture: any
+Depends: libck-connector0 (= ${binary:Version}), libdbus-1-dev
+Description: ConsoleKit development files
+ ConsoleKit is a system daemon for tracking what users are logged
+ into the system and how they interact with the computer (e.g.
+ which keyboard and mouse they use).
+ .
+ This package provides the development libraries and headers.
+
+Package: libpam-ck-connector
+Section: admin
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: ConsoleKit PAM module 
+ ConsoleKit is a system daemon for tracking what users are logged
+ into the system and how they interact with the computer (e.g.
+ which keyboard and mouse they use).
+ .
+ This package provides a PAM module which can be used for console logins.
+ Graphical login managers should talk to the ConsoleKit directly.
+

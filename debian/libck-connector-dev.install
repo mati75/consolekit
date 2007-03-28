@@ -1,0 +1,4 @@
+debian/tmp/usr/lib/libck-connector.so
+debian/tmp/usr/lib/pkgconfig/
+debian/tmp/usr/include/ConsoleKit/ck-connector/
+debian/tmp/usr/share/doc/ConsoleKit/spec/ usr/share/doc/libck-connector-dev/

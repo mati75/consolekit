@@ -1,0 +1,2 @@
+debian/tmp/lib/security/pam_ck_connector.so
+debian/tmp/usr/share/man/man8/pam_ck_connector.8

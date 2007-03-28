@@ -1,0 +1,6 @@
+consolekit (0.2.1-1) experimental; urgency=low
+
+  * Initial release. (Closes: #416568)
+
+ -- Michael Biebl <biebl@debian.org>  Thu, 29 Mar 2007 01:38:27 +0200
+
