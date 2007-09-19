@@ -1,3 +1,14 @@
+consolekit (0.2.3-1) unstable; urgency=low
+
+  * New upstream release.
+  * debian/consolekit.install 
+    - Install the ck-get-x11-display-device binary.
+    - Install the configuration files in /etc/ConsoleKit/.
+  * debian/consolekit.docs
+    - Install the ConsoleKit specification document.
+
+ -- Michael Biebl <biebl@debian.org>  Wed, 19 Sep 2007 21:34:38 +0200
+
 consolekit (0.2.1-2) unstable; urgency=low
 
   * Upload to unstable. 
