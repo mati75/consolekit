@@ -5,13 +5,14 @@ Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.
 Uploaders: Michael Biebl <biebl@debian.org>
 Build-Depends: cdbs, debhelper (>= 5), autotools-dev, libdbus-glib-1-dev (>= 0.30), libglib2.0-dev (>= 2.7.0), libx11-dev (>= 1.0.0), xmlto, libpam0g-dev
 Standards-Version: 3.7.2
-XS-Vcs-Svn: svn://svn.debian.org/svn/pkg-utopia/packages/experimental/consolekit
-XS-Vcs-Browser: http://svn.debian.org/wsvn/pkg-utopia/packages/experimental/consolekit
+XS-Vcs-Svn: svn://svn.debian.org/svn/pkg-utopia/packages/unstable/consolekit
+XS-Vcs-Browser: http://svn.debian.org/wsvn/pkg-utopia/packages/unstable/consolekit
+Homepage: http://www.freedesktop.org/wiki/Software/ConsoleKit
 
 Package: consolekit
 Section: admin
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, dbus
+Depends: ${shlibs:Depends}, ${misc:Depends}, dbus, lsb-base (>= 3.0-6)
 Recommends: libpam-ck-connector
 Description: framework for defining and tracking users, sessions and seats
  ConsoleKit is a system daemon for tracking what users are logged
