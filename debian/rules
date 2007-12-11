@@ -7,7 +7,3 @@ include /usr/share/cdbs/1/rules/utils.mk
 DEB_CONFIGURE_EXTRA_FLAGS := --enable-pam-module \
                              --enable-docbook-docs \
 			     --with-pid-file=/var/run/console-kit-daemon.pid
-
-# Start after dbus / stop before dbus
-DEB_DH_INSTALLINIT_ARGS := -- start 22 2 3 4 5 . stop 18 0 1 6 .
-

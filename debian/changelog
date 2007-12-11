@@ -1,3 +1,23 @@
+consolekit (0.2.3-3) unstable; urgency=low
+
+  * debian/control
+    - The Vcs-* fields are now officially supported, so remove the XS- prefix.
+    - Bump Standards-Version to 3.7.3. No further changes required.
+    - Drop dependency on lsb-base, as we no longer install a SysV init script.
+    - Tighten dependency on dbus (>= 1.1.2). This is required for the D-Bus
+      system activation support.
+  * debian/consolekit.init
+    - Deleted, no longer required.
+  * debian/consolekit.install
+    - Install the D-Bus service file debian/org.freedesktop.ConsoleKit.service
+      into /usr/share/dbus-1/system-services. This allows to start the
+      ConsoleKit service on demand.
+  * debian/consolekit.preinst
+    - Make sure the conffile /etc/init.d/consolekit and its symlinks in
+      /etc/rc?.d are properly removed on package upgrades.
+
+ -- Michael Biebl <biebl@debian.org>  Tue, 11 Dec 2007 23:14:14 +0100
+
 consolekit (0.2.3-2) unstable; urgency=low
 
   * debian/control
