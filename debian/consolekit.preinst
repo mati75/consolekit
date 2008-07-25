@@ -37,10 +37,7 @@ rm_conffile()
 
 
 case "$1" in
-    install)
-    	;;
-
-    upgrade)
+    install|upgrade)
 	# Upgrade from previous versions
 	if dpkg --compare-versions "$2" lt "0.2.3-3"; then
 	    rm_conffile consolekit /etc/init.d/consolekit

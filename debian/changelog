@@ -1,3 +1,40 @@
+consolekit (0.2.10-1) unstable; urgency=low
+
+  * New upstream release. (Closes: #464005, #489030)
+  * debian/control
+    - Add Build-Depends on pkg-config.
+    - Add Build-Depends on zlib1g-dev.
+    - Add Build-Depends on quilt.
+    - Bump Standards-Version to 3.8.0. No further changes.
+  * debian/org.freedesktop.ConsoleKit.service
+    - Removed, merged upstream.
+  * debian/libck-connector0.symbols
+    - Add symbols file for libck-connector library.
+  * consolekit.install
+    - Install all binaries in /usr/bin and /usr/sbin instead of listing them
+      individually.
+    - Update the list of installed directories.
+    - Install 90consolekit into /etc/X11/Xsession.d.
+  * debian/pam-foreground-compat.ck
+    - Add run-session.d script which creates pam_console compatible tag files.
+      Script shamelessly taken from Ubuntu. (Closes: #422349)
+  * debian/rules
+    - Install pam-foreground-compat.ck into /usr/lib/ConsoleKit/run-session.d. 
+    - Include patchsys-quilt.mk for patch management.
+  * debian/90consolekit
+    - Xsession ConsoleKit integration. Script is taken from Ubuntu but renamed
+      to better fit with the existing naming conventions for Xsession scripts.
+      (Closes: #452627)
+  * debian/patches/01-dbus_policy.patch
+    - Allow only root to call the Restart and Stop D-Bus methods since we are
+      not using PolicyKit to restrict the access to those methods.
+  * debian/patches/02-exit_with_dbus.patch
+    - Pulled from upstream git. Exit when D-Bus system bus is stopped.
+  * debian/patches/03-cleanup_console_tags.patch
+    - Cleanup console tag files on application startup and shutdown.
+
+ -- Michael Biebl <biebl@debian.org>  Sat, 26 Jul 2008 00:29:46 +0200
+
 consolekit (0.2.3-3) unstable; urgency=low
 
   * debian/control

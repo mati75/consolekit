@@ -3,8 +3,8 @@ Section: admin
 Priority: optional
 Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
 Uploaders: Michael Biebl <biebl@debian.org>
-Build-Depends: cdbs, debhelper (>= 5), autotools-dev, libdbus-glib-1-dev (>= 0.30), libglib2.0-dev (>= 2.7.0), libx11-dev (>= 1.0.0), xmlto, libpam0g-dev
-Standards-Version: 3.7.3
+Build-Depends: cdbs, debhelper (>= 5), autotools-dev, pkg-config, ,quilt, libdbus-glib-1-dev (>= 0.30), libglib2.0-dev (>= 2.7.0), libx11-dev (>= 1.0.0), xmlto, libpam0g-dev, zlib1g-dev
+Standards-Version: 3.8.0
 Vcs-Svn: svn://svn.debian.org/svn/pkg-utopia/packages/unstable/consolekit
 Vcs-Browser: http://svn.debian.org/wsvn/pkg-utopia/packages/unstable/consolekit
 Homepage: http://www.freedesktop.org/wiki/Software/ConsoleKit

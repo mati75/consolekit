@@ -1,8 +1,8 @@
 debian/tmp/etc/dbus-1/system.d/ConsoleKit.conf
 debian/tmp/etc/ConsoleKit/
-debian/tmp/usr/bin/ck-list-sessions
-debian/tmp/usr/lib/consolekit/ck-get-x11-server-pid
-debian/tmp/usr/lib/consolekit/ck-get-x11-display-device
-debian/tmp/usr/lib/consolekit/ck-collect-session-info
-debian/tmp/usr/sbin/console-kit-daemon
-debian/org.freedesktop.ConsoleKit.service usr/share/dbus-1/system-services/
+debian/tmp/usr/share/dbus-1/system-services/
+debian/tmp/usr/lib/ConsoleKit/
+debian/tmp/var/log/ConsoleKit/
+debian/tmp/usr/sbin/
+debian/tmp/usr/bin/
+debian/90consolekit etc/X11/Xsession.d/
