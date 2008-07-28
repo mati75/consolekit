@@ -12,14 +12,14 @@ Index: ConsoleKit-0.2.10/src/main.c
 +delete_console_tags (void)
 +{
 +	GDir *dir;
-+	GError *error;
++	GError *error = NULL;
 +	const gchar *name;
 +
 +	g_debug ("Cleaning up %s", CONSOLE_TAGS_DIR);
 +
 +	dir = g_dir_open (CONSOLE_TAGS_DIR, 0, &error);
 +	if (dir == NULL) {
-+		g_warning ("Couldn't open directory %s: %s", CONSOLE_TAGS_DIR,
++		g_debug ("Couldn't open directory %s: %s", CONSOLE_TAGS_DIR,
 +		           error->message);
 +		g_error_free (error);
 +		return;
