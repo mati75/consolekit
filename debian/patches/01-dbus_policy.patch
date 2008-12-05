@@ -1,3 +1,6 @@
+Allow only root to call the Restart and Stop D-Bus methods since we are
+not using PolicyKit to restrict the access to those methods.
+
 Index: ConsoleKit-0.2.10/data/ConsoleKit.conf
 ===================================================================
 --- ConsoleKit-0.2.10.orig/data/ConsoleKit.conf	2008-02-12 16:45:04.000000000 +0100

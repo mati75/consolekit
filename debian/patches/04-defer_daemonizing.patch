@@ -1,0 +1,30 @@
+Daemonize after registering the dbus name to avoid a race condition
+where dbus-daemon thinks that console-kit-daemon has failed to start
+properly and returns an error to the caller. (Closes: #507815)
+
+Index: ConsoleKit-0.2.10/src/main.c
+===================================================================
+--- ConsoleKit-0.2.10.orig/src/main.c	2008-12-05 00:59:53.000000000 +0100
++++ ConsoleKit-0.2.10/src/main.c	2008-12-05 00:59:56.000000000 +0100
+@@ -325,10 +325,6 @@
+                 goto out;
+         }
+ 
+-        if (! no_daemon && daemon (0, 0)) {
+-                g_error ("Could not daemonize: %s", g_strerror (errno));
+-        }
+-
+         setup_debug_log (debug);
+ 
+         connection = get_system_bus ();
+@@ -347,6 +343,10 @@
+                 goto out;
+         }
+ 
++        if (! no_daemon && daemon (0, 0)) {
++                g_error ("Could not daemonize: %s", g_strerror (errno));
++        }
++
+         g_debug ("initializing console-kit-daemon %s", VERSION);
+ 
+ 	delete_console_tags ();

@@ -1,3 +1,13 @@
+consolekit (0.2.10-3) unstable; urgency=low
+
+  * debian/patches/04-defer_daemonizing.patch
+    - Daemonize after registering the dbus name to avoid a race condition
+      where dbus-daemon thinks that console-kit-daemon has failed to start
+      properly and returns an error to the caller. (Closes: #507815)
+  * Document all patches to make lintian happy.
+
+ -- Michael Biebl <biebl@debian.org>  Fri, 05 Dec 2008 01:28:46 +0100
+
 consolekit (0.2.10-2) unstable; urgency=high
 
   * debian/patches/03-cleanup_console_tags.patch
