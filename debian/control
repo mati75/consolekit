@@ -3,7 +3,7 @@ Section: admin
 Priority: optional
 Maintainer: Utopia Maintenance Team <pkg-utopia-maintainers@lists.alioth.debian.org>
 Uploaders: Michael Biebl <biebl@debian.org>
-Build-Depends: cdbs, debhelper (>= 5), autotools-dev, pkg-config, ,quilt, libdbus-glib-1-dev (>= 0.30), libglib2.0-dev (>= 2.7.0), libx11-dev (>= 1.0.0), xmlto, libpam0g-dev, zlib1g-dev
+Build-Depends: cdbs, debhelper (>= 5), autotools-dev, pkg-config, quilt, libdbus-glib-1-dev (>= 0.30), libglib2.0-dev (>= 2.7.0), libx11-dev (>= 1.0.0), xmlto, libpam0g-dev, zlib1g-dev
 Standards-Version: 3.8.0
 Vcs-Svn: svn://svn.debian.org/svn/pkg-utopia/packages/unstable/consolekit
 Vcs-Browser: http://svn.debian.org/wsvn/pkg-utopia/packages/unstable/consolekit
@@ -38,7 +38,7 @@ Description: ConsoleKit libraries
 Package: libck-connector-dev
 Section: libdevel
 Architecture: any
-Depends: libck-connector0 (= ${binary:Version}), libdbus-1-dev
+Depends: libck-connector0 (= ${binary:Version}), ${misc:Depends}, libdbus-1-dev
 Description: ConsoleKit development files
  ConsoleKit is a system daemon for tracking what users are logged
  into the system and how they interact with the computer (e.g.

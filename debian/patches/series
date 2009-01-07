@@ -2,3 +2,4 @@
 02-exit_with_dbus.patch
 03-cleanup_console_tags.patch
 04-defer_daemonizing.patch
+05-dbus_policy.patch

@@ -1,3 +1,19 @@
+consolekit (0.2.10-4) unstable; urgency=high
+
+  [ Michael Biebl ]
+  * debian/watch
+    - Check for both .gz and .bz2 tarballs.
+  * debian/control
+    - Add ${misc:Depends} to libck-connector-dev.
+
+  [ Simon McVittie ]
+  * debian/patches/05-dbus_policy.patch: patch from
+    Colin Walters so ConsoleKit introspection and SetIdleHint still work
+    after CVE-2008-4311 is fixed in dbus-daemon. (Closes: #510645)
+  * Urgency high for bugfix that blocks CVE-2008-4311 upload.
+
+ -- Michael Biebl <biebl@debian.org>  Wed, 07 Jan 2009 17:58:29 +0100
+
 consolekit (0.2.10-3) unstable; urgency=low
 
   * debian/patches/04-defer_daemonizing.patch
