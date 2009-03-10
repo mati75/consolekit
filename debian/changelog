@@ -1,3 +1,45 @@
+consolekit (0.3.0-1) unstable; urgency=low
+
+  * New upstream release.
+  * debian/patches/01-dbus_policy.patch
+    - Removed, the access to the restart and stop actions is now properly
+      restricted by checks in the source code.
+  * debian/patches/02-exit_with_dbus.patch
+    - Removed, merged upstream.
+  * debian/patches/05-dbus_policy.patch
+    - Updated by pulling latest patch from upstream Git.
+  * debian/patches/06-xmlto_skip_validation.patch
+    - Skip XML validation when generating the documentation. (Closes: #516253)
+      A proper fix will be, to make ConsoleKit.xml actually valid XML.
+  * debian/consolekit.docs
+    - Update path to spec html file.
+  * Merge patches from Ubuntu
+    - debian/patches/04-consolekit_park.patch (Closes: #489032)
+    - debian/patches/05-pam-add-nox11.patch
+    - debian/patches/08-fix-double-close.patch
+    - debian/patches/09-directory-handle-leak.patch (Closes: #516532)
+    - debian/patches/10-file_monitor_remove_watch_crash.patch
+    - debian/patches/11-unref-dbus-proxy.patch
+    - debian/patches/12-allow-get-sessions.patch
+  * debian/control
+    - Wrap Build-Depends.
+    - Bump Build-Depends on debhelper to (>= 7).
+  * debian/compat
+    - Bump debhelper compat level to 7.
+  * Fix FTBFS on GNU/kFreeBSD. (Closes: #511270)
+    - debian/patches/80-gnukfreebsd_support_configure.ac.patch
+      debian/patches/81-gnukfreebsd_support_pseudo_run_autoconf.patch
+      + Add kfreebsd target to configure(.ac) script
+    - debian/control
+      + Add libkvm-dev to Build-Depends on kfreebsd ports.
+    Patch by Luca Favatella, thanks.
+  * debian/libpam-ck-connector.{pam-auth-update,install,postinst,prerm},
+    debian/rules: enable pam_ck_connector by default using the new
+    pam-auth-update support.
+  * debian/control: depend on libpam-runtime (>= 1.0.1-6) for the above.
+
+ -- Michael Biebl <biebl@debian.org>  Tue, 10 Mar 2009 12:48:43 +0100
+
 consolekit (0.2.10-5) unstable; urgency=high
 
   * debian/watch 

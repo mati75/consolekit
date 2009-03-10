@@ -1,23 +1,14 @@
-Patch from Colin Walters for http://bugs.freedesktop.org/show_bug.cgi?id=19020,
-adapted to apply to Debian's ConsoleKit.
+commit e0d9cc359b3099307067107b59ec691418e280b8
+Author: Colin Walters <walters@verbum.org>
+Date:   Sun Jan 18 13:06:37 2009 -0500
 
-He writes:
-> This patch is relatively conservative; it adds send_destination= to all the
-> rules (as is very important, see
-> https://bugs.freedesktop.org/show_bug.cgi?id=18961).
->
-> It also adds SetIdleHint into the default allow.  From the source it looks that
-> that method implementation checks the caller.
->
-> Please review.  
->
-> Also an open question - do all the methods verify their caller?  In that case
-> the policy file can be *much* simpler; see:
-> http://lists.freedesktop.org/archives/dbus/2008-December/010717.html
+    fix up D-Bus permissions
 
---- a/data/ConsoleKit.conf	2009-01-06 02:59:15.000000000 +0000
-+++ b/data/ConsoleKit.conf	2009-01-06 03:04:38.000000000 +0000
-@@ -8,89 +8,129 @@
+Index: consolekit-0.3.0/data/ConsoleKit.conf
+===================================================================
+--- consolekit-0.3.0.orig/data/ConsoleKit.conf	2009-03-03 01:48:13.000000000 +0100
++++ consolekit-0.3.0/data/ConsoleKit.conf	2009-03-03 01:48:28.000000000 +0100
+@@ -8,88 +8,128 @@
      <allow own="org.freedesktop.ConsoleKit"/>
  
      <!-- Allow all methods on interfaces -->
@@ -43,6 +34,14 @@ He writes:
      <deny send_destination="org.freedesktop.ConsoleKit"
            send_interface="org.freedesktop.DBus.Properties" />
  
+-    <allow send_interface="org.freedesktop.ConsoleKit.Manager"
++    <allow send_destination="org.freedesktop.ConsoleKit"
++           send_interface="org.freedesktop.ConsoleKit.Manager"
+            send_member="Restart"/>
+-    <allow send_interface="org.freedesktop.ConsoleKit.Manager"
++    <allow send_destination="org.freedesktop.ConsoleKit"
++           send_interface="org.freedesktop.ConsoleKit.Manager"
+            send_member="Stop"/>
 -    <allow send_interface="org.freedesktop.ConsoleKit.Manager"
 +    <allow send_destination="org.freedesktop.ConsoleKit"
 +           send_interface="org.freedesktop.ConsoleKit.Manager"
@@ -120,6 +119,10 @@ He writes:
 -    <allow send_interface="org.freedesktop.ConsoleKit.Session"
 +    <allow send_destination="org.freedesktop.ConsoleKit"
 +           send_interface="org.freedesktop.ConsoleKit.Session"
+            send_member="GetLoginSessionId"/>
+-    <allow send_interface="org.freedesktop.ConsoleKit.Session"
++    <allow send_destination="org.freedesktop.ConsoleKit"
++           send_interface="org.freedesktop.ConsoleKit.Session"
             send_member="GetSessionType"/>
 -    <allow send_interface="org.freedesktop.ConsoleKit.Session"
 +    <allow send_destination="org.freedesktop.ConsoleKit"
@@ -168,21 +171,9 @@ He writes:
 -    <allow send_interface="org.freedesktop.ConsoleKit.Session"
 +    <allow send_destination="org.freedesktop.ConsoleKit"
 +           send_interface="org.freedesktop.ConsoleKit.Session"
-            send_member="GetIdleSinceHint"/>
-+
++           send_member="SetIdleHint"/>
 +    <allow send_destination="org.freedesktop.ConsoleKit"
 +           send_interface="org.freedesktop.ConsoleKit.Session"
-+           send_member="SetIdleHint"/>
-   </policy>
- 
-   <policy user="root">
--    <allow send_interface="org.freedesktop.ConsoleKit.Manager"
-+    <allow send_destination="org.freedesktop.ConsoleKit"
-+           send_interface="org.freedesktop.ConsoleKit.Manager"
-            send_member="Restart"/>
--    <allow send_interface="org.freedesktop.ConsoleKit.Manager"
-+    <allow send_destination="org.freedesktop.ConsoleKit"
-+           send_interface="org.freedesktop.ConsoleKit.Manager"
-            send_member="Stop"/>
+            send_member="GetIdleSinceHint"/>
    </policy>
  

@@ -1,0 +1,13 @@
+Index: ConsoleKit-0.3.0/configure.ac
+===================================================================
+--- ConsoleKit-0.3.0.orig/configure.ac	2008-07-31 02:35:53.000000000 +0200
++++ ConsoleKit-0.3.0/configure.ac	2009-03-10 12:06:52.000000000 +0100
+@@ -176,7 +176,7 @@
+ CK_BACKEND=""
+ KVM_LIBS=""
+ case "$host" in
+-        *-*-freebsd*)
++        *-*-freebsd* | *-*-kfreebsd*-gnu)
+         CK_BACKEND="freebsd"
+         AC_CHECK_LIB(kvm, kvm_openfiles, have_kvm=yes,
+                 AC_MSG_ERROR([Unable to find libkvm which is needed on FreeBSD]))

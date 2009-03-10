@@ -13,3 +13,4 @@ DEB_CONFIGURE_EXTRA_FLAGS := --enable-pam-module \
 
 install/consolekit::
 	install -m 755 debian/pam-foreground-compat.ck debian/tmp/usr/lib/ConsoleKit/run-session.d/
+	install -D -m 644 debian/libpam-ck-connector.pam-auth-update debian/tmp/usr/share/pam-configs/consolekit

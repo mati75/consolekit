@@ -1,0 +1,13 @@
+Index: ConsoleKit-0.3.0/configure
+===================================================================
+--- ConsoleKit-0.3.0.orig/configure	2008-07-31 02:41:02.000000000 +0200
++++ ConsoleKit-0.3.0/configure	2009-03-10 12:06:52.000000000 +0100
+@@ -24393,7 +24393,7 @@
+ CK_BACKEND=""
+ KVM_LIBS=""
+ case "$host" in
+-        *-*-freebsd*)
++        *-*-freebsd* | *-*-kfreebsd*-gnu)
+         CK_BACKEND="freebsd"
+         { echo "$as_me:$LINENO: checking for kvm_openfiles in -lkvm" >&5
+ echo $ECHO_N "checking for kvm_openfiles in -lkvm... $ECHO_C" >&6; }
