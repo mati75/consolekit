@@ -1,0 +1,26 @@
+Index: consolekit-0.2.10/doc/Makefile.am
+===================================================================
+--- consolekit-0.2.10.orig/doc/Makefile.am	2009-03-29 18:17:23.000000000 +0200
++++ consolekit-0.2.10/doc/Makefile.am	2009-03-29 18:19:06.000000000 +0200
+@@ -16,7 +16,7 @@
+ htmldoc_DATA = ConsoleKit.html
+ 
+ ConsoleKit.html : $(SPEC_XML_FILES)
+-	$(XMLTO) xhtml-nochunks -m config.xsl ConsoleKit.xml
++	$(XMLTO) --skip-validation xhtml-nochunks -m config.xsl ConsoleKit.xml
+ 
+ endif # DOCBOOK_DOCS_ENABLED
+ 
+Index: consolekit-0.2.10/doc/Makefile.in
+===================================================================
+--- consolekit-0.2.10.orig/doc/Makefile.in	2009-03-29 18:17:13.000000000 +0200
++++ consolekit-0.2.10/doc/Makefile.in	2009-03-29 18:19:17.000000000 +0200
+@@ -421,7 +421,7 @@
+ 
+ 
+ @DOCBOOK_DOCS_ENABLED_TRUE@ConsoleKit.html : $(SPEC_XML_FILES)
+-@DOCBOOK_DOCS_ENABLED_TRUE@	$(XMLTO) xhtml-nochunks -m config.xsl ConsoleKit.xml
++@DOCBOOK_DOCS_ENABLED_TRUE@	$(XMLTO) --skip-validation xhtml-nochunks -m config.xsl ConsoleKit.xml
+ 	$(NULL)
+ 
+ clean-local:

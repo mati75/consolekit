@@ -1,3 +1,21 @@
+consolekit (0.2.10-5+lenny1) stable-proposed-updates; urgency=low
+
+  * debian/patches/11-unref-dbus-proxy.patch
+    - Unref the dbus proxy when finalizing the session object, so that
+      they are not leaked. (Closes: #521651)
+  * debian/patches/06-xmlto_skip_validation.patch
+    - Skip XML validation when generating the documentation. (Closes: #516253)
+      The xmlto version in lenny otherwise causes a FTBFS.
+  * debian/patches/08-fix-double-close.patch
+    - Fix double close of the log file, which occasionally causes segfaults.
+  * debian/patches/09-directory-handle-leak.patch
+    - Close the directory handle when we're done with it, so that we aren't
+      leaking file descriptors.
+  * debian/patches/10-file_monitor_remove_watch_crash.patch
+    - Fix common crash when trying to remove a NULL watch.
+
+ -- Michael Biebl <biebl@debian.org>  Sun, 29 Mar 2009 21:21:09 +0200
+
 consolekit (0.2.10-5) unstable; urgency=high
 
   * debian/watch 

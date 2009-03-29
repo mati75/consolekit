@@ -3,3 +3,8 @@
 03-cleanup_console_tags.patch
 04-defer_daemonizing.patch
 05-dbus_policy.patch
+06-xmlto_skip_validation.patch
+08-fix-double-close.patch
+09-directory-handle-leak.patch
+10-file_monitor_remove_watch_crash.patch
+11-unref-dbus-proxy.patch

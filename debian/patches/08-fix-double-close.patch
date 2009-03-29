@@ -1,0 +1,32 @@
+# Description: Fix double close of the log file (->file is an fdopen(->priv), which occasionally causes segfaults.
+# Ubuntu: https://bugs.launchpad.net/bugs/263245
+# Upstream: https://bugs.freedesktop.org/show_bug.cgi?id=17866
+# Upstream: http://gitweb.freedesktop.org/?p=ConsoleKit.git;a=commitdiff;h=a58a4bff451dcf8a6019aed1b2fb276e9836b0f4
+Index: consolekit-0.2.10/src/ck-event-logger.c
+===================================================================
+--- consolekit-0.2.10.orig/src/ck-event-logger.c	2008-02-26 00:58:03.000000000 +0100
++++ consolekit-0.2.10/src/ck-event-logger.c	2009-03-29 21:20:17.000000000 +0200
+@@ -180,8 +180,10 @@
+ static void
+ reopen_file_stream (CkEventLogger *event_logger)
+ {
+-        close (event_logger->priv->fd);
+-        fclose (event_logger->priv->file);
++        /* fclose will also close the underlying fd */
++        if (event_logger->priv->file != NULL) {
++                fclose (event_logger->priv->file);
++        }
+ 
+         /* FIXME: retries */
+         open_log_file (event_logger);
+@@ -398,8 +400,8 @@
+                 g_async_queue_unref (event_logger->priv->event_queue);
+         }
+ 
+-        if (event_logger->priv->fd != -1) {
+-                close (event_logger->priv->fd);
++        if (event_logger->priv->file != NULL) {
++                fclose (event_logger->priv->file);
+         }
+ 
+         g_free (event_logger->priv->log_filename);
