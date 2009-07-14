@@ -26,13 +26,6 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
-#include <sys/ioctl.h>
-#include <sys/vt.h>
-
-#if defined (__linux__)
-#include <linux/tty.h>
-#include <linux/kd.h>
-#endif /* linux */
 
 #include <glib.h>
 #include <glib/gi18n.h>
@@ -44,9 +37,12 @@
 #include <dbus/dbus-glib-lowlevel.h>
 
 #include "ck-vt-monitor.h"
+#include "ck-sysdeps.h"
 #include "ck-marshal.h"
 
+#ifndef ERROR
 #define ERROR -1
+#endif
 
 #define CK_VT_MONITOR_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CK_TYPE_VT_MONITOR, CkVtMonitorPrivate))
 
@@ -121,8 +117,8 @@ ck_vt_monitor_set_active (CkVtMonitor    *vt_monitor,
                 return FALSE;
         }
 
-        res = ioctl (vt_monitor->priv->vfd, VT_ACTIVATE, num);
-        if (res == 0) {
+        res = ck_activate_console_num (vt_monitor->priv->vfd, num);
+        if (res) {
                 ret = TRUE;
         } else {
                 g_set_error (error,
@@ -272,35 +268,16 @@ static void *
 vt_thread_start (ThreadData *data)
 {
         CkVtMonitor *vt_monitor;
+        gboolean     res;
         int          ret;
         gint32       num;
 
         vt_monitor = data->vt_monitor;
         num = data->num;
 
- again:
-        g_debug ("VT_WAITACTIVE for vt %d", num);
-        ret = ioctl (vt_monitor->priv->vfd, VT_WAITACTIVE, num);
-
-        g_debug ("VT_WAITACTIVE for vt %d returned %d", num, ret);
-
-        if (ret == ERROR) {
-                const char *errmsg;
-
-                errmsg = g_strerror (errno);
-
-                if (errno == EINTR) {
-                        g_debug ("Interrupted waiting for native console %d activation: %s",
-                                  num,
-                                  errmsg);
-                       goto again;
-                } else {
-                        g_warning ("Error waiting for native console %d activation: %s",
-                                   num,
-                                   errmsg);
-                }
-
-                g_free (data);
+        res = ck_wait_for_active_console_num (vt_monitor->priv->vfd, num);
+        if (! res) {
+                /* FIXME: what do we do if it fails? */
         } else {
                 EventData *event;
 
@@ -357,6 +334,7 @@ vt_add_watch_unlocked (CkVtMonitor *vt_monitor,
 static void
 vt_add_watches (CkVtMonitor *vt_monitor)
 {
+        guint  max_consoles;
         int    i;
         gint32 current_num;
 
@@ -364,7 +342,13 @@ vt_add_watches (CkVtMonitor *vt_monitor)
 
         current_num = vt_monitor->priv->active_num;
 
-        for (i = 1; i < MAX_NR_CONSOLES; i++) {
+        max_consoles = 1;
+
+        if (! ck_get_max_num_consoles (&max_consoles)) {
+                /* FIXME: this can fail on solaris and freebsd */
+        }
+
+        for (i = 1; i < max_consoles; i++) {
                 gpointer id;
 
                 /* don't wait on the active vc */
@@ -381,33 +365,6 @@ vt_add_watches (CkVtMonitor *vt_monitor)
         }
 
         G_UNLOCK (hash_lock);
-}
-
-static guint
-get_active_native (CkVtMonitor *vt_monitor)
-{
-        int            ret;
-        struct vt_stat stat;
-
-        ret = ioctl (vt_monitor->priv->vfd, VT_GETSTATE, &stat);
-        if (ret == ERROR) {
-                perror ("ioctl VT_GETSTATE");
-                return -1;
-        }
-
-        {
-                int i;
-
-                g_debug ("Current VT: tty%d", stat.v_active);
-                for (i = 1; i <= 16; i++) {
-                        gboolean is_on;
-                        is_on = stat.v_state & (1 << i);
-
-                        g_debug ("VT %d:%s", i, is_on ? "on" : "off");
-                }
-        }
-
-        return stat.v_active;
 }
 
 static void
@@ -430,8 +387,6 @@ ck_vt_monitor_class_init (CkVtMonitorClass *klass)
         g_type_class_add_private (klass, sizeof (CkVtMonitorPrivate));
 }
 
-extern int getfd (void);
-
 static void
 ck_vt_monitor_init (CkVtMonitor *vt_monitor)
 {
@@ -439,7 +394,7 @@ ck_vt_monitor_init (CkVtMonitor *vt_monitor)
 
         vt_monitor->priv = CK_VT_MONITOR_GET_PRIVATE (vt_monitor);
 
-        fd = getfd ();
+        fd = ck_get_a_console_fd ();
         vt_monitor->priv->vfd = fd;
 
         if (fd == ERROR) {
@@ -447,10 +402,19 @@ ck_vt_monitor_init (CkVtMonitor *vt_monitor)
                 errmsg = g_strerror (errno);
                 g_warning ("Unable to open a console: %s", errmsg);
         } else {
+                gboolean res;
+                guint    active;
+
+                res = ck_get_active_console_num (fd, &active);
+                if (! res) {
+                        /* FIXME: handle failure */
+                        g_warning ("Could not determine active console");
+                        active = 0;
+                }
+
+                vt_monitor->priv->active_num = active;
                 vt_monitor->priv->event_queue = g_async_queue_new ();
                 vt_monitor->priv->vt_thread_hash = g_hash_table_new (g_direct_hash, g_direct_equal);
-
-                vt_monitor->priv->active_num = get_active_native (vt_monitor);
 
                 vt_add_watches (vt_monitor);
         }

@@ -1087,7 +1087,7 @@ glib_DEFUN([GLIB_WITH_NLS],
 	  AC_CHECK_FUNCS(dcgettext)
 	  MSGFMT_OPTS=
 	  AC_MSG_CHECKING([if msgfmt accepts -c])
-	  GLIB_RUN_PROG([msgfmt -c -o /dev/null],[
+	  GLIB_RUN_PROG([$MSGFMT -c -o /dev/null],[
 msgid ""
 msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -1310,31 +1310,6 @@ echo "$as_me: failed input was:" >&AS_MESSAGE_LOG_FD
 sed 's/^/| /' conftest.foo >&AS_MESSAGE_LOG_FD
 fi])
 
-
-# isc-posix.m4 serial 2 (gettext-0.11.2)
-dnl Copyright (C) 1995-2002 Free Software Foundation, Inc.
-dnl This file is free software; the Free Software Foundation
-dnl gives unlimited permission to copy and/or distribute it,
-dnl with or without modifications, as long as this notice is preserved.
-
-# This file is not needed with autoconf-2.53 and newer.  Remove it in 2005.
-
-# This test replaces the one in autoconf.
-# Currently this macro should have the same name as the autoconf macro
-# because gettext's gettext.m4 (distributed in the automake package)
-# still uses it.  Otherwise, the use in gettext.m4 makes autoheader
-# give these diagnostics:
-#   configure.in:556: AC_TRY_COMPILE was called before AC_ISC_POSIX
-#   configure.in:556: AC_TRY_RUN was called before AC_ISC_POSIX
-
-undefine([AC_ISC_POSIX])
-
-AC_DEFUN([AC_ISC_POSIX],
-  [
-    dnl This test replaces the obsolescent AC_ISC_POSIX kludge.
-    AC_CHECK_LIB(cposix, strerror, [LIBS="$LIBS -lcposix"])
-  ]
-)
 
 # libtool.m4 - Configure libtool for the host system. -*-Autoconf-*-
 
@@ -7868,7 +7843,8 @@ installed software in a non-standard prefix.
 
 _PKG_TEXT
 ])],
-		[$4])
+		[AC_MSG_RESULT([no])
+                $4])
 elif test $pkg_failed = untried; then
 	ifelse([$4], , [AC_MSG_FAILURE(dnl
 [The pkg-config script could not be found or is too old.  Make sure it

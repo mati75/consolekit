@@ -47,7 +47,8 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
-am__installdirs = "$(DESTDIR)$(initddir)" "$(DESTDIR)$(dbusconfdir)"
+am__installdirs = "$(DESTDIR)$(initddir)" "$(DESTDIR)$(dbusconfdir)" \
+	"$(DESTDIR)$(seatdir)"
 initdSCRIPT_INSTALL = $(INSTALL_SCRIPT)
 SCRIPTS = $(initd_SCRIPTS)
 SOURCES =
@@ -59,7 +60,8 @@ am__vpath_adj = case $$p in \
   esac;
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 dbusconfDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(dbusconf_DATA)
+seatDATA_INSTALL = $(INSTALL_DATA)
+DATA = $(dbusconf_DATA) $(seat_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMDEP_FALSE = @AMDEP_FALSE@
@@ -126,6 +128,7 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INSTOBJEXT = @INSTOBJEXT@
 INTLLIBS = @INTLLIBS@
+KVM_LIBS = @KVM_LIBS@
 LDFLAGS = @LDFLAGS@
 LIBDBUS_CFLAGS = @LIBDBUS_CFLAGS@
 LIBDBUS_LIBS = @LIBDBUS_LIBS@
@@ -217,11 +220,15 @@ target_alias = @target_alias@
 NULL = 
 dbusconfdir = $(DBUS_SYS_DIR)
 dbusconf_DATA = ConsoleKit.conf
+seatdir = $(sysconfdir)/ConsoleKit/seats.d
+seat_DATA = 00-primary.seat
 SCRIPT_IN_FILES = ConsoleKit.in
-initddir = $(sysconfdir)/rc.d/init.d
-initd_SCRIPTS = \
-	ConsoleKit	\
-	$(NULL)
+
+# I guess it's Linux-only but that will do for the moment.
+@CK_COMPILE_FREEBSD_FALSE@initddir = $(sysconfdir)/rc.d/init.d
+@CK_COMPILE_FREEBSD_FALSE@initd_SCRIPTS = \
+@CK_COMPILE_FREEBSD_FALSE@	ConsoleKit	\
+@CK_COMPILE_FREEBSD_FALSE@	$(NULL)
 
 edit = sed \
 	-e 's|@sbindir[@]|$(sbindir)|g' \
@@ -231,6 +238,7 @@ edit = sed \
 
 EXTRA_DIST = \
 	$(dbusconf_DATA)				\
+	$(seat_DATA)					\
 	$(SCRIPT_IN_FILES)				\
 	$(NULL)
 
@@ -317,6 +325,23 @@ uninstall-dbusconfDATA:
 	  echo " rm -f '$(DESTDIR)$(dbusconfdir)/$$f'"; \
 	  rm -f "$(DESTDIR)$(dbusconfdir)/$$f"; \
 	done
+install-seatDATA: $(seat_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(seatdir)" || $(mkdir_p) "$(DESTDIR)$(seatdir)"
+	@list='$(seat_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(seatDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(seatdir)/$$f'"; \
+	  $(seatDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(seatdir)/$$f"; \
+	done
+
+uninstall-seatDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(seat_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(seatdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(seatdir)/$$f"; \
+	done
 tags: TAGS
 TAGS:
 
@@ -355,7 +380,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(SCRIPTS) $(DATA)
 installdirs:
-	for dir in "$(DESTDIR)$(initddir)" "$(DESTDIR)$(dbusconfdir)"; do \
+	for dir in "$(DESTDIR)$(initddir)" "$(DESTDIR)$(dbusconfdir)" "$(DESTDIR)$(seatdir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-am
@@ -402,7 +427,8 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dbusconfDATA install-initdSCRIPTS
+install-data-am: install-dbusconfDATA install-initdSCRIPTS \
+	install-seatDATA
 
 install-exec-am:
 
@@ -429,19 +455,19 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-dbusconfDATA uninstall-info-am \
-	uninstall-initdSCRIPTS
+	uninstall-initdSCRIPTS uninstall-seatDATA
 
 .PHONY: all all-am check check-am clean clean-generic clean-libtool \
 	distclean distclean-generic distclean-libtool distdir dvi \
 	dvi-am html html-am info info-am install install-am \
 	install-data install-data-am install-dbusconfDATA install-exec \
 	install-exec-am install-info install-info-am \
-	install-initdSCRIPTS install-man install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am uninstall uninstall-am \
-	uninstall-dbusconfDATA uninstall-info-am \
-	uninstall-initdSCRIPTS
+	install-initdSCRIPTS install-man install-seatDATA \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	uninstall uninstall-am uninstall-dbusconfDATA \
+	uninstall-info-am uninstall-initdSCRIPTS uninstall-seatDATA
 
 
 ConsoleKit: ConsoleKit.in Makefile

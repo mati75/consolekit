@@ -53,7 +53,7 @@ G_BEGIN_DECLS
 #endif /* !G_ENABLE_DEBUG */
 
 
-/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.NT25PT:1) */
+/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.33NIYT:1) */
 extern void dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER (GClosure     *closure,
                                                                 GValue       *return_value,
                                                                 guint         n_param_values,
@@ -100,7 +100,7 @@ dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.NT25PT:2) */
+/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.33NIYT:2) */
 extern void dbus_glib_marshal_ck_seat_VOID__BOXED_POINTER (GClosure     *closure,
                                                            GValue       *return_value,
                                                            guint         n_param_values,
@@ -152,17 +152,18 @@ G_END_DECLS
 static const DBusGMethodInfo dbus_glib_ck_seat_methods[] = {
   { (GCallback) ck_seat_get_id, dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER, 0 },
   { (GCallback) ck_seat_get_sessions, dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER, 53 },
-  { (GCallback) ck_seat_get_active_session, dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER, 118 },
-  { (GCallback) ck_seat_can_activate_sessions, dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER, 183 },
-  { (GCallback) ck_seat_activate_session, dbus_glib_marshal_ck_seat_NONE__BOXED_POINTER, 259 },
+  { (GCallback) ck_seat_get_devices, dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER, 118 },
+  { (GCallback) ck_seat_get_active_session, dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER, 184 },
+  { (GCallback) ck_seat_can_activate_sessions, dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER, 249 },
+  { (GCallback) ck_seat_activate_session, dbus_glib_marshal_ck_seat_NONE__BOXED_POINTER, 325 },
 };
 
 const DBusGObjectInfo dbus_glib_ck_seat_object_info = {
   0,
   dbus_glib_ck_seat_methods,
-  5,
-"org.freedesktop.ConsoleKit.Seat\0GetId\0S\0sid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Seat\0GetSessions\0S\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Seat\0GetActiveSession\0S\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Seat\0CanActivateSessions\0S\0can_activate\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Seat\0ActivateSession\0A\0ssid\0I\0o\0\0\0",
-"org.freedesktop.ConsoleKit.Seat\0ActiveSessionChanged\0org.freedesktop.ConsoleKit.Seat\0SessionAdded\0org.freedesktop.ConsoleKit.Seat\0SessionRemoved\0\0",
+  6,
+"org.freedesktop.ConsoleKit.Seat\0GetId\0S\0sid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Seat\0GetSessions\0S\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Seat\0GetDevices\0S\0devices\0O\0F\0N\0a(ss)\0\0org.freedesktop.ConsoleKit.Seat\0GetActiveSession\0S\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Seat\0CanActivateSessions\0S\0can_activate\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Seat\0ActivateSession\0A\0ssid\0I\0o\0\0\0",
+"org.freedesktop.ConsoleKit.Seat\0ActiveSessionChanged\0org.freedesktop.ConsoleKit.Seat\0SessionAdded\0org.freedesktop.ConsoleKit.Seat\0SessionRemoved\0org.freedesktop.ConsoleKit.Seat\0DeviceAdded\0org.freedesktop.ConsoleKit.Seat\0DeviceRemoved\0\0",
 "\0"
 };
 

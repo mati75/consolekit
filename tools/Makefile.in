@@ -38,6 +38,9 @@ build_triplet = @build@
 host_triplet = @host@
 @CK_COMPILE_LINUX_TRUE@am__append_1 = linux
 bin_PROGRAMS = ck-list-sessions$(EXEEXT) $(am__EXEEXT_1)
+libexec_PROGRAMS = ck-collect-session-info$(EXEEXT) \
+	ck-get-x11-server-pid$(EXEEXT) \
+	ck-get-x11-display-device$(EXEEXT) $(am__EXEEXT_1)
 subdir = tools
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -49,13 +52,31 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 am__EXEEXT_1 =
-am__installdirs = "$(DESTDIR)$(bindir)"
+am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libexecdir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
-PROGRAMS = $(bin_PROGRAMS)
+libexecPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
+PROGRAMS = $(bin_PROGRAMS) $(libexec_PROGRAMS)
 am__objects_1 =
+am_ck_collect_session_info_OBJECTS =  \
+	ck-collect-session-info.$(OBJEXT) $(am__objects_1)
+ck_collect_session_info_OBJECTS =  \
+	$(am_ck_collect_session_info_OBJECTS)
+am__DEPENDENCIES_1 =
+ck_collect_session_info_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/libck.la $(am__DEPENDENCIES_1)
+am_ck_get_x11_display_device_OBJECTS =  \
+	ck-get-x11-display-device.$(OBJEXT) $(am__objects_1)
+ck_get_x11_display_device_OBJECTS =  \
+	$(am_ck_get_x11_display_device_OBJECTS)
+ck_get_x11_display_device_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/libck.la $(am__DEPENDENCIES_1)
+am_ck_get_x11_server_pid_OBJECTS = ck-get-x11-server-pid.$(OBJEXT) \
+	$(am__objects_1)
+ck_get_x11_server_pid_OBJECTS = $(am_ck_get_x11_server_pid_OBJECTS)
+ck_get_x11_server_pid_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/libck.la $(am__DEPENDENCIES_1)
 am_ck_list_sessions_OBJECTS = list-sessions.$(OBJEXT) $(am__objects_1)
 ck_list_sessions_OBJECTS = $(am_ck_list_sessions_OBJECTS)
-am__DEPENDENCIES_1 =
 ck_list_sessions_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
@@ -69,8 +90,12 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(ck_list_sessions_SOURCES)
-DIST_SOURCES = $(ck_list_sessions_SOURCES)
+SOURCES = $(ck_collect_session_info_SOURCES) \
+	$(ck_get_x11_display_device_SOURCES) \
+	$(ck_get_x11_server_pid_SOURCES) $(ck_list_sessions_SOURCES)
+DIST_SOURCES = $(ck_collect_session_info_SOURCES) \
+	$(ck_get_x11_display_device_SOURCES) \
+	$(ck_get_x11_server_pid_SOURCES) $(ck_list_sessions_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-exec-recursive install-info-recursive \
@@ -145,6 +170,7 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INSTOBJEXT = @INSTOBJEXT@
 INTLLIBS = @INTLLIBS@
+KVM_LIBS = @KVM_LIBS@
 LDFLAGS = @LDFLAGS@
 LIBDBUS_CFLAGS = @LIBDBUS_CFLAGS@
 LIBDBUS_LIBS = @LIBDBUS_LIBS@
@@ -243,6 +269,7 @@ DIST_SUBDIRS = \
 INCLUDES = \
 	-I.							\
 	-I$(srcdir)						\
+	-I$(top_srcdir)/src					\
 	$(CONSOLE_KIT_CFLAGS)					\
 	$(DISABLE_DEPRECATED_CFLAGS)				\
 	-DPREFIX=\""$(prefix)"\" 				\
@@ -262,6 +289,33 @@ ck_list_sessions_SOURCES = \
 
 ck_list_sessions_LDADD = \
 	$(CONSOLE_KIT_LIBS)		\
+	$(NULL)
+
+ck_collect_session_info_SOURCES = \
+	ck-collect-session-info.c	\
+	$(NULL)
+
+ck_collect_session_info_LDADD = \
+	$(TOOLS_LIBS)			\
+	$(top_builddir)/src/libck.la	\
+	$(NULL)
+
+ck_get_x11_server_pid_SOURCES = \
+	ck-get-x11-server-pid.c		\
+	$(NULL)
+
+ck_get_x11_server_pid_LDADD = \
+	$(TOOLS_LIBS)			\
+	$(top_builddir)/src/libck.la	\
+	$(NULL)
+
+ck_get_x11_display_device_SOURCES = \
+	ck-get-x11-display-device.c	\
+	$(NULL)
+
+ck_get_x11_display_device_LDADD = \
+	$(TOOLS_LIBS)			\
+	$(top_builddir)/src/libck.la	\
 	$(NULL)
 
 EXTRA_DIST = \
@@ -332,6 +386,43 @@ clean-binPROGRAMS:
 	  echo " rm -f $$p $$f"; \
 	  rm -f $$p $$f ; \
 	done
+install-libexecPROGRAMS: $(libexec_PROGRAMS)
+	@$(NORMAL_INSTALL)
+	test -z "$(libexecdir)" || $(mkdir_p) "$(DESTDIR)$(libexecdir)"
+	@list='$(libexec_PROGRAMS)'; for p in $$list; do \
+	  p1=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  if test -f $$p \
+	     || test -f $$p1 \
+	  ; then \
+	    f=`echo "$$p1" | sed 's,^.*/,,;$(transform);s/$$/$(EXEEXT)/'`; \
+	   echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(libexecPROGRAMS_INSTALL) '$$p' '$(DESTDIR)$(libexecdir)/$$f'"; \
+	   $(INSTALL_PROGRAM_ENV) $(LIBTOOL) --mode=install $(libexecPROGRAMS_INSTALL) "$$p" "$(DESTDIR)$(libexecdir)/$$f" || exit 1; \
+	  else :; fi; \
+	done
+
+uninstall-libexecPROGRAMS:
+	@$(NORMAL_UNINSTALL)
+	@list='$(libexec_PROGRAMS)'; for p in $$list; do \
+	  f=`echo "$$p" | sed 's,^.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/'`; \
+	  echo " rm -f '$(DESTDIR)$(libexecdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(libexecdir)/$$f"; \
+	done
+
+clean-libexecPROGRAMS:
+	@list='$(libexec_PROGRAMS)'; for p in $$list; do \
+	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
+	  echo " rm -f $$p $$f"; \
+	  rm -f $$p $$f ; \
+	done
+ck-collect-session-info$(EXEEXT): $(ck_collect_session_info_OBJECTS) $(ck_collect_session_info_DEPENDENCIES) 
+	@rm -f ck-collect-session-info$(EXEEXT)
+	$(LINK) $(ck_collect_session_info_LDFLAGS) $(ck_collect_session_info_OBJECTS) $(ck_collect_session_info_LDADD) $(LIBS)
+ck-get-x11-display-device$(EXEEXT): $(ck_get_x11_display_device_OBJECTS) $(ck_get_x11_display_device_DEPENDENCIES) 
+	@rm -f ck-get-x11-display-device$(EXEEXT)
+	$(LINK) $(ck_get_x11_display_device_LDFLAGS) $(ck_get_x11_display_device_OBJECTS) $(ck_get_x11_display_device_LDADD) $(LIBS)
+ck-get-x11-server-pid$(EXEEXT): $(ck_get_x11_server_pid_OBJECTS) $(ck_get_x11_server_pid_DEPENDENCIES) 
+	@rm -f ck-get-x11-server-pid$(EXEEXT)
+	$(LINK) $(ck_get_x11_server_pid_LDFLAGS) $(ck_get_x11_server_pid_OBJECTS) $(ck_get_x11_server_pid_LDADD) $(LIBS)
 ck-list-sessions$(EXEEXT): $(ck_list_sessions_OBJECTS) $(ck_list_sessions_DEPENDENCIES) 
 	@rm -f ck-list-sessions$(EXEEXT)
 	$(LINK) $(ck_list_sessions_LDFLAGS) $(ck_list_sessions_OBJECTS) $(ck_list_sessions_LDADD) $(LIBS)
@@ -342,6 +433,9 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-collect-session-info.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-get-x11-display-device.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-get-x11-server-pid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list-sessions.Po@am__quote@
 
 .c.o:
@@ -554,7 +648,7 @@ check: check-recursive
 all-am: Makefile $(PROGRAMS)
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(bindir)"; do \
+	for dir in "$(DESTDIR)$(bindir)" "$(DESTDIR)$(libexecdir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: install-recursive
@@ -584,7 +678,8 @@ maintainer-clean-generic:
 	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 clean: clean-recursive
 
-clean-am: clean-binPROGRAMS clean-generic clean-libtool mostlyclean-am
+clean-am: clean-binPROGRAMS clean-generic clean-libexecPROGRAMS \
+	clean-libtool mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -rf ./$(DEPDIR)
@@ -604,7 +699,7 @@ info-am:
 
 install-data-am:
 
-install-exec-am: install-binPROGRAMS
+install-exec-am: install-binPROGRAMS install-libexecPROGRAMS
 
 install-info: install-info-recursive
 
@@ -630,24 +725,27 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-binPROGRAMS uninstall-info-am
+uninstall-am: uninstall-binPROGRAMS uninstall-info-am \
+	uninstall-libexecPROGRAMS
 
 uninstall-info: uninstall-info-recursive
 
 .PHONY: $(RECURSIVE_TARGETS) CTAGS GTAGS all all-am check check-am \
-	clean clean-binPROGRAMS clean-generic clean-libtool \
-	clean-recursive ctags ctags-recursive distclean \
+	clean clean-binPROGRAMS clean-generic clean-libexecPROGRAMS \
+	clean-libtool clean-recursive ctags ctags-recursive distclean \
 	distclean-compile distclean-generic distclean-libtool \
 	distclean-recursive distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-binPROGRAMS \
 	install-data install-data-am install-exec install-exec-am \
-	install-info install-info-am install-man install-strip \
-	installcheck installcheck-am installdirs installdirs-am \
-	maintainer-clean maintainer-clean-generic \
-	maintainer-clean-recursive mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool mostlyclean-recursive \
-	pdf pdf-am ps ps-am tags tags-recursive uninstall uninstall-am \
-	uninstall-binPROGRAMS uninstall-info-am
+	install-info install-info-am install-libexecPROGRAMS \
+	install-man install-strip installcheck installcheck-am \
+	installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic maintainer-clean-recursive \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool mostlyclean-recursive pdf pdf-am ps ps-am \
+	tags tags-recursive uninstall uninstall-am \
+	uninstall-binPROGRAMS uninstall-info-am \
+	uninstall-libexecPROGRAMS
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

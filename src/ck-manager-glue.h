@@ -53,7 +53,7 @@ G_BEGIN_DECLS
 #endif /* !G_ENABLE_DEBUG */
 
 
-/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.87ODQT:1) */
+/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.2JLIYT:1) */
 extern void dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
                                                                    GValue       *return_value,
                                                                    guint         n_param_values,
@@ -100,11 +100,11 @@ dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:UINT,POINTER (/tmp/dbus-binding-tool-c-marshallers.87ODQT:2) */
+/* NONE:UINT,POINTER (/tmp/dbus-binding-tool-c-marshallers.2JLIYT:2) */
 #define dbus_glib_marshal_ck_manager_VOID__UINT_POINTER	g_cclosure_marshal_VOID__UINT_POINTER
 #define dbus_glib_marshal_ck_manager_NONE__UINT_POINTER	dbus_glib_marshal_ck_manager_VOID__UINT_POINTER
 
-/* NONE:STRING,POINTER (/tmp/dbus-binding-tool-c-marshallers.87ODQT:3) */
+/* NONE:STRING,POINTER (/tmp/dbus-binding-tool-c-marshallers.2JLIYT:3) */
 extern void dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
                                                                GValue       *return_value,
                                                                guint         n_param_values,
@@ -148,11 +148,11 @@ dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
 }
 #define dbus_glib_marshal_ck_manager_NONE__STRING_POINTER	dbus_glib_marshal_ck_manager_VOID__STRING_POINTER
 
-/* NONE:POINTER (/tmp/dbus-binding-tool-c-marshallers.87ODQT:4) */
+/* NONE:POINTER (/tmp/dbus-binding-tool-c-marshallers.2JLIYT:4) */
 #define dbus_glib_marshal_ck_manager_VOID__POINTER	g_cclosure_marshal_VOID__POINTER
 #define dbus_glib_marshal_ck_manager_NONE__POINTER	dbus_glib_marshal_ck_manager_VOID__POINTER
 
-/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.87ODQT:5) */
+/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.2JLIYT:5) */
 extern void dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER (GClosure     *closure,
                                                               GValue       *return_value,
                                                               guint         n_param_values,

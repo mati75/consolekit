@@ -23,6 +23,38 @@ INCLUDES =							\
 	$(DBUS_CFLAGS)						\
 	$(NULL)
 
+noinst_LTLIBRARIES =            \
+        libck.la         	\
+        $(NULL)
+
+libck_la_SOURCES =		\
+	ck-sysdeps.h		\
+	ck-sysdeps-unix.c	\
+	$(NULL)
+
+if CK_COMPILE_LINUX
+libck_la_SOURCES +=		\
+	ck-sysdeps-linux.c	\
+	$(NULL)
+endif
+if CK_COMPILE_SOLARIS
+libck_la_SOURCES +=		\
+	ck-sysdeps-solaris.c	\
+	$(NULL)
+endif
+if CK_COMPILE_FREEBSD
+libck_la_SOURCES +=		\
+	ck-sysdeps-freebsd.c	\
+	$(NULL)
+libck_la_LIBADD = $(KVM_LIBS)
+endif
+
+EXTRA_libck_la_SOURCES =		\
+	ck-sysdeps-linux.c		\
+	ck-sysdeps-solaris.c		\
+	ck-sysdeps-freebsd.c		\
+	$(NULL)
+
 sbin_PROGRAMS = 		\
 	console-kit-daemon	\
 	$(NULL)
@@ -49,10 +81,6 @@ ck-marshal.c: ck-marshal.list
 ck-marshal.h: ck-marshal.list
 	@GLIB_GENMARSHAL@ $< --prefix=ck_marshal --header > $@
 
-PLATFORM_SOURCES =		\
-	proc-linux.c		\
-	$(NULL)
-
 console_kit_daemon_SOURCES =	\
 	main.c			\
 	ck-manager.h		\
@@ -70,9 +98,6 @@ console_kit_daemon_SOURCES =	\
 	ck-session.c		\
 	ck-log.h		\
 	ck-log.c		\
-	getfd.c			\
-	proc.h			\
-	$(PLATFORM_SOURCES)	\
 	$(BUILT_SOURCES)	\
 	$(NULL)
 
@@ -91,10 +116,23 @@ EXTRA_console_kit_daemon_SOURCES = 	\
 
 console_kit_daemon_LDADD =	\
 	$(CONSOLE_KIT_LIBS)	\
+	libck.la		\
 	$(NULL)
 
 noinst_PROGRAMS = 			\
 	test-tty-idle-monitor		\
+	test-vt-monitor			\
+	$(NULL)
+
+test_vt_monitor_SOURCES = 		\
+	ck-vt-monitor.h			\
+	ck-vt-monitor.c			\
+	test-vt-monitor.c 		\
+	$(NULL)
+
+test_vt_monitor_LDADD =			\
+	$(CONSOLE_KIT_LIBS)		\
+	libck.la			\
 	$(NULL)
 
 test_tty_idle_monitor_SOURCES = 	\
@@ -107,6 +145,7 @@ test_tty_idle_monitor_SOURCES = 	\
 
 test_tty_idle_monitor_LDADD =		\
 	$(CONSOLE_KIT_LIBS)		\
+	libck.la			\
 	$(NULL)
 
 EXTRA_DIST =			\
