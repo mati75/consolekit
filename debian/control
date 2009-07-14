@@ -16,8 +16,8 @@ Build-Depends: cdbs,
  libpam0g-dev,
  zlib1g-dev
 Standards-Version: 3.8.0
-Vcs-Svn: svn://svn.debian.org/svn/pkg-utopia/packages/unstable/consolekit
-Vcs-Browser: http://svn.debian.org/wsvn/pkg-utopia/packages/unstable/consolekit
+Vcs-Git: git://git.debian.org/git/pkg-utopia/consolekit.git
+Vcs-Browser: http://git.debian.org/?p=pkg-utopia/consolekit.git;a=summary
 Homepage: http://www.freedesktop.org/wiki/Software/ConsoleKit
 
 Package: consolekit
