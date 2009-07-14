@@ -1,0 +1,65 @@
+=============
+Version 0.2.1
+=============
+
+        * disable static libs
+        * use inotify to detect activity on tty when possible
+        * add support for CKCON_X11_DISPLAY_DEVICE environment variable
+        * daemonize earlier
+        * daemonize quietly (David Zeuthen)
+        * add syslog support
+        * properly detect unix-user for OpenSession
+        * use xlib directly for tools
+        * add CanActivateSessions to Seat interface
+        * install fixes (Doug Goldstein)
+
+=============
+Version 0.2.0
+=============
+
+        * add PAM module and connector library (David)
+        * restrict the use of D-Bus property get/set by default
+        * add x11-display-device property
+        * add unix-user property and deprecate user property
+        * rename host-name property to remote-host-name
+        * make OpenSession asynchronously collect information for session
+        * add basic idle monitoring of text sessions
+        * add backend tools / framework
+        * add uuid to cookie
+        * rename list session tool
+        * add docbook documentation
+        * add spec framework
+        * fix some leaks
+
+=============
+Version 0.1.2
+=============
+
+        * don't use NULL parameters
+        * add system-idle-hint and system-idle-since-hint
+        * add session idle-hint and idle-since-hint
+        * add session creation time
+        * don't spew errors when can't get a console fd
+        * improve thread safety in vt monitor
+        * split output of list-sessions onto separate lines
+        * create/delete pid file (caglar)
+
+=============
+Version 0.1.1
+=============
+
+        * use the supplied vt number when updating active session
+        * add support for reconnecting the the system bus
+        * start before HAL (David)
+        * don't keep last session active when switching without one (David)
+        * make threads use small stack size rather than the default (Matthias)
+        * change a console-kit to ConsoleKit in a few places
+        * add more debugging output
+
+=============
+Version 0.1.0
+=============
+
+  ConsoleKit
+
+        * First public release
