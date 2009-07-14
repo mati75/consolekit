@@ -9,6 +9,9 @@
 /* Set if we build PAM module */
 #undef ENABLE_PAM_MODULE
 
+/* Set if we build with RBAC support */
+#undef ENABLE_RBAC_SHUTDOWN
+
 /* Name of default gettext domain */
 #undef GETTEXT_PACKAGE
 
@@ -48,6 +51,9 @@
 /* Define to 1 if you have the <paths.h> header file. */
 #undef HAVE_PATHS_H
 
+/* Define if we have polkit */
+#undef HAVE_POLKIT
+
 /* Define to 1 if you have the <security/pam_ext.h> header file. */
 #undef HAVE_SECURITY_PAM_EXT_H
 
@@ -66,11 +72,17 @@
 /* Define to 1 if you have the <string.h> header file. */
 #undef HAVE_STRING_H
 
+/* Define to 1 if you have the <sys/consio.h> header file. */
+#undef HAVE_SYS_CONSIO_H
+
 /* Define to 1 if you have the <sys/stat.h> header file. */
 #undef HAVE_SYS_STAT_H
 
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/vt.h> header file. */
+#undef HAVE_SYS_VT_H
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
@@ -93,11 +105,19 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Set if we build with RBAC support */
+#undef RBAC_SHUTDOWN_KEY
+
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
 /* Version number of package */
 #undef VERSION
+
+/* Enable GNU extensions on systems that have them.  */
+#ifndef _GNU_SOURCE
+# undef _GNU_SOURCE
+#endif
 
 /* Define to `int' if <sys/types.h> doesn't define. */
 #undef gid_t

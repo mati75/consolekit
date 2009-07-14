@@ -53,7 +53,7 @@ G_BEGIN_DECLS
 #endif /* !G_ENABLE_DEBUG */
 
 
-/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.33NIYT:1) */
+/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.G1XI6T:1) */
 extern void dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER (GClosure     *closure,
                                                                 GValue       *return_value,
                                                                 guint         n_param_values,
@@ -62,10 +62,10 @@ extern void dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER (GClosure     *cl
                                                                 gpointer      marshal_data);
 void
 dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER (GClosure     *closure,
-                                                    GValue       *return_value,
+                                                    GValue       *return_value G_GNUC_UNUSED,
                                                     guint         n_param_values,
                                                     const GValue *param_values,
-                                                    gpointer      invocation_hint,
+                                                    gpointer      invocation_hint G_GNUC_UNUSED,
                                                     gpointer      marshal_data)
 {
   typedef gboolean (*GMarshalFunc_BOOLEAN__POINTER_POINTER) (gpointer     data1,
@@ -100,7 +100,7 @@ dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.33NIYT:2) */
+/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.G1XI6T:2) */
 extern void dbus_glib_marshal_ck_seat_VOID__BOXED_POINTER (GClosure     *closure,
                                                            GValue       *return_value,
                                                            guint         n_param_values,
@@ -109,10 +109,10 @@ extern void dbus_glib_marshal_ck_seat_VOID__BOXED_POINTER (GClosure     *closure
                                                            gpointer      marshal_data);
 void
 dbus_glib_marshal_ck_seat_VOID__BOXED_POINTER (GClosure     *closure,
-                                               GValue       *return_value,
+                                               GValue       *return_value G_GNUC_UNUSED,
                                                guint         n_param_values,
                                                const GValue *param_values,
-                                               gpointer      invocation_hint,
+                                               gpointer      invocation_hint G_GNUC_UNUSED,
                                                gpointer      marshal_data)
 {
   typedef void (*GMarshalFunc_VOID__BOXED_POINTER) (gpointer     data1,

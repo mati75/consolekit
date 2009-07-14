@@ -28,45 +28,57 @@
 #include <signal.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <errno.h>
+#include <pwd.h>
 
 #include <glib.h>
 #include <glib/gi18n.h>
+#include <glib/gstdio.h>
 #include <glib-object.h>
 #define DBUS_API_SUBJECT_TO_CHANGE
 #include <dbus/dbus-glib.h>
 #include <dbus/dbus-glib-lowlevel.h>
 
+#ifdef HAVE_POLKIT
+#include <polkit/polkit.h>
+#endif
+
+#ifdef ENABLE_RBAC_SHUTDOWN
+#include <auth_attr.h>
+#include <secdb.h>
+#endif
+
 #include "ck-manager.h"
 #include "ck-manager-glue.h"
 #include "ck-seat.h"
+#include "ck-session-leader.h"
 #include "ck-session.h"
-#include "ck-job.h"
 #include "ck-marshal.h"
+#include "ck-event-logger.h"
 
 #include "ck-sysdeps.h"
 
 #define CK_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CK_TYPE_MANAGER, CkManagerPrivate))
 
-#define CK_SEAT_DIR SYSCONFDIR "/ConsoleKit/seats.d"
-
+#define CK_SEAT_DIR          SYSCONFDIR "/ConsoleKit/seats.d"
+#define LOG_FILE             LOCALSTATEDIR "/log/ConsoleKit/history"
 #define CK_DBUS_PATH         "/org/freedesktop/ConsoleKit"
 #define CK_MANAGER_DBUS_PATH CK_DBUS_PATH "/Manager"
 #define CK_MANAGER_DBUS_NAME "org.freedesktop.ConsoleKit.Manager"
 
-#define CK_TYPE_PARAMETER_STRUCT (dbus_g_type_get_struct ("GValueArray", \
-                                                          G_TYPE_STRING, \
-                                                          G_TYPE_VALUE, \
-                                                          G_TYPE_INVALID))
-#define CK_TYPE_PARAMETER_LIST (dbus_g_type_get_collection ("GPtrArray", \
-                                                            CK_TYPE_PARAMETER_STRUCT))
 struct CkManagerPrivate
 {
+#ifdef HAVE_POLKIT
+        PolKitContext   *pol_ctx;
+#endif
+
         GHashTable      *seats;
         GHashTable      *sessions;
         GHashTable      *leaders;
 
         DBusGProxy      *bus_proxy;
         DBusGConnection *connection;
+        CkEventLogger   *logger;
 
         guint32          session_serial;
         guint32          seat_serial;
@@ -74,18 +86,6 @@ struct CkManagerPrivate
         gboolean         system_idle_hint;
         GTimeVal         system_idle_since_hint;
 };
-
-
-typedef struct {
-        int         refcount;
-        gboolean    cancelled;
-        uid_t       uid;
-        pid_t       pid;
-        char       *service_name;
-        char       *ssid;
-        char       *cookie;
-        GList      *pending_jobs;
-} LeaderInfo;
 
 enum {
         SEAT_ADDED,
@@ -105,64 +105,136 @@ static gpointer manager_object = NULL;
 G_DEFINE_TYPE (CkManager, ck_manager, G_TYPE_OBJECT)
 
 static void
-remove_pending_job (CkJob *job)
+dump_state_seat_iter (char     *id,
+                      CkSeat   *seat,
+                      GKeyFile *key_file)
 {
-        if (job != NULL) {
-                char *command;
-
-                command = NULL;
-                ck_job_get_command (job, &command);
-                g_debug ("Removing pending job: %s", command);
-                g_free (command);
-
-                ck_job_cancel (job);
-                g_object_unref (job);
-        }
+        ck_seat_dump (seat, key_file);
 }
 
 static void
-_leader_info_free (LeaderInfo *info)
+dump_state_session_iter (char      *id,
+                         CkSession *session,
+                         GKeyFile  *key_file)
 {
-        g_debug ("Freeing leader info: %s", info->ssid);
-
-        g_free (info->ssid);
-        info->ssid = NULL;
-        g_free (info->cookie);
-        info->cookie = NULL;
-        g_free (info->service_name);
-        info->service_name = NULL;
-
-        g_free (info);
+        ck_session_dump (session, key_file);
 }
 
 static void
-leader_info_cancel (LeaderInfo *info)
+dump_state_leader_iter (char            *id,
+                        CkSessionLeader *leader,
+                        GKeyFile        *key_file)
 {
-        if (info->pending_jobs != NULL) {
-                g_list_foreach (info->pending_jobs, (GFunc)remove_pending_job, NULL);
-                g_list_free (info->pending_jobs);
-                info->pending_jobs = NULL;
+        ck_session_leader_dump (leader, key_file);
+}
+
+static gboolean
+do_dump (CkManager *manager,
+         int        fd)
+{
+        char     *str;
+        gsize     str_len;
+        GKeyFile *key_file;
+        GError   *error;
+        gboolean  ret;
+
+        str = NULL;
+        error = NULL;
+        ret = FALSE;
+
+        key_file = g_key_file_new ();
+
+        g_hash_table_foreach (manager->priv->seats, (GHFunc) dump_state_seat_iter, key_file);
+        g_hash_table_foreach (manager->priv->sessions, (GHFunc) dump_state_session_iter, key_file);
+        g_hash_table_foreach (manager->priv->leaders, (GHFunc) dump_state_leader_iter, key_file);
+
+        str = g_key_file_to_data (key_file, &str_len, &error);
+        g_key_file_free (key_file);
+        if (str != NULL) {
+                ssize_t written;
+
+                written = 0;
+                while (written < str_len) {
+                        ssize_t ret;
+                        ret = write (fd, str + written, str_len - written);
+                        if (ret < 0) {
+                                if (errno == EAGAIN || errno == EINTR) {
+                                        continue;
+                                } else {
+                                        g_warning ("Error writing state file: %s", strerror (errno));
+                                        goto out;
+                                }
+                        }
+                        written += ret;
+                }
+        } else {
+                g_warning ("Couldn't construct state file: %s", error->message);
+                g_error_free (error);
         }
 
-        info->cancelled = TRUE;
+        ret = TRUE;
+
+out:
+        g_free (str);
+        return ret;
 }
 
 static void
-leader_info_unref (LeaderInfo *info)
+ck_manager_dump (CkManager *manager)
 {
-        /* Probably should use some kind of atomic op here */
-        info->refcount -= 1;
-        if (info->refcount == 0) {
-                _leader_info_free (info);
+        int         fd;
+        int         res;
+        const char *filename = LOCALSTATEDIR "/run/ConsoleKit/database";
+        const char *filename_tmp = LOCALSTATEDIR "/run/ConsoleKit/database~";
+
+        if (manager == NULL) {
+                return;
         }
-}
 
-static LeaderInfo *
-leader_info_ref (LeaderInfo *info)
-{
-        info->refcount += 1;
+        /* always make sure we have a directory */
+        errno = 0;
+        res = g_mkdir_with_parents (LOCALSTATEDIR "/run/ConsoleKit",
+                                    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+        if (res < 0) {
+                g_warning ("Unable to create directory %s (%s)",
+                           LOCALSTATEDIR "/run/ConsoleKit",
+                           g_strerror (errno));
+                return;
+        }
 
-        return info;
+        fd = g_open (filename_tmp, O_CREAT | O_WRONLY, 0600);
+        if (fd == -1) {
+                g_warning ("Cannot create file %s: %s", filename_tmp, g_strerror (errno));
+                goto error;
+        }
+
+        if (! do_dump (manager, fd)) {
+                g_warning ("Cannot write to file %s", filename_tmp);
+                close (fd);
+                goto error;
+        }
+ again:
+        if (close (fd) != 0) {
+                if (errno == EINTR)
+                        goto again;
+                else {
+                        g_warning ("Cannot close fd for %s: %s", filename_tmp, g_strerror (errno));
+                        goto error;
+                }
+        }
+
+        if (g_rename (filename_tmp, filename) != 0) {
+                g_warning ("Cannot rename %s to %s: %s", filename_tmp, filename, g_strerror (errno));
+                goto error;
+        }
+
+        return;
+error:
+        /* For security reasons; unlink the existing file since it
+           contains outdated information */
+        if (g_unlink (filename) != 0) {
+                g_warning ("Cannot unlink %s: %s", filename, g_strerror (errno));
+        }
 }
 
 GQuark
@@ -174,6 +246,28 @@ ck_manager_error_quark (void)
         }
 
         return ret;
+}
+
+#define ENUM_ENTRY(NAME, DESC) { NAME, "" #NAME "", DESC }
+
+GType
+ck_manager_error_get_type (void)
+{
+        static GType etype = 0;
+
+        if (etype == 0) {
+                static const GEnumValue values[] = {
+                        ENUM_ENTRY (CK_MANAGER_ERROR_GENERAL, "GeneralError"),
+                        ENUM_ENTRY (CK_MANAGER_ERROR_NOT_PRIVILEGED, "NotPrivileged"),
+                        { 0, 0, 0 }
+                };
+
+                g_assert (CK_MANAGER_NUM_ERRORS == G_N_ELEMENTS (values) - 1);
+
+                etype = g_enum_register_static ("CkManagerError", values);
+        }
+
+        return etype;
 }
 
 static guint32
@@ -277,6 +371,1140 @@ generate_seat_id (CkManager *manager)
         return id;
 }
 
+static const char *
+get_object_id_basename (const char *id)
+{
+        const char *base;
+
+        if (id != NULL && g_str_has_prefix (id, CK_DBUS_PATH "/")) {
+                base = id + strlen (CK_DBUS_PATH "/");
+        } else {
+                base = id;
+        }
+
+        return base;
+}
+
+static void
+log_seat_added_event (CkManager  *manager,
+                      CkSeat     *seat)
+{
+        CkLogEvent         event;
+        gboolean           res;
+        GError            *error;
+        char              *sid;
+        CkSeatKind         seat_kind;
+
+        memset (&event, 0, sizeof (CkLogEvent));
+
+        event.type = CK_LOG_EVENT_SEAT_ADDED;
+        g_get_current_time (&event.timestamp);
+
+        sid = NULL;
+        ck_seat_get_id (seat, &sid, NULL);
+        ck_seat_get_kind (seat, &seat_kind, NULL);
+
+        event.event.seat_added.seat_id = (char *)get_object_id_basename (sid);
+        event.event.seat_added.seat_kind = (int)seat_kind;
+
+        error = NULL;
+        res = ck_event_logger_queue_event (manager->priv->logger, &event, &error);
+        if (! res) {
+                g_debug ("Unable to log event: %s", error->message);
+                g_error_free (error);
+        }
+
+        g_free (sid);
+}
+
+static void
+log_seat_removed_event (CkManager  *manager,
+                        CkSeat     *seat)
+{
+        CkLogEvent         event;
+        gboolean           res;
+        GError            *error;
+        char              *sid;
+        CkSeatKind         seat_kind;
+
+        memset (&event, 0, sizeof (CkLogEvent));
+
+        event.type = CK_LOG_EVENT_SEAT_REMOVED;
+        g_get_current_time (&event.timestamp);
+
+        sid = NULL;
+        ck_seat_get_id (seat, &sid, NULL);
+        ck_seat_get_kind (seat, &seat_kind, NULL);
+
+        event.event.seat_removed.seat_id = (char *)get_object_id_basename (sid);
+        event.event.seat_removed.seat_kind = (int)seat_kind;
+
+        error = NULL;
+        res = ck_event_logger_queue_event (manager->priv->logger, &event, &error);
+        if (! res) {
+                g_debug ("Unable to log event: %s", error->message);
+                g_error_free (error);
+        }
+
+        g_free (sid);
+}
+
+static void
+log_system_stop_event (CkManager  *manager)
+{
+        CkLogEvent         event;
+        gboolean           res;
+        GError            *error;
+
+        memset (&event, 0, sizeof (CkLogEvent));
+
+        event.type = CK_LOG_EVENT_SYSTEM_STOP;
+        g_get_current_time (&event.timestamp);
+
+        error = NULL;
+        res = ck_event_logger_queue_event (manager->priv->logger, &event, &error);
+        if (! res) {
+                g_debug ("Unable to log event: %s", error->message);
+                g_error_free (error);
+        }
+
+        /* FIXME: in this case we should block and wait for log to flush */
+}
+
+static void
+log_system_restart_event (CkManager  *manager)
+{
+        CkLogEvent         event;
+        gboolean           res;
+        GError            *error;
+
+        memset (&event, 0, sizeof (CkLogEvent));
+
+        event.type = CK_LOG_EVENT_SYSTEM_RESTART;
+        g_get_current_time (&event.timestamp);
+
+        error = NULL;
+        res = ck_event_logger_queue_event (manager->priv->logger, &event, &error);
+        if (! res) {
+                g_debug ("Unable to log event: %s", error->message);
+                g_error_free (error);
+        }
+
+        /* FIXME: in this case we should block and wait for log to flush */
+}
+
+static void
+log_seat_session_added_event (CkManager  *manager,
+                              CkSeat     *seat,
+                              const char *ssid)
+{
+        CkLogEvent         event;
+        gboolean           res;
+        GError            *error;
+        char              *sid;
+        CkSession         *session;
+
+        memset (&event, 0, sizeof (CkLogEvent));
+
+        event.type = CK_LOG_EVENT_SEAT_SESSION_ADDED;
+        g_get_current_time (&event.timestamp);
+
+        sid = NULL;
+        ck_seat_get_id (seat, &sid, NULL);
+
+        event.event.seat_session_added.seat_id = (char *)get_object_id_basename (sid);
+        event.event.seat_session_added.session_id = (char *)get_object_id_basename (ssid);
+
+        session = g_hash_table_lookup (manager->priv->sessions, ssid);
+        if (session != NULL) {
+                g_object_get (session,
+                              "session-type", &event.event.seat_session_added.session_type,
+                              "x11-display", &event.event.seat_session_added.session_x11_display,
+                              "x11-display-device", &event.event.seat_session_added.session_x11_display_device,
+                              "display-device", &event.event.seat_session_added.session_display_device,
+                              "remote-host-name", &event.event.seat_session_added.session_remote_host_name,
+                              "is-local", &event.event.seat_session_added.session_is_local,
+                              "unix-user", &event.event.seat_session_added.session_unix_user,
+                              NULL);
+                ck_session_get_creation_time (session, &event.event.seat_session_added.session_creation_time, NULL);
+                g_debug ("Got uid: %u", event.event.seat_session_added.session_unix_user);
+        } else {
+        }
+
+        error = NULL;
+        res = ck_event_logger_queue_event (manager->priv->logger, &event, &error);
+        if (! res) {
+                g_debug ("Unable to log event: %s", error->message);
+                g_error_free (error);
+        }
+
+        g_free (sid);
+
+        g_free (event.event.seat_session_added.session_type);
+        g_free (event.event.seat_session_added.session_x11_display);
+        g_free (event.event.seat_session_added.session_x11_display_device);
+        g_free (event.event.seat_session_added.session_display_device);
+        g_free (event.event.seat_session_added.session_remote_host_name);
+        g_free (event.event.seat_session_added.session_creation_time);
+}
+
+static void
+log_seat_session_removed_event (CkManager  *manager,
+                                CkSeat     *seat,
+                                const char *ssid)
+{
+        CkLogEvent         event;
+        gboolean           res;
+        GError            *error;
+        char              *sid;
+        CkSession         *session;
+
+        memset (&event, 0, sizeof (CkLogEvent));
+
+        event.type = CK_LOG_EVENT_SEAT_SESSION_REMOVED;
+        g_get_current_time (&event.timestamp);
+
+        sid = NULL;
+        ck_seat_get_id (seat, &sid, NULL);
+
+        event.event.seat_session_removed.seat_id = (char *)get_object_id_basename (sid);
+        event.event.seat_session_removed.session_id = (char *)get_object_id_basename (ssid);
+
+        session = g_hash_table_lookup (manager->priv->sessions, ssid);
+        if (session != NULL) {
+                g_object_get (session,
+                              "session-type", &event.event.seat_session_removed.session_type,
+                              "x11-display", &event.event.seat_session_removed.session_x11_display,
+                              "x11-display-device", &event.event.seat_session_removed.session_x11_display_device,
+                              "display-device", &event.event.seat_session_removed.session_display_device,
+                              "remote-host-name", &event.event.seat_session_removed.session_remote_host_name,
+                              "is-local", &event.event.seat_session_removed.session_is_local,
+                              "unix-user", &event.event.seat_session_removed.session_unix_user,
+                              NULL);
+                ck_session_get_creation_time (session, &event.event.seat_session_removed.session_creation_time, NULL);
+                g_debug ("Got uid: %u", event.event.seat_session_removed.session_unix_user);
+        }
+
+        error = NULL;
+        res = ck_event_logger_queue_event (manager->priv->logger, &event, &error);
+        if (! res) {
+                g_debug ("Unable to log event: %s", error->message);
+                g_error_free (error);
+        }
+
+        g_free (sid);
+
+        g_free (event.event.seat_session_removed.session_type);
+        g_free (event.event.seat_session_removed.session_x11_display);
+        g_free (event.event.seat_session_removed.session_x11_display_device);
+        g_free (event.event.seat_session_removed.session_display_device);
+        g_free (event.event.seat_session_removed.session_remote_host_name);
+        g_free (event.event.seat_session_removed.session_creation_time);
+}
+
+static void
+log_seat_active_session_changed_event (CkManager  *manager,
+                                       CkSeat     *seat,
+                                       const char *ssid)
+{
+        CkLogEvent         event;
+        gboolean           res;
+        GError            *error;
+        char              *sid;
+
+        memset (&event, 0, sizeof (CkLogEvent));
+
+        event.type = CK_LOG_EVENT_SEAT_ACTIVE_SESSION_CHANGED;
+        g_get_current_time (&event.timestamp);
+
+        sid = NULL;
+        ck_seat_get_id (seat, &sid, NULL);
+
+        event.event.seat_active_session_changed.seat_id = (char *)get_object_id_basename (sid);
+        event.event.seat_active_session_changed.session_id = (char *)get_object_id_basename (ssid);
+
+        error = NULL;
+        res = ck_event_logger_queue_event (manager->priv->logger, &event, &error);
+        if (! res) {
+                g_debug ("Unable to log event: %s", error->message);
+                g_error_free (error);
+        }
+
+        g_free (sid);
+}
+
+static void
+log_seat_device_added_event (CkManager   *manager,
+                             CkSeat      *seat,
+                             GValueArray *device)
+{
+        CkLogEvent         event;
+        gboolean           res;
+        GError            *error;
+        char              *sid;
+        GValue             val_struct = { 0, };
+        char              *device_id;
+        char              *device_type;
+
+        memset (&event, 0, sizeof (CkLogEvent));
+
+        event.type = CK_LOG_EVENT_SEAT_DEVICE_ADDED;
+        g_get_current_time (&event.timestamp);
+
+        sid = NULL;
+        device_type = NULL;
+        device_id = NULL;
+
+        ck_seat_get_id (seat, &sid, NULL);
+
+        g_value_init (&val_struct, CK_TYPE_DEVICE);
+        g_value_set_static_boxed (&val_struct, device);
+        res = dbus_g_type_struct_get (&val_struct,
+                                      0, &device_type,
+                                      1, &device_id,
+                                      G_MAXUINT);
+
+        event.event.seat_device_added.seat_id = (char *)get_object_id_basename (sid);
+
+        event.event.seat_device_added.device_id = device_id;
+        event.event.seat_device_added.device_type = device_type;
+
+        error = NULL;
+        res = ck_event_logger_queue_event (manager->priv->logger, &event, &error);
+        if (! res) {
+                g_debug ("Unable to log event: %s", error->message);
+                g_error_free (error);
+        }
+
+        g_free (sid);
+        g_free (device_type);
+        g_free (device_id);
+}
+
+static void
+log_seat_device_removed_event (CkManager   *manager,
+                               CkSeat      *seat,
+                               GValueArray *device)
+{
+        CkLogEvent         event;
+        gboolean           res;
+        GError            *error;
+        char              *sid;
+        GValue             val_struct = { 0, };
+        char              *device_id;
+        char              *device_type;
+
+        memset (&event, 0, sizeof (CkLogEvent));
+
+        event.type = CK_LOG_EVENT_SEAT_DEVICE_REMOVED;
+        g_get_current_time (&event.timestamp);
+
+        sid = NULL;
+        device_type = NULL;
+        device_id = NULL;
+
+        ck_seat_get_id (seat, &sid, NULL);
+
+        g_value_init (&val_struct, CK_TYPE_DEVICE);
+        g_value_set_static_boxed (&val_struct, device);
+        res = dbus_g_type_struct_get (&val_struct,
+                                      0, &device_type,
+                                      1, &device_id,
+                                      G_MAXUINT);
+
+        event.event.seat_device_removed.seat_id = (char *)get_object_id_basename (sid);
+
+        event.event.seat_device_removed.device_id = device_id;
+        event.event.seat_device_removed.device_type = device_type;
+
+        error = NULL;
+        res = ck_event_logger_queue_event (manager->priv->logger, &event, &error);
+        if (! res) {
+                g_debug ("Unable to log event: %s", error->message);
+                g_error_free (error);
+        }
+
+        g_free (sid);
+        g_free (device_type);
+        g_free (device_id);
+}
+
+static char *
+get_cookie_for_pid (CkManager *manager,
+                    guint      pid)
+{
+        char *cookie;
+
+        /* FIXME: need a better way to get the cookie */
+
+        cookie = ck_unix_pid_get_env (pid, "XDG_SESSION_COOKIE");
+
+        return cookie;
+}
+
+static CkSession *
+get_session_for_unix_process (CkManager *manager,
+                              guint      pid)
+{
+        CkSessionLeader *leader;
+        CkSession       *session;
+        char            *cookie;
+
+        session = NULL;
+        leader = NULL;
+
+        cookie = get_cookie_for_pid (manager, pid);
+        if (cookie == NULL) {
+                goto out;
+        }
+
+        leader = g_hash_table_lookup (manager->priv->leaders, cookie);
+        if (leader == NULL) {
+                goto out;
+        }
+
+        session = g_hash_table_lookup (manager->priv->sessions, ck_session_leader_peek_session_id (leader));
+
+ out:
+        g_free (cookie);
+
+        return session;
+}
+
+#ifdef HAVE_POLKIT
+static PolKitSession *
+new_polkit_session_from_session (CkManager *manager,
+                                 CkSession *ck_session)
+{
+        PolKitSession *pk_session;
+        PolKitSeat    *pk_seat;
+        uid_t          uid;
+        gboolean       is_active;
+        gboolean       is_local;
+        char          *sid;
+        char          *ssid;
+        char          *remote_host;
+
+        sid = NULL;
+        ssid = NULL;
+        remote_host = NULL;
+
+        ck_session_get_seat_id (ck_session, &sid, NULL);
+
+        g_object_get (ck_session,
+                      "active", &is_active,
+                      "is-local", &is_local,
+                      "id", &ssid,
+                      "unix-user", &uid,
+                      "remote-host-name", &remote_host,
+                      NULL);
+
+        pk_session = polkit_session_new ();
+        if (pk_session == NULL) {
+                goto out;
+        }
+        if (!polkit_session_set_uid (pk_session, uid)) {
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+        if (!polkit_session_set_ck_objref (pk_session, ssid)) {
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+        if (!polkit_session_set_ck_is_active (pk_session, is_active)) {
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+        if (!polkit_session_set_ck_is_local (pk_session, is_local)) {
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+        if (!is_local) {
+                if (!polkit_session_set_ck_remote_host (pk_session, remote_host)) {
+                        polkit_session_unref (pk_session);
+                        pk_session = NULL;
+                        goto out;
+                }
+
+        }
+
+
+        pk_seat = polkit_seat_new ();
+        if (pk_seat == NULL) {
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+        if (!polkit_seat_set_ck_objref (pk_seat, sid)) {
+                polkit_seat_unref (pk_seat);
+                pk_seat = NULL;
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+        if (!polkit_seat_validate (pk_seat)) {
+                polkit_seat_unref (pk_seat);
+                pk_seat = NULL;
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+
+        if (!polkit_session_set_seat (pk_session, pk_seat)) {
+                polkit_seat_unref (pk_seat);
+                pk_seat = NULL;
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+        polkit_seat_unref (pk_seat); /* session object now owns this object */
+        pk_seat = NULL;
+
+        if (!polkit_session_validate (pk_session)) {
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+
+out:
+        g_free (ssid);
+        g_free (sid);
+        g_free (remote_host);
+
+        return pk_session;
+}
+
+static PolKitCaller *
+new_polkit_caller_from_dbus_name (CkManager  *manager,
+                                  const char *dbus_name)
+{
+        PolKitCaller *caller;
+        pid_t pid;
+        uid_t uid;
+        char *selinux_context;
+        PolKitSession *pk_session;
+        DBusMessage *message;
+        DBusMessage *reply;
+        DBusMessageIter iter;
+        DBusMessageIter sub_iter;
+        char *str;
+        int num_elems;
+        DBusConnection *con;
+        DBusError       error;
+        CkSession      *ck_session;
+
+        dbus_error_init (&error);
+
+        con = dbus_g_connection_get_connection (manager->priv->connection);
+
+        g_return_val_if_fail (con != NULL, NULL);
+        g_return_val_if_fail (dbus_name != NULL, NULL);
+
+        selinux_context = NULL;
+
+        caller = NULL;
+        ck_session = NULL;
+        pk_session = NULL;
+
+        uid = dbus_bus_get_unix_user (con, dbus_name, &error);
+        if (dbus_error_is_set (&error)) {
+                g_warning ("Could not get uid for connection: %s %s",
+                           error.name,
+                           error.message);
+                dbus_error_free (&error);
+                goto out;
+        }
+
+        message = dbus_message_new_method_call ("org.freedesktop.DBus",
+                                                "/org/freedesktop/DBus/Bus",
+                                                "org.freedesktop.DBus",
+                                                "GetConnectionUnixProcessID");
+        dbus_message_iter_init_append (message, &iter);
+        dbus_message_iter_append_basic (&iter, DBUS_TYPE_STRING, &dbus_name);
+        reply = dbus_connection_send_with_reply_and_block (con, message, -1, &error);
+
+        if (reply == NULL || dbus_error_is_set (&error)) {
+                g_warning ("Error doing GetConnectionUnixProcessID on Bus: %s: %s",
+                           error.name,
+                           error.message);
+                dbus_message_unref (message);
+                if (reply != NULL) {
+                        dbus_message_unref (reply);
+                }
+                dbus_error_free (&error);
+                goto out;
+        }
+        dbus_message_iter_init (reply, &iter);
+        dbus_message_iter_get_basic (&iter, &pid);
+        dbus_message_unref (message);
+        dbus_message_unref (reply);
+
+        message = dbus_message_new_method_call ("org.freedesktop.DBus",
+                                                "/org/freedesktop/DBus/Bus",
+                                                "org.freedesktop.DBus",
+                                                "GetConnectionSELinuxSecurityContext");
+        dbus_message_iter_init_append (message, &iter);
+        dbus_message_iter_append_basic (&iter, DBUS_TYPE_STRING, &dbus_name);
+        reply = dbus_connection_send_with_reply_and_block (con, message, -1, &error);
+        /* SELinux might not be enabled */
+        if (dbus_error_is_set (&error) &&
+            strcmp (error.name, "org.freedesktop.DBus.Error.SELinuxSecurityContextUnknown") == 0) {
+                dbus_message_unref (message);
+                if (reply != NULL) {
+                        dbus_message_unref (reply);
+                }
+                dbus_error_init (&error);
+        } else if (reply == NULL || dbus_error_is_set (&error)) {
+                g_warning ("Error doing GetConnectionSELinuxSecurityContext on Bus: %s: %s", error.name, error.message);
+                dbus_message_unref (message);
+                if (reply != NULL) {
+                        dbus_message_unref (reply);
+                }
+                goto out;
+        } else {
+                /* TODO: verify signature */
+                dbus_message_iter_init (reply, &iter);
+                dbus_message_iter_recurse (&iter, &sub_iter);
+                dbus_message_iter_get_fixed_array (&sub_iter, (void *) &str, &num_elems);
+                if (str != NULL && num_elems > 0) {
+                        selinux_context = g_strndup (str, num_elems);
+                }
+                dbus_message_unref (message);
+                dbus_message_unref (reply);
+        }
+
+        ck_session = get_session_for_unix_process (manager, pid);
+        if (ck_session == NULL) {
+                /* OK, this is not a catastrophe; just means the caller is not a
+                 * member of any session or that ConsoleKit is not available..
+                 */
+                goto not_in_session;
+        }
+
+        pk_session = new_polkit_session_from_session (manager, ck_session);
+        if (pk_session == NULL) {
+                g_warning ("Got a session but couldn't construct polkit session object!");
+                goto out;
+        }
+        if (!polkit_session_validate (pk_session)) {
+                polkit_session_unref (pk_session);
+                pk_session = NULL;
+                goto out;
+        }
+
+not_in_session:
+
+        caller = polkit_caller_new ();
+        if (caller == NULL) {
+                if (pk_session != NULL) {
+                        polkit_session_unref (pk_session);
+                        pk_session = NULL;
+                }
+                goto out;
+        }
+
+        if (!polkit_caller_set_dbus_name (caller, dbus_name)) {
+                if (pk_session != NULL) {
+                        polkit_session_unref (pk_session);
+                        pk_session = NULL;
+                }
+                polkit_caller_unref (caller);
+                caller = NULL;
+                goto out;
+        }
+        if (!polkit_caller_set_uid (caller, uid)) {
+                if (pk_session != NULL) {
+                        polkit_session_unref (pk_session);
+                        pk_session = NULL;
+                }
+                polkit_caller_unref (caller);
+                caller = NULL;
+                goto out;
+        }
+        if (!polkit_caller_set_pid (caller, pid)) {
+                if (pk_session != NULL) {
+                        polkit_session_unref (pk_session);
+                        pk_session = NULL;
+                }
+                polkit_caller_unref (caller);
+                caller = NULL;
+                goto out;
+        }
+        if (selinux_context != NULL) {
+                if (!polkit_caller_set_selinux_context (caller, selinux_context)) {
+                        if (pk_session != NULL) {
+                                polkit_session_unref (pk_session);
+                                pk_session = NULL;
+                        }
+                        polkit_caller_unref (caller);
+                        caller = NULL;
+                        goto out;
+                }
+        }
+        if (pk_session != NULL) {
+                if (!polkit_caller_set_ck_session (caller, pk_session)) {
+                        if (pk_session != NULL) {
+                                polkit_session_unref (pk_session);
+                                pk_session = NULL;
+                        }
+                        polkit_caller_unref (caller);
+                        caller = NULL;
+                        goto out;
+                }
+                polkit_session_unref (pk_session); /* caller object now own this object */
+                pk_session = NULL;
+        }
+
+        if (!polkit_caller_validate (caller)) {
+                polkit_caller_unref (caller);
+                caller = NULL;
+                goto out;
+        }
+
+out:
+        g_free (selinux_context);
+
+        return caller;
+}
+
+static gboolean
+_check_polkit_for_action (CkManager             *manager,
+                          DBusGMethodInvocation *context,
+                          const char            *action)
+{
+        const char   *sender;
+        GError       *error;
+        DBusError     dbus_error;
+        PolKitCaller *pk_caller;
+        PolKitAction *pk_action;
+        PolKitResult  pk_result;
+
+        error = NULL;
+
+        g_debug ("constructing polkit data");
+
+        /* Check that caller is privileged */
+        sender = dbus_g_method_get_sender (context);
+        dbus_error_init (&dbus_error);
+
+        pk_caller = new_polkit_caller_from_dbus_name (manager, sender);
+        if (pk_caller == NULL) {
+                error = g_error_new (CK_MANAGER_ERROR,
+                                     CK_MANAGER_ERROR_GENERAL,
+                                     "Error getting information about caller: %s: %s",
+                                     dbus_error.name,
+                                     dbus_error.message);
+                dbus_error_free (&dbus_error);
+                dbus_g_method_return_error (context, error);
+                g_error_free (error);
+                return FALSE;
+        }
+
+        pk_action = polkit_action_new ();
+        polkit_action_set_action_id (pk_action, action);
+
+        g_debug ("checking if caller %s is authorized", sender);
+
+        /* this version crashes if error is used */
+        pk_result = polkit_context_is_caller_authorized (manager->priv->pol_ctx,
+                                                         pk_action,
+                                                         pk_caller,
+                                                         TRUE,
+                                                         NULL);
+        g_debug ("answer is: %s", (pk_result == POLKIT_RESULT_YES) ? "yes" : "no");
+
+        polkit_caller_unref (pk_caller);
+        polkit_action_unref (pk_action);
+
+        if (pk_result != POLKIT_RESULT_YES) {
+                error = g_error_new (CK_MANAGER_ERROR,
+                                     CK_MANAGER_ERROR_NOT_PRIVILEGED,
+                                     "Not privileged for action: %s",
+                                     action);
+                dbus_error_free (&dbus_error);
+                dbus_g_method_return_error (context, error);
+                g_error_free (error);
+                return FALSE;
+        }
+
+        return TRUE;
+}
+#endif
+
+/* adapted from PolicyKit */
+static gboolean
+get_caller_info (CkManager   *manager,
+                 const char  *sender,
+                 uid_t       *calling_uid,
+                 pid_t       *calling_pid)
+{
+        gboolean res;
+        GError  *error = NULL;
+
+        res = FALSE;
+
+        if (sender == NULL) {
+                goto out;
+        }
+
+        if (! dbus_g_proxy_call (manager->priv->bus_proxy, "GetConnectionUnixUser", &error,
+                                 G_TYPE_STRING, sender,
+                                 G_TYPE_INVALID,
+                                 G_TYPE_UINT, calling_uid,
+                                 G_TYPE_INVALID)) {
+                g_debug ("GetConnectionUnixUser() failed: %s", error->message);
+                g_error_free (error);
+                goto out;
+        }
+
+        if (! dbus_g_proxy_call (manager->priv->bus_proxy, "GetConnectionUnixProcessID", &error,
+                                 G_TYPE_STRING, sender,
+                                 G_TYPE_INVALID,
+                                 G_TYPE_UINT, calling_pid,
+                                 G_TYPE_INVALID)) {
+                g_debug ("GetConnectionUnixProcessID() failed: %s", error->message);
+                g_error_free (error);
+                goto out;
+        }
+
+        res = TRUE;
+
+        g_debug ("uid = %d", *calling_uid);
+        g_debug ("pid = %d", *calling_pid);
+
+out:
+        return res;
+}
+
+static char *
+get_user_name (uid_t uid)
+{
+        struct passwd *pwent;
+        char          *name;
+
+        name = NULL;
+
+        pwent = getpwuid (uid);
+
+        if (pwent != NULL) {
+                name = g_strdup (pwent->pw_name);
+        }
+
+        return name;
+}
+
+static gboolean
+session_is_real_user (CkSession *session,
+                      char     **userp)
+{
+        int         uid;
+        char       *username;
+        char       *session_type;
+        gboolean    ret;
+
+        ret = FALSE;
+        session_type = NULL;
+        username = NULL;
+
+        session_type = NULL;
+
+        g_object_get (session,
+                      "unix-user", &uid,
+                      "session-type", session_type,
+                      NULL);
+
+        username = get_user_name (uid);
+
+        /* filter out GDM user */
+        if (username != NULL && strcmp (username, "gdm") == 0) {
+                ret = FALSE;
+                goto out;
+        }
+
+        if (userp != NULL) {
+                *userp = g_strdup (username);
+        }
+
+        ret = TRUE;
+
+ out:
+        g_free (username);
+        g_free (session_type);
+
+        return ret;
+}
+
+static void
+collect_users (const char *ssid,
+               CkSession  *session,
+               GHashTable *hash)
+{
+        char *username;
+
+        if (session_is_real_user (session, &username)) {
+                if (username != NULL) {
+                        g_hash_table_insert (hash, username, NULL);
+                }
+        }
+}
+
+static guint
+get_system_num_users (CkManager *manager)
+{
+        guint            num_users;
+        GHashTable      *hash;
+
+        hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+        g_hash_table_foreach (manager->priv->sessions, (GHFunc)collect_users, hash);
+
+        num_users = g_hash_table_size (hash);
+
+        g_hash_table_destroy (hash);
+
+        g_debug ("found %u unique users", num_users);
+
+        return num_users;
+}
+
+#ifdef ENABLE_RBAC_SHUTDOWN
+static gboolean
+check_rbac_permissions (CkManager             *manager,
+                        DBusGMethodInvocation *context)
+{
+        const char *sender;
+        char       *username;
+        gboolean    res;
+        uid_t       uid;
+        pid_t       pid;
+
+        username = NULL;
+        sender   = dbus_g_method_get_sender (context);
+        res      = get_caller_info (manager,
+                                    sender,
+                                    &uid,
+                                    &pid);
+        if (!res) {
+                goto out;
+        }
+
+        username = get_user_name (uid);
+
+        if (username == NULL ||
+            !chkauthattr (RBAC_SHUTDOWN_KEY, username)) {
+                res = FALSE;
+                goto out;
+        }
+
+out:
+
+        if (res == TRUE) {
+                g_debug ("User %s has RBAC permission to stop/restart", username);
+        } else {
+                g_debug ("User %s does not have RBAC permission to stop/restart", username);
+        }
+
+        g_free (username);
+        return res;
+}
+#endif
+
+/*
+  Example:
+  dbus-send --system --dest=org.freedesktop.ConsoleKit \
+  --type=method_call --print-reply --reply-timeout=2000 \
+  /org/freedesktop/ConsoleKit/Manager \
+  org.freedesktop.ConsoleKit.Manager.Restart
+*/
+gboolean
+ck_manager_restart (CkManager             *manager,
+                    DBusGMethodInvocation *context)
+{
+        gboolean    ret;
+        gboolean    res;
+        const char *action;
+        GError     *error;
+
+        ret = FALSE;
+
+        if (get_system_num_users (manager) > 1) {
+                action = "org.freedesktop.consolekit.system.restart-multiple-users";
+        } else {
+                action = "org.freedesktop.consolekit.system.restart";
+        }
+
+        g_debug ("ConsoleKit Restart: %s", action);
+
+#ifdef HAVE_POLKIT
+        res = _check_polkit_for_action (manager, context, action);
+        if (! res) {
+                goto out;
+        }
+#endif
+
+#ifdef ENABLE_RBAC_SHUTDOWN
+        if (! check_rbac_permissions (manager, context)) {
+                goto out;
+        }
+#endif
+
+        g_debug ("ConsoleKit preforming Restart: %s", action);
+
+        log_system_restart_event (manager);
+
+        error = NULL;
+        res = g_spawn_command_line_async (LIBDIR "/ConsoleKit/scripts/ck-system-restart",
+                                          &error);
+        if (! res) {
+                GError *new_error;
+
+                g_warning ("Unable to restart system: %s", error->message);
+
+                new_error = g_error_new (CK_MANAGER_ERROR,
+                                         CK_MANAGER_ERROR_GENERAL,
+                                         "Unable to restart system: %s", error->message);
+                dbus_g_method_return_error (context, new_error);
+                g_error_free (new_error);
+
+                g_error_free (error);
+        } else {
+                ret = TRUE;
+                dbus_g_method_return (context);
+        }
+
+ out:
+
+        return ret;
+}
+
+gboolean
+ck_manager_stop (CkManager             *manager,
+                 DBusGMethodInvocation *context)
+{
+        gboolean    ret;
+        gboolean    res;
+        const char *action;
+        GError     *error;
+
+        ret = TRUE;
+
+        if (get_system_num_users (manager) > 1) {
+                action = "org.freedesktop.consolekit.system.stop-multiple-users";
+        } else {
+                action = "org.freedesktop.consolekit.system.stop";
+        }
+
+#ifdef HAVE_POLKIT
+        res = _check_polkit_for_action (manager, context, action);
+        if (! res) {
+                goto out;
+        }
+#endif
+
+#ifdef ENABLE_RBAC_SHUTDOWN
+        if (!check_rbac_permissions (manager, context))
+                goto out;
+#endif
+
+        g_debug ("Stopping system");
+
+        log_system_stop_event (manager);
+
+        error = NULL;
+        res = g_spawn_command_line_async (LIBDIR "/ConsoleKit/scripts/ck-system-stop",
+                                          &error);
+        if (! res) {
+                GError *new_error;
+
+                g_warning ("Unable to stop system: %s", error->message);
+
+                new_error = g_error_new (CK_MANAGER_ERROR,
+                                         CK_MANAGER_ERROR_GENERAL,
+                                         "Unable to stop system: %s", error->message);
+                dbus_g_method_return_error (context, new_error);
+                g_error_free (new_error);
+
+                g_error_free (error);
+        } else {
+                ret = TRUE;
+                dbus_g_method_return (context);
+        }
+
+ out:
+        return ret;
+}
+
+static void
+on_seat_active_session_changed (CkSeat     *seat,
+                                const char *ssid,
+                                CkManager  *manager)
+{
+        ck_manager_dump (manager);
+        log_seat_active_session_changed_event (manager, seat, ssid);
+}
+
+static void
+on_seat_session_added (CkSeat     *seat,
+                       const char *ssid,
+                       CkManager  *manager)
+{
+        ck_manager_dump (manager);
+        log_seat_session_added_event (manager, seat, ssid);
+}
+
+static void
+on_seat_session_removed (CkSeat     *seat,
+                         const char *ssid,
+                         CkManager  *manager)
+{
+        ck_manager_dump (manager);
+        log_seat_session_removed_event (manager, seat, ssid);
+}
+
+static void
+on_seat_device_added (CkSeat      *seat,
+                      GValueArray *device,
+                      CkManager   *manager)
+{
+        ck_manager_dump (manager);
+        log_seat_device_added_event (manager, seat, device);
+}
+
+static void
+on_seat_device_removed (CkSeat      *seat,
+                        GValueArray *device,
+                        CkManager   *manager)
+{
+        ck_manager_dump (manager);
+        log_seat_device_removed_event (manager, seat, device);
+}
+
+static void
+connect_seat_signals (CkManager *manager,
+                      CkSeat    *seat)
+{
+        g_signal_connect (seat, "active-session-changed", G_CALLBACK (on_seat_active_session_changed), manager);
+        g_signal_connect (seat, "session-added", G_CALLBACK (on_seat_session_added), manager);
+        g_signal_connect (seat, "session-removed", G_CALLBACK (on_seat_session_removed), manager);
+        g_signal_connect (seat, "device-added", G_CALLBACK (on_seat_device_added), manager);
+        g_signal_connect (seat, "device-removed", G_CALLBACK (on_seat_device_removed), manager);
+}
+
+static void
+disconnect_seat_signals (CkManager *manager,
+                         CkSeat    *seat)
+{
+        g_signal_handlers_disconnect_by_func (seat, on_seat_active_session_changed, manager);
+        g_signal_handlers_disconnect_by_func (seat, on_seat_session_added, manager);
+        g_signal_handlers_disconnect_by_func (seat, on_seat_session_removed, manager);
+        g_signal_handlers_disconnect_by_func (seat, on_seat_device_added, manager);
+        g_signal_handlers_disconnect_by_func (seat, on_seat_device_removed, manager);
+}
+
 static CkSeat *
 add_new_seat (CkManager *manager,
               CkSeatKind kind)
@@ -293,11 +1521,17 @@ add_new_seat (CkManager *manager,
                 goto out;
         }
 
+        connect_seat_signals (manager, seat);
+
         g_hash_table_insert (manager->priv->seats, sid, seat);
 
         g_debug ("Added seat: %s kind:%d", sid, kind);
 
+        ck_manager_dump (manager);
+
         g_signal_emit (manager, signals [SEAT_ADDED], 0, sid);
+
+        log_seat_added_event (manager, seat);
 
  out:
         return seat;
@@ -307,19 +1541,49 @@ static void
 remove_seat (CkManager *manager,
              CkSeat    *seat)
 {
-        char *sid;
+        char    *sid;
+        char    *orig_sid;
+        CkSeat  *orig_seat;
+        gboolean res;
 
         sid = NULL;
         ck_seat_get_id (seat, &sid, NULL);
+
+        /* Need to get the original key/value */
+        res = g_hash_table_lookup_extended (manager->priv->seats,
+                                            sid,
+                                            (gpointer *)&orig_sid,
+                                            (gpointer *)&orig_seat);
+        if (! res) {
+                g_debug ("Seat %s is not attached", sid);
+                goto out;
+        }
+
+        /* Remove the seat from the list but don't call
+         * unref until the signal is emitted */
+        g_hash_table_steal (manager->priv->seats, sid);
+
+        disconnect_seat_signals (manager, orig_seat);
 
         if (sid != NULL) {
                 g_hash_table_remove (manager->priv->seats, sid);
         }
 
+        ck_manager_dump (manager);
+
+        g_debug ("Emitting seat-removed: %s", sid);
         g_signal_emit (manager, signals [SEAT_REMOVED], 0, sid);
+
+        log_seat_removed_event (manager, orig_seat);
 
         g_debug ("Removed seat: %s", sid);
 
+        if (orig_seat != NULL) {
+                g_object_unref (orig_seat);
+        }
+        g_free (orig_sid);
+
+ out:
         g_free (sid);
 }
 
@@ -382,51 +1646,6 @@ find_seat_for_session (CkManager *manager,
         g_free (remote_host_name);
 
         return seat;
-}
-
-/* adapted from PolicyKit */
-static gboolean
-get_caller_info (CkManager   *manager,
-                 const char  *sender,
-                 uid_t       *calling_uid,
-                 pid_t       *calling_pid)
-{
-        gboolean res;
-        GError  *error = NULL;
-
-        res = FALSE;
-
-        if (sender == NULL) {
-                goto out;
-        }
-
-        if (! dbus_g_proxy_call (manager->priv->bus_proxy, "GetConnectionUnixUser", &error,
-                                 G_TYPE_STRING, sender,
-                                 G_TYPE_INVALID,
-                                 G_TYPE_UINT, calling_uid,
-                                 G_TYPE_INVALID)) {
-                g_debug ("GetConnectionUnixUser() failed: %s", error->message);
-                g_error_free (error);
-                goto out;
-        }
-
-        if (! dbus_g_proxy_call (manager->priv->bus_proxy, "GetConnectionUnixProcessID", &error,
-                                 G_TYPE_STRING, sender,
-                                 G_TYPE_INVALID,
-                                 G_TYPE_UINT, calling_pid,
-                                 G_TYPE_INVALID)) {
-                g_debug ("GetConnectionUnixProcessID() failed: %s", error->message);
-                g_error_free (error);
-                goto out;
-        }
-
-        res = TRUE;
-
-        g_debug ("uid = %d", *calling_uid);
-        g_debug ("pid = %d", *calling_pid);
-
-out:
-        return res;
 }
 
 static gboolean
@@ -552,16 +1771,21 @@ ck_manager_get_system_idle_since_hint (CkManager *manager,
 }
 
 static void
-open_session_for_leader_info (CkManager             *manager,
-                              LeaderInfo            *leader_info,
-                              const GPtrArray       *parameters,
-                              DBusGMethodInvocation *context)
+open_session_for_leader (CkManager             *manager,
+                         CkSessionLeader       *leader,
+                         const GPtrArray       *parameters,
+                         DBusGMethodInvocation *context)
 {
         CkSession   *session;
         CkSeat      *seat;
+        const char  *ssid;
+        const char  *cookie;
 
-        session = ck_session_new_with_parameters (leader_info->ssid,
-                                                  leader_info->cookie,
+        ssid = ck_session_leader_peek_session_id (leader);
+        cookie = ck_session_leader_peek_cookie (leader);
+
+        session = ck_session_new_with_parameters (ssid,
+                                                  cookie,
                                                   parameters);
 
         if (session == NULL) {
@@ -576,7 +1800,9 @@ open_session_for_leader_info (CkManager             *manager,
                 return;
         }
 
-        g_hash_table_insert (manager->priv->sessions, g_strdup (leader_info->ssid), g_object_ref (session));
+        g_hash_table_insert (manager->priv->sessions,
+                             g_strdup (ssid),
+                             g_object_ref (session));
 
         /* Add to seat */
         seat = find_seat_for_session (manager, session);
@@ -597,247 +1823,55 @@ open_session_for_leader_info (CkManager             *manager,
 
         g_object_unref (session);
 
-        dbus_g_method_return (context, leader_info->cookie);
+        dbus_g_method_return (context, cookie);
 }
 
 static void
-verify_and_open_session_for_leader_info (CkManager             *manager,
-                                         LeaderInfo            *leader_info,
-                                         const GPtrArray       *parameters,
-                                         DBusGMethodInvocation *context)
+verify_and_open_session_for_leader (CkManager             *manager,
+                                    CkSessionLeader       *leader,
+                                    const GPtrArray       *parameters,
+                                    DBusGMethodInvocation *context)
 {
         /* for now don't bother verifying since we protect OpenSessionWithParameters */
-        open_session_for_leader_info (manager,
-                                      leader_info,
-                                      parameters,
-                                      context);
+        open_session_for_leader (manager,
+                                 leader,
+                                 parameters,
+                                 context);
 }
 
 static void
-add_param_int (GPtrArray  *parameters,
-               const char *key,
-               const char *value)
+collect_parameters_cb (CkSessionLeader       *leader,
+                       GPtrArray             *parameters,
+                       DBusGMethodInvocation *context,
+                       CkManager             *manager)
 {
-        GValue val = { 0, };
-        GValue param_val = { 0, };
-        int    num;
-
-        num = atoi (value);
-
-        g_value_init (&val, G_TYPE_INT);
-        g_value_set_int (&val, num);
-        g_value_init (&param_val, CK_TYPE_PARAMETER_STRUCT);
-        g_value_take_boxed (&param_val,
-                            dbus_g_type_specialized_construct (CK_TYPE_PARAMETER_STRUCT));
-        dbus_g_type_struct_set (&param_val,
-                                0, key,
-                                1, &val,
-                                G_MAXUINT);
-        g_value_unset (&val);
-
-        g_ptr_array_add (parameters, g_value_get_boxed (&param_val));
-}
-
-static void
-add_param_boolean (GPtrArray  *parameters,
-                   const char *key,
-                   const char *value)
-{
-        GValue   val = { 0, };
-        GValue   param_val = { 0, };
-        gboolean b;
-
-        if (value != NULL && strcmp (value, "true") == 0) {
-                b = TRUE;
-        } else {
-                b = FALSE;
+        if (parameters == NULL) {
+                GError *error;
+                error = g_error_new (CK_MANAGER_ERROR,
+                                     CK_MANAGER_ERROR_GENERAL,
+                                     "Unable to get information about the calling process");
+                dbus_g_method_return_error (context, error);
+                g_error_free (error);
+                return;
         }
 
-        g_value_init (&val, G_TYPE_BOOLEAN);
-        g_value_set_boolean (&val, b);
-        g_value_init (&param_val, CK_TYPE_PARAMETER_STRUCT);
-        g_value_take_boxed (&param_val,
-                            dbus_g_type_specialized_construct (CK_TYPE_PARAMETER_STRUCT));
-        dbus_g_type_struct_set (&param_val,
-                                0, key,
-                                1, &val,
-                                G_MAXUINT);
-        g_value_unset (&val);
-
-        g_ptr_array_add (parameters, g_value_get_boxed (&param_val));
+        verify_and_open_session_for_leader (manager,
+                                            leader,
+                                            parameters,
+                                            context);
 }
 
 static void
-add_param_string (GPtrArray  *parameters,
-                  const char *key,
-                  const char *value)
+generate_session_for_leader (CkManager             *manager,
+                             CkSessionLeader       *leader,
+                             DBusGMethodInvocation *context)
 {
-        GValue val = { 0, };
-        GValue param_val = { 0, };
+        gboolean res;
 
-        g_value_init (&val, G_TYPE_STRING);
-        g_value_set_string (&val, value);
-
-        g_value_init (&param_val, CK_TYPE_PARAMETER_STRUCT);
-        g_value_take_boxed (&param_val,
-                            dbus_g_type_specialized_construct (CK_TYPE_PARAMETER_STRUCT));
-
-        dbus_g_type_struct_set (&param_val,
-                                0, key,
-                                1, &val,
-                                G_MAXUINT);
-        g_value_unset (&val);
-
-        g_ptr_array_add (parameters, g_value_get_boxed (&param_val));
-}
-
-typedef void (* CkAddParamFunc) (GPtrArray  *arr,
-                                 const char *key,
-                                 const char *value);
-
-static struct {
-        char          *key;
-        CkAddParamFunc func;
-} parse_ops[] = {
-        { "display-device",     add_param_string },
-        { "x11-display-device", add_param_string },
-        { "x11-display",        add_param_string },
-        { "remote-host-name",   add_param_string },
-        { "session-type",       add_param_string },
-        { "is-local",           add_param_boolean },
-        { "unix-user",          add_param_int },
-};
-
-static GPtrArray *
-parse_output (const char *output)
-{
-        GPtrArray *parameters;
-        char     **lines;
-        int        i;
-        int        j;
-
-        lines = g_strsplit (output, "\n", -1);
-        if (lines == NULL) {
-                return NULL;
-        }
-
-        parameters = g_ptr_array_sized_new (10);
-
-        for (i = 0; lines[i] != NULL; i++) {
-                char **vals;
-
-                vals = g_strsplit (lines[i], " = ", 2);
-                if (vals == NULL || vals[0] == NULL) {
-                        g_strfreev (vals);
-                        continue;
-                }
-
-                for (j = 0; j < G_N_ELEMENTS (parse_ops); j++) {
-                        if (strcmp (vals[0], parse_ops[j].key) == 0) {
-                                parse_ops[j].func (parameters, vals[0], vals[1]);
-                                break;
-                        }
-                }
-                g_strfreev (vals);
-        }
-
-        g_strfreev (lines);
-
-        return parameters;
-}
-
-typedef struct {
-        CkManager             *manager;
-        LeaderInfo            *leader_info;
-        DBusGMethodInvocation *context;
-} JobData;
-
-static void
-job_data_free (JobData *data)
-{
-        leader_info_unref (data->leader_info);
-        g_free (data);
-}
-
-static void
-parameters_free (GPtrArray *parameters)
-{
-        int i;
-
-        for (i = 0; i < parameters->len; i++) {
-                gpointer data;
-                data = g_ptr_array_index (parameters, i);
-                if (data != NULL) {
-                        g_boxed_free (CK_TYPE_PARAMETER_STRUCT, data);
-                }
-        }
-
-        g_ptr_array_free (parameters, TRUE);
-}
-
-static void
-job_completed (CkJob     *job,
-               int        status,
-               JobData   *data)
-{
-        g_debug ("Job status: %d", status);
-        if (status == 0) {
-                char      *output;
-                GPtrArray *parameters;
-
-                output = NULL;
-                ck_job_get_stdout (job, &output);
-                g_debug ("Job output: %s", output);
-
-                parameters = parse_output (output);
-                g_free (output);
-
-                verify_and_open_session_for_leader_info (data->manager,
-                                                         data->leader_info,
-                                                         parameters,
-                                                         data->context);
-                parameters_free (parameters);
-        }
-
-        /* remove job from queue */
-        data->leader_info->pending_jobs = g_list_remove (data->leader_info->pending_jobs, job);
-
-        g_signal_handlers_disconnect_by_func (job, job_completed, data);
-        g_object_unref (job);
-}
-
-static void
-generate_session_for_leader_info (CkManager             *manager,
-                                  LeaderInfo            *leader_info,
-                                  DBusGMethodInvocation *context)
-{
-        GError      *local_error;
-        char        *command;
-        gboolean     res;
-        CkJob       *job;
-        JobData     *data;
-
-        command = g_strdup_printf ("%s --uid %u --pid %u",
-                                   LIBEXECDIR "/ck-collect-session-info",
-                                   leader_info->uid,
-                                   leader_info->pid);
-        job = ck_job_new ();
-        ck_job_set_command (job, command);
-        g_free (command);
-
-        data = g_new0 (JobData, 1);
-        data->manager = manager;
-        data->leader_info = leader_info_ref (leader_info);
-        data->context = context;
-        g_signal_connect_data (job,
-                               "completed",
-                               G_CALLBACK (job_completed),
-                               data,
-                               (GClosureNotify)job_data_free,
-                               0);
-
-        local_error = NULL;
-        res = ck_job_execute (job, &local_error);
+        res = ck_session_leader_collect_parameters (leader,
+                                                    context,
+                                                    (CkSessionLeaderDoneFunc)collect_parameters_cb,
+                                                    manager);
         if (! res) {
                 GError *error;
                 error = g_error_new (CK_MANAGER_ERROR,
@@ -845,19 +1879,7 @@ generate_session_for_leader_info (CkManager             *manager,
                                      "Unable to get information about the calling process");
                 dbus_g_method_return_error (context, error);
                 g_error_free (error);
-
-                if (local_error != NULL) {
-                        g_debug ("stat on pid %d failed: %s", leader_info->pid, local_error->message);
-                        g_error_free (local_error);
-                }
-
-                g_object_unref (job);
-
-                return;
         }
-
-        /* Add job to queue */
-        leader_info->pending_jobs = g_list_prepend (leader_info->pending_jobs, job);
 }
 
 static gboolean
@@ -866,12 +1888,14 @@ create_session_for_sender (CkManager             *manager,
                            const GPtrArray       *parameters,
                            DBusGMethodInvocation *context)
 {
-        pid_t        pid;
-        uid_t        uid;
-        gboolean     res;
-        char        *cookie;
-        char        *ssid;
-        LeaderInfo  *leader_info;
+        pid_t           pid;
+        uid_t           uid;
+        gboolean        res;
+        char            *cookie;
+        char            *ssid;
+        CkSessionLeader *leader;
+
+        g_debug ("CkManager: create session for sender: %s", sender);
 
         res = get_caller_info (manager,
                                sender,
@@ -892,27 +1916,27 @@ create_session_for_sender (CkManager             *manager,
 
         g_debug ("Creating new session ssid: %s", ssid);
 
-        leader_info = g_new0 (LeaderInfo, 1);
-        leader_info->uid = uid;
-        leader_info->pid = pid;
-        leader_info->service_name = g_strdup (sender);
-        leader_info->ssid = g_strdup (ssid);
-        leader_info->cookie = g_strdup (cookie);
+        leader = ck_session_leader_new ();
+        ck_session_leader_set_uid (leader, uid);
+        ck_session_leader_set_pid (leader, pid);
+        ck_session_leader_set_service_name (leader, sender);
+        ck_session_leader_set_session_id (leader, ssid);
+        ck_session_leader_set_cookie (leader, cookie);
 
         /* need to store the leader info first so the pending request can be revoked */
         g_hash_table_insert (manager->priv->leaders,
-                             g_strdup (leader_info->cookie),
-                             leader_info_ref (leader_info));
+                             g_strdup (cookie),
+                             g_object_ref (leader));
 
         if (parameters == NULL) {
-                generate_session_for_leader_info (manager,
-                                                  leader_info,
-                                                  context);
+                generate_session_for_leader (manager,
+                                             leader,
+                                             context);
         } else {
-                verify_and_open_session_for_leader_info (manager,
-                                                         leader_info,
-                                                         parameters,
-                                                         context);
+                verify_and_open_session_for_leader (manager,
+                                                    leader,
+                                                    parameters,
+                                                    context);
         }
 
         g_free (cookie);
@@ -933,17 +1957,19 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
                                    const char            *cookie,
                                    DBusGMethodInvocation *context)
 {
-        gboolean       res;
-        char          *sender;
-        uid_t          calling_uid;
-        pid_t          calling_pid;
-        CkProcessStat *stat;
-        char          *ssid;
-        CkSession     *session;
-        LeaderInfo    *leader_info;
-        GError        *local_error;
+        gboolean         res;
+        char            *sender;
+        uid_t            calling_uid;
+        pid_t            calling_pid;
+        CkProcessStat   *stat;
+        char            *ssid;
+        CkSession       *session;
+        CkSessionLeader *leader;
+        GError          *local_error;
 
         ssid = NULL;
+
+        g_debug ("CkManager: get session for cookie");
 
         sender = dbus_g_method_get_sender (context);
 
@@ -984,8 +2010,8 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
         /* FIXME: should we restrict this by uid? */
         ck_process_stat_free (stat);
 
-        leader_info = g_hash_table_lookup (manager->priv->leaders, cookie);
-        if (leader_info == NULL) {
+        leader = g_hash_table_lookup (manager->priv->leaders, cookie);
+        if (leader == NULL) {
                 GError *error;
                 error = g_error_new (CK_MANAGER_ERROR,
                                      CK_MANAGER_ERROR_GENERAL,
@@ -995,7 +2021,7 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
                 return FALSE;
         }
 
-        session = g_hash_table_lookup (manager->priv->sessions, leader_info->ssid);
+        session = g_hash_table_lookup (manager->priv->sessions, ck_session_leader_peek_session_id (leader));
         if (session == NULL) {
                 GError *error;
                 error = g_error_new (CK_MANAGER_ERROR,
@@ -1015,19 +2041,6 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
         return TRUE;
 }
 
-static char *
-get_cookie_for_pid (CkManager *manager,
-                    guint      pid)
-{
-        char *cookie;
-
-        /* FIXME: need a better way to get the cookie */
-
-        cookie = ck_unix_pid_get_env (pid, "XDG_SESSION_COOKIE");
-
-        return cookie;
-}
-
 /*
   Example:
   dbus-send --system --dest=org.freedesktop.ConsoleKit \
@@ -1044,11 +2057,11 @@ ck_manager_get_session_for_unix_process (CkManager             *manager,
         char          *sender;
         uid_t          calling_uid;
         pid_t          calling_pid;
-        CkProcessStat *stat;
         char          *cookie;
-        GError        *error;
 
         sender = dbus_g_method_get_sender (context);
+
+        g_debug ("CkManager: get session for unix process: %u", pid);
 
         res = get_caller_info (manager,
                                sender,
@@ -1066,27 +2079,12 @@ ck_manager_get_session_for_unix_process (CkManager             *manager,
                 return FALSE;
         }
 
-        error = NULL;
-        res = ck_process_stat_new_for_unix_pid (calling_pid, &stat, &error);
-        if (! res) {
-                GError *error;
-                g_debug ("stat on pid %d failed", calling_pid);
-                error = g_error_new (CK_MANAGER_ERROR,
-                                     CK_MANAGER_ERROR_GENERAL,
-                                     _("Unable to lookup information about calling process '%d'"),
-                                     calling_pid);
-                dbus_g_method_return_error (context, error);
-                g_error_free (error);
-                return FALSE;
-        }
-
-        /* FIXME: check stuff? */
-
-        ck_process_stat_free (stat);
-
         cookie = get_cookie_for_pid (manager, pid);
         if (cookie == NULL) {
                 GError *error;
+
+                g_debug ("CkManager: unable to lookup session for unix process: %u", pid);
+
                 error = g_error_new (CK_MANAGER_ERROR,
                                      CK_MANAGER_ERROR_GENERAL,
                                      _("Unable to lookup session information for process '%d'"),
@@ -1119,6 +2117,8 @@ ck_manager_get_current_session (CkManager             *manager,
         pid_t       calling_pid;
 
         sender = dbus_g_method_get_sender (context);
+
+        g_debug ("CkManager: get current session");
 
         res = get_caller_info (manager,
                                sender,
@@ -1175,43 +2175,59 @@ remove_session_for_cookie (CkManager  *manager,
                            const char *cookie,
                            GError    **error)
 {
-        CkSession  *session;
-        LeaderInfo *leader_info;
-        char       *ssid;
-        char       *sid;
+        CkSession       *orig_session;
+        char            *orig_ssid;
+        CkSessionLeader *leader;
+        char            *sid;
+        gboolean         res;
+        gboolean         ret;
+
+        ret = FALSE;
+        orig_ssid = NULL;
+        orig_session = NULL;
 
         g_debug ("Removing session for cookie: %s", cookie);
 
-        leader_info = g_hash_table_lookup (manager->priv->leaders, cookie);
+        leader = g_hash_table_lookup (manager->priv->leaders, cookie);
 
-        if (leader_info == NULL) {
+        if (leader == NULL) {
                 g_set_error (error,
                              CK_MANAGER_ERROR,
                              CK_MANAGER_ERROR_GENERAL,
                              "Unable to find session for cookie");
-                return FALSE;
+                goto out;
         }
 
-        session = g_hash_table_lookup (manager->priv->sessions, leader_info->ssid);
-        if (session == NULL) {
+        /* Need to get the original key/value */
+        res = g_hash_table_lookup_extended (manager->priv->sessions,
+                                            ck_session_leader_peek_session_id (leader),
+                                            (gpointer *)&orig_ssid,
+                                            (gpointer *)&orig_session);
+        if (! res) {
                 g_set_error (error,
                              CK_MANAGER_ERROR,
                              CK_MANAGER_ERROR_GENERAL,
                              "Unable to find session for cookie");
-                return FALSE;
+                goto out;
         }
 
-        ssid = g_strdup (leader_info->ssid);
+        /* Must keep a reference to the session in the manager until
+         * all events for seats are cleared.  So don't remove
+         * or steal the session from the master list until
+         * it is removed from all seats.  Otherwise, event logging
+         * for seat removals doesn't work.
+         */
 
         /* remove from seat */
-        ck_session_get_seat_id (session, &sid, NULL);
+        sid = NULL;
+        ck_session_get_seat_id (orig_session, &sid, NULL);
         if (sid != NULL) {
                 CkSeat *seat;
                 seat = g_hash_table_lookup (manager->priv->seats, sid);
                 if (seat != NULL) {
                         CkSeatKind kind;
 
-                        ck_seat_remove_session (seat, session, NULL);
+                        ck_seat_remove_session (seat, orig_session, NULL);
 
                         kind = CK_SEAT_KIND_STATIC;
                         /* if dynamic seat has no sessions then remove it */
@@ -1221,15 +2237,25 @@ remove_session_for_cookie (CkManager  *manager,
                         }
                 }
         }
-
-        g_hash_table_remove (manager->priv->sessions, ssid);
-
         g_free (sid);
-        g_free (ssid);
+
+        /* Remove the session from the list but don't call
+         * unref until we are done with it */
+        g_hash_table_steal (manager->priv->sessions,
+                            ck_session_leader_peek_session_id (leader));
+
+        ck_manager_dump (manager);
 
         manager_update_system_idle_hint (manager);
 
-        return TRUE;
+        ret = TRUE;
+ out:
+        if (orig_session != NULL) {
+                g_object_unref (orig_session);
+        }
+        g_free (orig_ssid);
+
+        return ret;
 }
 
 static gboolean
@@ -1239,7 +2265,7 @@ paranoia_check_is_cookie_owner (CkManager  *manager,
                                 pid_t       calling_pid,
                                 GError    **error)
 {
-        LeaderInfo *leader_info;
+        CkSessionLeader *leader;
 
         if (cookie == NULL) {
                 g_set_error (error,
@@ -1249,8 +2275,8 @@ paranoia_check_is_cookie_owner (CkManager  *manager,
                 return FALSE;
         }
 
-        leader_info = g_hash_table_lookup (manager->priv->leaders, cookie);
-        if (leader_info == NULL) {
+        leader = g_hash_table_lookup (manager->priv->leaders, cookie);
+        if (leader == NULL) {
                 g_set_error (error,
                              CK_MANAGER_ERROR,
                              CK_MANAGER_ERROR_GENERAL,
@@ -1258,7 +2284,7 @@ paranoia_check_is_cookie_owner (CkManager  *manager,
                 return FALSE;
         }
 
-        if (leader_info->uid != calling_uid) {
+        if (ck_session_leader_get_uid (leader) != calling_uid) {
                 g_set_error (error,
                              CK_MANAGER_ERROR,
                              CK_MANAGER_ERROR_GENERAL,
@@ -1268,7 +2294,7 @@ paranoia_check_is_cookie_owner (CkManager  *manager,
         }
 
         /* do we want to restrict to the same process? */
-        if (leader_info->pid != calling_pid) {
+        if (ck_session_leader_get_pid (leader) != calling_pid) {
                 g_set_error (error,
                              CK_MANAGER_ERROR,
                              CK_MANAGER_ERROR_GENERAL,
@@ -1341,15 +2367,18 @@ typedef struct {
 
 static gboolean
 remove_leader_for_connection (const char       *cookie,
-                              LeaderInfo       *info,
+                              CkSessionLeader  *leader,
                               RemoveLeaderData *data)
 {
-        g_assert (info != NULL);
+        const char *name;
+
+        g_assert (leader != NULL);
         g_assert (data->service_name != NULL);
 
-        if (strcmp (info->service_name, data->service_name) == 0) {
+        name = ck_session_leader_peek_service_name (leader);
+        if (strcmp (name, data->service_name) == 0) {
                 remove_session_for_cookie (data->manager, cookie, NULL);
-                leader_info_cancel (info);
+                ck_session_leader_cancel (leader);
                 return TRUE;
         }
 
@@ -1389,10 +2418,64 @@ bus_name_owner_changed (DBusGProxy  *bus_proxy,
                    service_name, old_service_name, new_service_name);
 }
 
+#ifdef HAVE_POLKIT
+static gboolean
+pk_io_watch_have_data (GIOChannel  *channel,
+                       GIOCondition condition,
+                       gpointer     user_data)
+{
+        int            fd;
+        PolKitContext *pk_context = user_data;
+
+        fd = g_io_channel_unix_get_fd (channel);
+        polkit_context_io_func (pk_context, fd);
+        return TRUE;
+}
+
+static int
+pk_io_add_watch (PolKitContext *pk_context,
+                 int            fd)
+{
+        guint       id = 0;
+        GIOChannel *channel;
+
+        channel = g_io_channel_unix_new (fd);
+        if (channel == NULL) {
+                goto out;
+        }
+
+        id = g_io_add_watch (channel, G_IO_IN, pk_io_watch_have_data, pk_context);
+        if (id == 0) {
+                g_io_channel_unref (channel);
+                goto out;
+        }
+        g_io_channel_unref (channel);
+
+out:
+        return id;
+}
+
+static void
+pk_io_remove_watch (PolKitContext *pk_context,
+                    int            watch_id)
+{
+        g_source_remove (watch_id);
+}
+#endif
+
 static gboolean
 register_manager (CkManager *manager)
 {
         GError *error = NULL;
+
+#ifdef HAVE_POLKIT
+        manager->priv->pol_ctx = polkit_context_new ();
+        polkit_context_set_io_watch_functions (manager->priv->pol_ctx, pk_io_add_watch, pk_io_remove_watch);
+        if (! polkit_context_init (manager->priv->pol_ctx, NULL)) {
+                g_critical ("cannot initialize libpolkit");
+                return FALSE;
+        }
+#endif
 
         error = NULL;
         manager->priv->connection = dbus_g_bus_get (DBUS_BUS_SYSTEM, &error);
@@ -1464,6 +2547,7 @@ ck_manager_class_init (CkManagerClass *klass)
                               1, G_TYPE_BOOLEAN);
 
         dbus_g_object_type_install_info (CK_TYPE_MANAGER, &dbus_glib_ck_manager_object_info);
+        dbus_g_error_domain_register (CK_MANAGER_ERROR, NULL, CK_MANAGER_TYPE_ERROR);
 
         g_type_class_add_private (klass, sizeof (CkManagerPrivate));
 }
@@ -1547,6 +2631,31 @@ ck_manager_get_seats (CkManager  *manager,
 }
 
 static void
+listify_session_ids (char       *id,
+                     CkSession  *session,
+                     GPtrArray **array)
+{
+        g_ptr_array_add (*array, g_strdup (id));
+}
+
+gboolean
+ck_manager_get_sessions (CkManager  *manager,
+                         GPtrArray **sessions,
+                         GError    **error)
+{
+        g_return_val_if_fail (CK_IS_MANAGER (manager), FALSE);
+
+        if (sessions == NULL) {
+                return FALSE;
+        }
+
+        *sessions = g_ptr_array_new ();
+        g_hash_table_foreach (manager->priv->sessions, (GHFunc)listify_session_ids, sessions);
+
+        return TRUE;
+}
+
+static void
 add_seat_for_file (CkManager  *manager,
                    const char *filename)
 {
@@ -1562,11 +2671,17 @@ add_seat_for_file (CkManager  *manager,
                 return;
         }
 
+        connect_seat_signals (manager, seat);
+
         g_hash_table_insert (manager->priv->seats, sid, seat);
 
         g_debug ("Added seat: %s", sid);
 
+        ck_manager_dump (manager);
+
         g_signal_emit (manager, signals [SEAT_ADDED], 0, sid);
+
+        log_seat_added_event (manager, seat);
 }
 
 static gboolean
@@ -1627,7 +2742,9 @@ ck_manager_init (CkManager *manager)
         manager->priv->leaders = g_hash_table_new_full (g_str_hash,
                                                         g_str_equal,
                                                         g_free,
-                                                        (GDestroyNotify) leader_info_unref);
+                                                        (GDestroyNotify) g_object_unref);
+
+        manager->priv->logger = ck_event_logger_new (LOG_FILE);
 
         create_seats (manager);
 }
@@ -1647,7 +2764,13 @@ ck_manager_finalize (GObject *object)
         g_hash_table_destroy (manager->priv->seats);
         g_hash_table_destroy (manager->priv->sessions);
         g_hash_table_destroy (manager->priv->leaders);
-        g_object_unref (manager->priv->bus_proxy);
+        if (manager->priv->bus_proxy != NULL) {
+                g_object_unref (manager->priv->bus_proxy);
+        }
+
+        if (manager->priv->logger != NULL) {
+                g_object_unref (manager->priv->logger);
+        }
 
         G_OBJECT_CLASS (ck_manager_parent_class)->finalize (object);
 }

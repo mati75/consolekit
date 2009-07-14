@@ -252,6 +252,42 @@ setup_debug_log (gboolean debug)
         setup_debug_log_signals ();
 }
 
+static void
+create_pid_file (void)
+{
+        char   *dirname;
+        int     res;
+        int     pf;
+        ssize_t written;
+        char    pid[9];
+
+        /* remove old pid file */
+        unlink (CONSOLE_KIT_PID_FILE);
+
+        dirname = g_path_get_dirname (CONSOLE_KIT_PID_FILE);
+        errno = 0;
+        res = g_mkdir_with_parents (dirname,
+                                    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+        if (res < 0) {
+                g_warning ("Unable to create directory %s (%s)",
+                           dirname,
+                           g_strerror (errno));
+        }
+        g_free (dirname);
+
+        /* make a new pid file */
+        if ((pf = open (CONSOLE_KIT_PID_FILE, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644)) > 0) {
+                snprintf (pid, sizeof (pid), "%lu\n", (long unsigned) getpid ());
+                written = write (pf, pid, strlen (pid));
+                close (pf);
+                g_atexit (delete_pid);
+        } else {
+                g_warning ("Unable to write pid file %s: %s",
+                           CONSOLE_KIT_PID_FILE,
+                           g_strerror (errno));
+        }
+}
+
 int
 main (int    argc,
       char **argv)
@@ -261,11 +297,9 @@ main (int    argc,
         GOptionContext  *context;
         DBusGProxy      *bus_proxy;
         DBusGConnection *connection;
+        GError          *error;
         int              ret;
-        int              pf;
-        ssize_t          written;
-        char             pid[9];
-
+        gboolean         res;
         static gboolean     debug            = FALSE;
         static gboolean     no_daemon        = FALSE;
         static gboolean     do_timed_exit    = FALSE;
@@ -289,10 +323,21 @@ main (int    argc,
                 exit (1);
         }
 
+        if (debug) {
+                g_setenv ("G_DEBUG", "fatal_criticals", FALSE);
+                g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL);
+        }
+
         context = g_option_context_new (_("Console kit daemon"));
         g_option_context_add_main_entries (context, entries, NULL);
-        g_option_context_parse (context, &argc, &argv, NULL);
+        error = NULL;
+        res = g_option_context_parse (context, &argc, &argv, &error);
         g_option_context_free (context);
+        if (! res) {
+                g_warning (error->message);
+                g_error_free (error);
+                goto out;
+        }
 
         if (! no_daemon && daemon (0, 0)) {
                 g_error ("Could not daemonize: %s", g_strerror (errno));
@@ -318,16 +363,7 @@ main (int    argc,
 
         g_debug ("initializing console-kit-daemon %s", VERSION);
 
-        /* remove old pid file */
-        unlink (CONSOLE_KIT_PID_FILE);
-
-        /* make a new pid file */
-        if ((pf = open (CONSOLE_KIT_PID_FILE, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644)) > 0) {
-                snprintf (pid, sizeof (pid), "%lu\n", (long unsigned) getpid ());
-                written = write (pf, pid, strlen (pid));
-                close (pf);
-                g_atexit (delete_pid);
-        }
+        create_pid_file ();
 
         manager = ck_manager_new ();
 

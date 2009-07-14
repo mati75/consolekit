@@ -33,10 +33,13 @@
 
 #ifdef __linux__
 #include <linux/kd.h>
+#endif
+
+#ifdef HAVE_SYS_VT_H
 #include <sys/vt.h>
 #endif
 
-#ifdef __FreeBSD__
+#if HAVE_SYS_CONSIO_H
 #include <sys/consio.h>
 #endif
 
@@ -124,15 +127,15 @@ gboolean
 ck_fd_is_a_console (int fd)
 {
 #ifdef __linux__
-        char arg = 0;
+        struct vt_stat vts;
 #elif defined(__FreeBSD__)
         int vers;
 #endif
         int  kb_ok;
 
+        errno = 0;
 #ifdef __linux__
-        kb_ok = (ioctl (fd, KDGKBTYPE, &arg) == 0
-                 && ((arg == KB_101) || (arg == KB_84)));
+        kb_ok = (ioctl (fd, VT_GETSTATE, &vts) == 0);
 #elif defined(__FreeBSD__)
         kb_ok = (ioctl (fd, CONS_GETVERS, &vers) == 0);
 #else
@@ -193,6 +196,11 @@ ck_get_a_console_fd (void)
                 goto done;
         }
 
+	fd = open_a_console ("/dev/tty0");
+	if (fd >= 0) {
+		goto done;
+	}
+
 #ifdef _PATH_CONSOLE
         fd = open_a_console (_PATH_CONSOLE);
         if (fd >= 0) {
@@ -252,11 +260,15 @@ ck_wait_for_active_console_num (int   console_fd,
  again:
         ret = FALSE;
 
-        g_debug ("VT_WAITACTIVE for vt %d", num);
         errno = 0;
+#ifdef VT_WAITACTIVE
+        g_debug ("VT_WAITACTIVE for vt %d", num);
         res = ioctl (console_fd, VT_WAITACTIVE, num);
-
-        g_debug ("VT_WAITACTIVE for vt %d returned %d", num, ret);
+        g_debug ("VT_WAITACTIVE for vt %d returned %d", num, res);
+#else
+        res = ERROR;
+        errno = ENOTSUP;
+#endif
 
         if (res == ERROR) {
                 const char *errmsg;
@@ -268,6 +280,8 @@ ck_wait_for_active_console_num (int   console_fd,
                                   num,
                                   errmsg);
                        goto again;
+                } else if (errno == ENOTSUP) {
+                        g_debug ("Console activation not supported on this system");
                 } else {
                         g_warning ("Error waiting for native console %d activation: %s",
                                    num,
@@ -294,11 +308,21 @@ ck_activate_console_num (int   console_fd,
         ret = FALSE;
 
         errno = 0;
+#ifdef VT_ACTIVATE
         res = ioctl (console_fd, VT_ACTIVATE, num);
+#else
+        res = ERROR;
+        errno = ENOTSUP;
+#endif
+
         if (res == 0) {
                 ret = TRUE;
         } else {
-                g_warning ("Unable to activate console: %s", g_strerror (errno));
+                if (errno == ENOTSUP) {
+                        g_debug ("Console activation not supported on this system");
+                } else {
+                        g_warning ("Unable to activate console: %s", g_strerror (errno));
+                }
         }
 
         return ret;

@@ -1,3 +1,102 @@
+==============
+Version 0.2.10
+==============
+
+ * always create the directories we need (William Jon McCann)
+ * properly get display device on Solaris (Simon Zheng)
+ * fix solaris x11-display-device when no vt available (Brian Cameron)
+ * solaris doesn't like printing null (Brian Cameron)
+ * fix display of active vt when vt is disabled (Brian Cameron)
+ * fix solaris vt handling to work when no vt available (Brian Cameron)
+ * improve supporting Solaris VT switching (Simon Zheng)
+ * don't include paths.h on systems that don't have it (William Jon McCann)
+ * create the log file with S_IROTH and don't touch the log on build (William Jo
+
+=============
+Version 0.2.9
+=============
+
+ * ck_seat_get_active_session shouldn't return a null ssid (William Jon McCann)
+ * guard against writing null string to keyfile (William Jon McCann)
+ * reverse the sense of the dbus policy (William Jon McCann)
+ * add a ck-launch-session tool (William Jon McCann)
+ * don't set the session-type to the command name (William Jon McCann)
+
+=============
+Version 0.2.8
+=============
+
+ * add tools to log restart and stop events (William Jon McCann)
+ * fix typo in dbus policy file (William Jon McCann)
+ * touch the history file to create it for people not using packages (William Jon McCann)
+ * mkdir /var/log/ConsoleKit at install time (William Jon McCann)
+ * set a global flag so that D-Bus does not change the SIGPIPE handler in the PAM module (William Jon McCann)
+ * when a parsing error occurs don't return an empty event (William Jon McCann)
+
+=============
+Version 0.2.7
+=============
+
+ * update gitignore files (William Jon McCann)
+ * add a helper to write a system start record to the CK history (William Jon McCann)
+ * add support for logging start/stop/restart (William Jon McCann)
+ * fix typo in man page (William Jon McCann)
+ * make autogen work with aclocal 1.10 (Marc-Andre Lureau)
+ * allow session type filtering for all report formats (William Jon McCann)
+ * make polkit optional and use RBAC on Solaris (Brian Cameron)
+ * fixes for solaris (Brian Cameron)
+ * add session-type filtering to ck-history (William Jon McCann)
+ * try to activate x11-display-device not only display-device (William Jon McCann)
+
+=============
+Version 0.2.6
+=============
+
+        * be a little smarter about how we compute the number of users (William Jon McCann)
+        * fix policy action name (William Jon McCann)
+
+=============
+Version 0.2.5
+=============
+
+        * use /var/log/ instead of /var/run for log file
+
+=============
+Version 0.2.4
+=============
+
+        * actually register the error type with dbus (William Jon McCann)
+        * add GetSessions method to Manager interface (William Jon McCann)
+        * add error type to manager (William Jon McCann)
+        * initial stop/restart support (William Jon McCann)
+        * use VT_GETSTATE and tty0 to identify a console_ioctl on linux (Peter Jones)
+        * remove obsolete sysv init script (Michael Biebl)
+        * start CK service on-demand using D-Bus system activation (Michael Biebl)
+        * dump session leader info (William Jon McCann)
+        * error out if unknown options are passed on command line (William Jon McCann)
+        * move session leader stuff into a separate class (William Jon McCann)
+        * try to handle log rotation (William Jon McCann)
+        * add support for reporting from logrotated files (William Jon McCann)
+        * add a basic --frequent report (William Jon McCann)
+        * Merge branch 'master' of git+ssh://git.freedesktop.org/git/ConsoleKit (William Jon McCann)
+        * add last mode, filtering by user/seat; shorten logged ids (William Jon McCann)
+        * add bugzilla url (William Jon McCann)
+        * check for oldest being null (William Jon McCann)
+        * rename --last to --last-compat (William Jon McCann)
+        * a few fixes for last patch (William Jon McCann)
+        * add a last compatible outout format to ck-history (William Jon McCann)
+        * use AC_GNU_SOURCE instead of #define (William Jon McCann)
+        * add a basic ck-history command (William Jon McCann)
+        * add event logging capability (William Jon McCann)
+        * remove emacs modeline (William Jon McCann)
+        * maintain a file with the dump of the local database (David Zeuthen)
+        * remove session/seat from list before signaling (William Jon McCann)
+        * add a way to synchronously run programs on session add/remove/activity_change (David Zeuthen)
+        * don't use VT_GETSTATE when VT is unavailable (Brian Cameron)
+        * try to make things work for systems that don't support VT_ACTIVATE etc (William Jon McCann)
+        * add wiki to readme (William Jon McCann)
+        * post release version bump (William Jon McCann)
+
 =============
 Version 0.2.3
 =============

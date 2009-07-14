@@ -1,6 +1,12 @@
 <!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <node name="/org/freedesktop/ConsoleKit/Manager">
   <interface name="org.freedesktop.ConsoleKit.Manager">
+    <method name="Restart">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+    </method>
+    <method name="Stop">
+      <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
+    </method>
     <method name="OpenSession">
       <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
       <arg name="cookie" direction="out" type="s"/>
@@ -17,6 +23,9 @@
     </method>
     <method name="GetSeats">
       <arg name="seats" direction="out" type="ao"/>
+    </method>
+    <method name="GetSessions">
+      <arg name="sessions" direction="out" type="ao"/>
     </method>
     <method name="GetSessionForCookie">
       <annotation name="org.freedesktop.DBus.GLib.Async" value=""/>
