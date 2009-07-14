@@ -15,7 +15,7 @@ Build-Depends: cdbs,
  xmlto,
  libpam0g-dev,
  zlib1g-dev
-Standards-Version: 3.8.0
+Standards-Version: 3.8.2
 Vcs-Git: git://git.debian.org/git/pkg-utopia/consolekit.git
 Vcs-Browser: http://git.debian.org/?p=pkg-utopia/consolekit.git;a=summary
 Homepage: http://www.freedesktop.org/wiki/Software/ConsoleKit
