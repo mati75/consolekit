@@ -8,6 +8,10 @@ consolekit (0.3.0-3) UNRELEASED; urgency=low
     - Refer to versioned GPL-2 file.
   * debian/consolekit.preinst
     - Use "set -e" instead of "#!/bin/sh -e".
+  * debian/90consolekit
+    - If an X session is started from the console using startx, make sure to
+      register a CK session, even if XDG_SESSION_COOKIE is already set.
+      (Closes: #520720)
 
  -- Michael Biebl <biebl@debian.org>  Tue, 14 Jul 2009 17:48:23 +0200
 
