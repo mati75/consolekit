@@ -26,11 +26,11 @@ License: GPL v2 or later
    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 
 On Debian systems, the complete text of the GNU General
-Public License can be found in `/usr/share/common-licenses/GPL'.
+Public License can be found in `/usr/share/common-licenses/GPL-2'.
 
 ===============================================================================
 
-libck-connector/* 
+libck-connector/*
 pam-ck-connector/*
 
 Copyright:
@@ -38,7 +38,7 @@ Copyright:
    Copyright (c) 2007 William Jon McCann <mccann@jhu.edu>
 
 License: MIT license
-   
+
    Permission is hereby granted, free of charge, to any person
    obtaining a copy of this software and associated documentation
    files (the "Software"), to deal in the Software without
@@ -47,7 +47,7 @@ License: MIT license
    copies of the Software, and to permit persons to whom the
    Software is furnished to do so, subject to the following
    conditions:
-	 
+
    The above copyright notice and this permission notice shall be
    included in all copies or substantial portions of the Software.
 

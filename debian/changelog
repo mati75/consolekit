@@ -2,6 +2,9 @@ consolekit (0.3.0-3) UNRELEASED; urgency=low
 
   * debian/control
     - Update Vcs-* fields. Package is now managed with Git on git.debian.org.
+  * debian/copyright
+    - Misc whitespace cleanups.
+    - Refer to versioned GPL-2 file.
 
  -- Michael Biebl <biebl@debian.org>  Tue, 14 Jul 2009 17:48:23 +0200
 
