@@ -1,3 +1,451 @@
+commit 129efd6638cab89a3bc75a2b5f252e613a30163d
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 30 20:38:21 2008 -0400
+
+    update for 0.3.0 release
+
+ NEWS             |   42 ++++++++++++++++++++++++++++++++++++++++++
+ configure.ac     |    2 +-
+ src/ck-session.c |    2 +-
+ 3 files changed, 44 insertions(+), 2 deletions(-)
+
+commit 456065f3f8d9ba785b0d2d9dc247fc9fb4fe9ba0
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 30 18:06:31 2008 -0400
+
+    don't allow reboot if PolicyKit and RBAC are disabled
+
+ configure.ac     |   11 ++++++++++-
+ src/ck-manager.c |   27 ++++++++++++++-------------
+ 2 files changed, 24 insertions(+), 14 deletions(-)
+
+commit 53d7c964bcdd29d6d22c4e78afe1ee5a2937bf95
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 30 17:45:07 2008 -0400
+
+    fix path in includes
+
+ doc/dbus/ConsoleKit.xml.in |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+commit edad750e967458f55b9e761af966f325213ce9fe
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 30 17:37:24 2008 -0400
+
+    reorganize the docs a bit
+
+ configure.ac                      |    4 +-
+ doc/.gitignore                    |    2 -
+ doc/ConsoleKit.xml.in             |   74 -----
+ doc/Makefile.am                   |   41 +---
+ doc/config.xsl                    |    6 -
+ doc/dbus-introspect-docs.dtd      |   32 ---
+ doc/dbus/.gitignore               |    6 +
+ doc/dbus/ConsoleKit.xml.in        |   74 +++++
+ doc/dbus/Makefile.am              |   46 +++
+ doc/dbus/ck-design.xml            |  180 ++++++++++++
+ doc/dbus/ck-introduction.xml      |   28 ++
+ doc/dbus/ck-terms.xml             |   67 +++++
+ doc/dbus/config.xsl               |    6 +
+ doc/dbus/dbus-introspect-docs.dtd |   32 +++
+ doc/dbus/docbook.css              |   78 ++++++
+ doc/dbus/spec-to-docbook.xsl      |  543
+ +++++++++++++++++++++++++++++++++++++
+ doc/docbook.css                   |   78 ------
+ doc/xml/Makefile.am               |   20 --
+ doc/xml/ck-design.xml             |  180 ------------
+ doc/xml/ck-introduction.xml       |   28 --
+ doc/xml/ck-terms.xml              |   67 -----
+ doc/xml/spec-to-docbook.xsl       |  543
+ -------------------------------------
+ 22 files changed, 1063 insertions(+), 1072 deletions(-)
+
+commit 77fe8e2e89af7cd21357116e9668b23d958fb2a5
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Jul 24 00:32:21 2008 -0400
+
+    pull updated DTD and xsl from DeviceKit-disks
+
+ doc/dbus-introspect-docs.dtd |    4 +-
+ doc/xml/spec-to-docbook.xsl  |  171
+ ++++++++++++++++++++++++++++++++++--------
+ 2 files changed, 141 insertions(+), 34 deletions(-)
+
+commit 3133a9ad1a1eb05ad6717d8ee8ede782b833ee67
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Jul 24 00:18:32 2008 -0400
+
+    fix distcheck
+
+ doc/Makefile.am     |    1 +
+ doc/xml/Makefile.am |    2 +-
+ 2 files changed, 2 insertions(+), 1 deletions(-)
+
+commit aad5b87b7e2f993aef418822d52d8dca5345fce5
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Jul 24 00:06:57 2008 -0400
+
+    still having problems using xinclude
+
+ doc/ConsoleKit.xml.in |   23 ++++++++++++++++-------
+ doc/xml/Makefile.am   |    5 +----
+ 2 files changed, 17 insertions(+), 11 deletions(-)
+
+commit cda2111bd2a12fc246c6e7973ae7fae4ff779bca
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 23 23:42:17 2008 -0400
+
+    fix the includes
+
+ doc/ConsoleKit.xml.in            |   23 +++++++----------------
+ doc/dbus-introspect-docs.dtd     |   32 ++++++++++++++++++++++++++++++++
+ doc/xml/Makefile.am              |    6 +++---
+ doc/xml/dbus-introspect-docs.dtd |   32 --------------------------------
+ 4 files changed, 42 insertions(+), 51 deletions(-)
+
+commit 460d6c9e42e84d3d66bfcadfbaa77a0e059caae7
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 23 23:31:48 2008 -0400
+
+    add missing bits
+
+ doc/Makefile.am     |    2 ++
+ doc/xml/Makefile.am |   23 +++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 0 deletions(-)
+
+commit e54095996b9066120ebf20011eba199d25422c2f
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 23 23:22:36 2008 -0400
+
+    use spec files directly as introspection xml and try to generate
+    docs on the fly
+
+    At one point we had to strip out the docs because dbus-glib didn't
+    support
+    unknown tags.  Apparently this is now fixed.  Also install the xml to
+    /usr/share/dbus-1/interfaces.
+
+ configure.ac                               |    6 +
+ doc/Makefile.am                            |    6 +-
+ doc/dbus-introspect-docs.dtd               |   32 --
+ doc/spec/ck-manager.xml                    |  343 ----------------------
+ doc/spec/ck-seat.xml                       |  163 -----------
+ doc/spec/ck-session.xml                    |  435
+ ---------------------------
+ doc/tools/spec-strip-docs                  |   34 ---
+ doc/tools/spec-strip-docs.xsl              |   36 ---
+ doc/tools/spec-to-docbook                  |   34 ---
+ doc/tools/spec-to-docbook.xsl              |  436
+ ----------------------------
+ doc/tools/update-from-spec                 |   25 --
+ doc/xml/dbus-introspect-docs.dtd           |   32 ++
+ doc/xml/ref-ck-manager.xml                 |  199 -------------
+ doc/xml/ref-ck-seat.xml                    |   87 ------
+ doc/xml/ref-ck-session.xml                 |  258 ----------------
+ doc/xml/spec-to-docbook.xsl                |  436
+ ++++++++++++++++++++++++++++
+ src/Makefile.am                            |   23 +-
+ src/ck-manager.xml                         |   70 -----
+ src/ck-seat.xml                            |   39 ---
+ src/ck-session.xml                         |   81 -----
+ src/org.freedesktop.ConsoleKit.Manager.xml |  343 ++++++++++++++++++++++
+ src/org.freedesktop.ConsoleKit.Seat.xml    |  163 +++++++++++
+ src/org.freedesktop.ConsoleKit.Session.xml |  435
+ +++++++++++++++++++++++++++
+ 23 files changed, 1432 insertions(+), 2284 deletions(-)
+
+commit 34cefc96f7661ed92927bffa1cf7cbc79a84e5ab
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Tue Jul 22 18:28:06 2008 -0400
+
+    use object paths for seat added/removed signals per spec
+
+ src/ck-manager.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+commit 25546d381557f5da8dd8db54c857442193c5340b
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Tue Jul 22 17:23:59 2008 -0400
+
+    regenerate the docs and xml from the spec
+
+ doc/xml/ref-ck-session.xml |    6 +++++-
+ src/ck-session.xml         |    3 +++
+ 2 files changed, 8 insertions(+), 1 deletions(-)
+
+commit f0dbc3ee0c8fb53f2b9eed000d72fb923a83a474
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Tue Jul 22 14:30:22 2008 -0400
+
+    add GetLoginSessionId to exported interface
+
+ doc/spec/ck-session.xml |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+commit e1cfb5cb97eee87ce34ba5ce586bf1e90f485874
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Tue Jul 22 14:29:54 2008 -0400
+
+    fix use of unix-user as int
+
+ tools/list-sessions.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+commit f757f22786dfa0bf034c5c1d66d47ecafc871606
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Mon Jul 21 16:48:21 2008 -0400
+
+    use fortify source flag when building from git
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 34291722aa95394b7470099394b936dfc70022eb
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Mon Jul 21 14:28:09 2008 -0400
+
+    fix location of scripts again
+
+ tools/linux/Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit fa2bad04422d8c34974121cae68069a9e2d2e841
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Mon Jul 21 13:55:16 2008 -0400
+
+    dist bzip by default
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 8e6002b4bcf441e6a650d0adacf4a1eafe34cd54
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Mon Jul 21 13:50:55 2008 -0400
+
+    fix up signal definition
+
+ src/ck-seat.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit bab014f7f827c0d5306d029d08bf234b7a452282
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jun 11 12:00:03 2008 -0400
+
+    fix UnixUser to be uint
+
+    Pointed out by Lennart Poettering
+
+ doc/spec/ck-session.xml    |    4 ++--
+ doc/xml/ref-ck-session.xml |    8 ++++----
+ src/ck-session.xml         |    7 ++-----
+ 3 files changed, 8 insertions(+), 11 deletions(-)
+
+commit 25663a88377d76f9e722635bec96627ed0db4e43
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jun 11 11:46:59 2008 -0400
+
+    use object paths instead of strings for signals
+
+    Pointed out by Lennart Poettering
+
+ src/ck-seat.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit dfcab49480565a7bcf71752c5b39eb367df81a19
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Mon May 5 15:12:39 2008 -0400
+
+    cleanly shutdown event logging thread
+
+ src/ck-event-logger.c |   28 +++++++++++++++++++++++++---
+ src/ck-log-event.h    |    8 +++++++-
+ 2 files changed, 32 insertions(+), 4 deletions(-)
+
+commit 844de7d4b6d29d57a5425dcc7d0d3f6d4b005311
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Mon May 5 14:20:25 2008 -0400
+
+    export login session id to the bus
+
+ data/ConsoleKit.conf          |    2 ++
+ src/ck-manager.c              |    9 +++++++++
+ src/ck-session.c              |    2 +-
+ src/ck-session.h              |    6 +++---
+ src/ck-session.xml            |    3 +++
+ src/test-method-access-policy |   13 +++++++++++++
+ tools/list-sessions.c         |    9 +++++++--
+ 7 files changed, 38 insertions(+), 6 deletions(-)
+
+commit 8ec523138671a8fe93748a0b75adaaca96e2392e
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Mon May 5 13:34:08 2008 -0400
+
+    exit with the bus now that we're activated by the bus
+
+ src/main.c |   65
+ +++++++----------------------------------------------------
+ 1 files changed, 8 insertions(+), 57 deletions(-)
+
+commit c7116a525f643dead46873a81cf7a03bf5c54d55
+Author: David Zeuthen <davidz@redhat.com>
+Date:   Sun Apr 20 16:01:13 2008 -0400
+
+    allow retaining authorizations for {stop,restart}-multiple-users
+
+ data/org.freedesktop.consolekit.policy |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 5d62baaba55a1777b60284802d83d3e9befe60c9
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Sat Apr 19 01:28:27 2008 -0400
+
+    make sure to add all override parameters
+
+ src/ck-session-leader.c               |   30
+ ++++++++++++++++++++++--------
+ src/test-open-session-with-parameters |    2 +-
+ 2 files changed, 23 insertions(+), 9 deletions(-)
+
+commit 5dbbfa91469135f59351cf3bffcf2d51b40f912f
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Sat Apr 19 01:05:42 2008 -0400
+
+    fix the script to work with recent dbus-python api changes
+
+ src/ck-job.c                          |    1 -
+ src/test-open-session-with-parameters |   20 ++++++++++----------
+ 2 files changed, 10 insertions(+), 11 deletions(-)
+
+commit fbb42449670f21cdeb7f0106fc617e276d7e229c
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Sat Apr 19 00:48:10 2008 -0400
+
+    always try to detect parameters for session
+
+    Treat the parameters passed in via OpenSessionWithParameters
+    as overrides.
+
+ src/ck-manager.c        |   16 ++----
+ src/ck-session-leader.c |  120
+ +++++++++++++++++++++++++++++++++++++++++++++-
+ src/ck-session-leader.h |   63 +++++++++++++------------
+ src/ck-vt-monitor.c     |    1 -
+ 4 files changed, 155 insertions(+), 45 deletions(-)
+
+commit e30bc7486fe4e872a7b91f1566bc2c880deb63b7
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Fri Apr 18 16:19:35 2008 -0400
+
+    oops one more place
+
+ tools/solaris/Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 3c8db75b2ffdba1627a7030a4b57ce7ee8e474f2
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Fri Apr 18 16:11:59 2008 -0400
+
+    install scripts into $(prefix)/lib instead of $libdir
+
+    We don't want scripts going into lib64...
+
+ src/Makefile.am           |    2 +-
+ src/ck-manager.c          |    4 ++--
+ src/ck-session.c          |    2 +-
+ tools/freebsd/Makefile.am |    2 +-
+ tools/linux/Makefile.am   |    2 +-
+ tools/solaris/Makefile.am |    2 +-
+ 6 files changed, 7 insertions(+), 7 deletions(-)
+
+commit f2bcc2a62015f6762eb426c25b7350ddf828bb0c
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Apr 16 17:32:50 2008 -0400
+
+    return PolicyKit results when not privileged for action
+
+ src/ck-manager.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+commit 933b89337028006b508e3ed964803753dea027c0
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Apr 16 17:30:15 2008 -0400
+
+    fix typo
+
+ data/org.freedesktop.consolekit.policy |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit e633be1b9a81cfb7993e469066e50af47f563575
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Apr 3 22:09:26 2008 -0400
+
+    initial login session id support
+
+    Linux audit session id support.  Still TODO:
+    * determine if session id should be hidden
+    * export to bus
+    * add to event log
+    * figure out how to add it to non-generated sessions
+
+ src/ck-session-leader.c         |    1 +
+ src/ck-session.c                |   48 ++++++++++++++++++++++++++++
+ src/ck-session.h                |    6 +++
+ src/ck-sysdeps-freebsd.c        |    9 +++++
+ src/ck-sysdeps-linux.c          |   66
+ +++++++++++++++++++++++++++++++++++++++
+ src/ck-sysdeps-solaris.c        |    9 +++++
+ src/ck-sysdeps.h                |    2 +
+ tools/ck-collect-session-info.c |   10 ++++++
+ 8 files changed, 151 insertions(+), 0 deletions(-)
+
+commit 4740245c6f6137175ef51be2207c35185f4d98f1
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Fri Feb 29 15:25:54 2008 -0500
+
+    display uid as unix-user to match api
+
+ tools/list-sessions.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 970fbb66cb86c2a8b0ecbccbf8107c85b72343ae
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Fri Feb 29 15:25:43 2008 -0500
+
+    fix packaging of policy file
+
+ data/Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 72a2abee7a963bef52561766131e1b52a85409a3
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Tue Feb 26 14:18:22 2008 -0500
+
+    rename policy file
+
+ data/ConsoleKit.policy                 |   48
+ --------------------------------
+ data/org.freedesktop.consolekit.policy |   48
+ ++++++++++++++++++++++++++++++++
+ 2 files changed, 48 insertions(+), 48 deletions(-)
+
+commit 1d7b97d3a393996ffb95d9c23b081b4cf6c54ed0
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Mon Feb 25 19:43:04 2008 -0500
+
+    post release version bump
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit c57bc09f5c1eaa216c8850ae64cc1735ce5c2bb1
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Mon Feb 25 19:41:56 2008 -0500
+
+    update for release
+
+ NEWS |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
 commit 9e78825cef3db4e13cffbfd024bda365403aa6ba
 Author: William Jon McCann <jmccann@redhat.com>
 Date:   Mon Feb 25 19:19:31 2008 -0500

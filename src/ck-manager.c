@@ -1,6 +1,6 @@
 /* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 8 -*-
  *
- * Copyright (C) 2006-2007 William Jon McCann <mccann@jhu.edu>
+ * Copyright (C) 2006-2008 William Jon McCann <mccann@jhu.edu>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,11 +39,9 @@
 #include <dbus/dbus-glib.h>
 #include <dbus/dbus-glib-lowlevel.h>
 
-#ifdef HAVE_POLKIT
+#if defined HAVE_POLKIT
 #include <polkit/polkit.h>
-#endif
-
-#ifdef ENABLE_RBAC_SHUTDOWN
+#elif defined ENABLE_RBAC_SHUTDOWN
 #include <auth_attr.h>
 #include <secdb.h>
 #endif
@@ -1123,8 +1121,9 @@ _check_polkit_for_action (CkManager             *manager,
         if (pk_result != POLKIT_RESULT_YES) {
                 error = g_error_new (CK_MANAGER_ERROR,
                                      CK_MANAGER_ERROR_NOT_PRIVILEGED,
-                                     "Not privileged for action: %s",
-                                     action);
+                                     "Not privileged for action: %s %s",
+                                     action,
+                                     polkit_result_to_string_representation (pk_result));
                 dbus_error_free (&dbus_error);
                 dbus_g_method_return_error (context, error);
                 g_error_free (error);
@@ -1339,17 +1338,18 @@ ck_manager_restart (CkManager             *manager,
 
         g_debug ("ConsoleKit Restart: %s", action);
 
-#ifdef HAVE_POLKIT
+#if defined HAVE_POLKIT
         res = _check_polkit_for_action (manager, context, action);
         if (! res) {
                 goto out;
         }
-#endif
-
-#ifdef ENABLE_RBAC_SHUTDOWN
+#elif defined ENABLE_RBAC_SHUTDOWN
         if (! check_rbac_permissions (manager, context)) {
                 goto out;
         }
+#else
+        g_warning ("Compiled without PolicyKit or RBAC support!");
+        goto out;
 #endif
 
         g_debug ("ConsoleKit preforming Restart: %s", action);
@@ -1357,7 +1357,7 @@ ck_manager_restart (CkManager             *manager,
         log_system_restart_event (manager);
 
         error = NULL;
-        res = g_spawn_command_line_async (LIBDIR "/ConsoleKit/scripts/ck-system-restart",
+        res = g_spawn_command_line_async (PREFIX "/lib/ConsoleKit/scripts/ck-system-restart",
                                           &error);
         if (! res) {
                 GError *new_error;
@@ -1398,16 +1398,18 @@ ck_manager_stop (CkManager             *manager,
                 action = "org.freedesktop.consolekit.system.stop";
         }
 
-#ifdef HAVE_POLKIT
+#if defined HAVE_POLKIT
         res = _check_polkit_for_action (manager, context, action);
         if (! res) {
                 goto out;
         }
-#endif
-
-#ifdef ENABLE_RBAC_SHUTDOWN
-        if (!check_rbac_permissions (manager, context))
+#elif defined  ENABLE_RBAC_SHUTDOWN
+        if (!check_rbac_permissions (manager, context)) {
                 goto out;
+        }
+#else
+        g_warning ("Compiled without PolicyKit or RBAC support!");
+        goto out;
 #endif
 
         g_debug ("Stopping system");
@@ -1415,7 +1417,7 @@ ck_manager_stop (CkManager             *manager,
         log_system_stop_event (manager);
 
         error = NULL;
-        res = g_spawn_command_line_async (LIBDIR "/ConsoleKit/scripts/ck-system-stop",
+        res = g_spawn_command_line_async (PREFIX "/lib/ConsoleKit/scripts/ck-system-stop",
                                           &error);
         if (! res) {
                 GError *new_error;
@@ -1922,22 +1924,16 @@ create_session_for_sender (CkManager             *manager,
         ck_session_leader_set_service_name (leader, sender);
         ck_session_leader_set_session_id (leader, ssid);
         ck_session_leader_set_cookie (leader, cookie);
+        ck_session_leader_set_override_parameters (leader, parameters);
 
         /* need to store the leader info first so the pending request can be revoked */
         g_hash_table_insert (manager->priv->leaders,
                              g_strdup (cookie),
                              g_object_ref (leader));
 
-        if (parameters == NULL) {
-                generate_session_for_leader (manager,
-                                             leader,
-                                             context);
-        } else {
-                verify_and_open_session_for_leader (manager,
-                                                    leader,
-                                                    parameters,
-                                                    context);
-        }
+        generate_session_for_leader (manager,
+                                     leader,
+                                     context);
 
         g_free (cookie);
         g_free (ssid);
@@ -1986,6 +1982,7 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
                                      _("Unable to get information about the calling process"));
                 dbus_g_method_return_error (context, error);
                 g_error_free (error);
+                g_debug ("CkManager: Unable to lookup caller info - failing");
                 return FALSE;
         }
 
@@ -2004,10 +2001,14 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
 
                 dbus_g_method_return_error (context, error);
                 g_error_free (error);
+
+                g_debug ("CkManager: Unable to lookup info for caller - failing");
+
                 return FALSE;
         }
 
         /* FIXME: should we restrict this by uid? */
+
         ck_process_stat_free (stat);
 
         leader = g_hash_table_lookup (manager->priv->leaders, cookie);
@@ -2018,6 +2019,7 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
                                      _("Unable to find session for cookie"));
                 dbus_g_method_return_error (context, error);
                 g_error_free (error);
+                g_debug ("CkManager: Unable to lookup cookie for caller - failing");
                 return FALSE;
         }
 
@@ -2029,10 +2031,13 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
                                      _("Unable to find session for cookie"));
                 dbus_g_method_return_error (context, error);
                 g_error_free (error);
+                g_debug ("CkManager: Unable to lookup session for cookie - failing");
                 return FALSE;
         }
 
         ck_session_get_id (session, &ssid, NULL);
+
+        g_debug ("CkManager: Found session '%s'", ssid);
 
         dbus_g_method_return (context, ssid);
 
@@ -2522,9 +2527,9 @@ ck_manager_class_init (CkManagerClass *klass)
                               G_STRUCT_OFFSET (CkManagerClass, seat_added),
                               NULL,
                               NULL,
-                              g_cclosure_marshal_VOID__STRING,
+                              g_cclosure_marshal_VOID__BOXED,
                               G_TYPE_NONE,
-                              1, G_TYPE_STRING);
+                              1, DBUS_TYPE_G_OBJECT_PATH);
         signals [SEAT_REMOVED] =
                 g_signal_new ("seat-removed",
                               G_TYPE_FROM_CLASS (object_class),
@@ -2532,9 +2537,9 @@ ck_manager_class_init (CkManagerClass *klass)
                               G_STRUCT_OFFSET (CkManagerClass, seat_removed),
                               NULL,
                               NULL,
-                              g_cclosure_marshal_VOID__STRING,
+                              g_cclosure_marshal_VOID__BOXED,
                               G_TYPE_NONE,
-                              1, G_TYPE_STRING);
+                              1, DBUS_TYPE_G_OBJECT_PATH);
         signals [SYSTEM_IDLE_HINT_CHANGED] =
                 g_signal_new ("system-idle-hint-changed",
                               G_TYPE_FROM_CLASS (object_class),

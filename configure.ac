@@ -1,13 +1,13 @@
 
 AC_PREREQ(2.59c)
 AC_INIT([ConsoleKit],
-        [0.2.10],
+        [0.3.0],
         [https://bugs.freedesktop.org/enter_bug.cgi?product=ConsoleKit],
         [ConsoleKit])
 
 AC_CONFIG_SRCDIR([src/ck-manager.c])
 
-AM_INIT_AUTOMAKE
+AM_INIT_AUTOMAKE([1.9 no-dist-gzip dist-bzip2])
 
 AM_MAINTAINER_MODE
 
@@ -275,6 +275,11 @@ AM_CONDITIONAL(DOCBOOK_DOCS_ENABLED, test x$enable_docbook_docs = xyes)
 AC_MSG_RESULT(yes)
 
 dnl ---------------------------------------------------------------------------
+dnl Check for xsltproc
+dnl ---------------------------------------------------------------------------
+AC_PATH_PROG([XSLTPROC], [xsltproc])
+
+dnl ---------------------------------------------------------------------------
 dnl check for inotify
 dnl ---------------------------------------------------------------------------
 
@@ -331,7 +336,7 @@ if test "$GCC" = "yes" -a "$set_more_warnings" != "no"; then
         -Wall \
         -Wchar-subscripts -Wmissing-declarations -Wmissing-prototypes \
         -Wnested-externs -Wpointer-arith \
-        -Wcast-align -Wsign-compare \
+        -Wcast-align -Wsign-compare -Wp,-D_FORTIFY_SOURCE=2 \
         $CFLAGS"
 
         for option in -Wno-strict-aliasing -Wno-sign-compare; do
@@ -391,7 +396,8 @@ tools/freebsd/Makefile
 tools/solaris/Makefile
 data/Makefile
 doc/Makefile
-doc/ConsoleKit.xml
+doc/dbus/ConsoleKit.xml
+doc/dbus/Makefile
 libck-connector/Makefile
 libck-connector/ck-connector.pc
 pam-ck-connector/Makefile
@@ -425,5 +431,14 @@ echo "
         PAM module dir:           ${PAM_MODULE_DIR}
         Build PAM module:         ${msg_pam_module}
         Build docs:               ${enable_docbook_docs}
-        Build with RBAC:          ${msg_rbac_shutdown}
+
+        PolicyKit support         ${have_polkit}
+        RBAC (Solaris) support:   ${msg_rbac_shutdown}
 "
+if test x${have_polkit} = xno -a x${msg_rbac_shutdown} = xno; then
+   echo "WARNING: PolicyKit and RBAC are disabled. You need to manually edit the ConsoleKit.conf"
+   echo "         file to lock down the service. Failure to do so may be"
+   echo "         a huge SECURITY HOLE. I repeat: YOU NEED TO EDIT THE FILE"
+   echo "         ConsoleKit.conf to match your distro/site to avoid NASTY SECURITY HOLES."
+   echo ""
+fi

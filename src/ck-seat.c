@@ -926,18 +926,18 @@ ck_seat_class_init (CkSeatClass *klass)
                                                 G_STRUCT_OFFSET (CkSeatClass, session_added),
                                                 NULL,
                                                 NULL,
-                                                g_cclosure_marshal_VOID__STRING,
+                                                g_cclosure_marshal_VOID__BOXED,
                                                 G_TYPE_NONE,
-                                                1, G_TYPE_STRING);
+                                                1, DBUS_TYPE_G_OBJECT_PATH);
         signals [SESSION_REMOVED] = g_signal_new ("session-removed",
                                                   G_TYPE_FROM_CLASS (object_class),
                                                   G_SIGNAL_RUN_LAST,
                                                   G_STRUCT_OFFSET (CkSeatClass, session_removed),
                                                   NULL,
                                                   NULL,
-                                                  g_cclosure_marshal_VOID__STRING,
+                                                  g_cclosure_marshal_VOID__BOXED,
                                                   G_TYPE_NONE,
-                                                  1, G_TYPE_STRING);
+                                                  1, DBUS_TYPE_G_OBJECT_PATH);
 
         signals [DEVICE_ADDED] = g_signal_new ("device-added",
                                                G_TYPE_FROM_CLASS (object_class),
