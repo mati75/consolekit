@@ -51,10 +51,10 @@
 /* VOID:UINT,STRING (ck-marshal.list:1) */
 void
 ck_marshal_VOID__UINT_STRING (GClosure     *closure,
-                              GValue       *return_value,
+                              GValue       *return_value G_GNUC_UNUSED,
                               guint         n_param_values,
                               const GValue *param_values,
-                              gpointer      invocation_hint,
+                              gpointer      invocation_hint G_GNUC_UNUSED,
                               gpointer      marshal_data)
 {
   typedef void (*GMarshalFunc_VOID__UINT_STRING) (gpointer     data1,
@@ -88,10 +88,10 @@ ck_marshal_VOID__UINT_STRING (GClosure     *closure,
 /* BOOLEAN:POINTER (ck-marshal.list:2) */
 void
 ck_marshal_BOOLEAN__POINTER (GClosure     *closure,
-                             GValue       *return_value,
+                             GValue       *return_value G_GNUC_UNUSED,
                              guint         n_param_values,
                              const GValue *param_values,
-                             gpointer      invocation_hint,
+                             gpointer      invocation_hint G_GNUC_UNUSED,
                              gpointer      marshal_data)
 {
   typedef gboolean (*GMarshalFunc_BOOLEAN__POINTER) (gpointer     data1,

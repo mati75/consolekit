@@ -1,9 +1,8 @@
-dnl -*- mode: m4 -*-
 
 AC_PREREQ(2.59c)
 AC_INIT([ConsoleKit],
-        [0.2.3],
-        [mccann@jhu.edu],
+        [0.2.10],
+        [https://bugs.freedesktop.org/enter_bug.cgi?product=ConsoleKit],
         [ConsoleKit])
 
 AC_CONFIG_SRCDIR([src/ck-manager.c])
@@ -11,6 +10,9 @@ AC_CONFIG_SRCDIR([src/ck-manager.c])
 AM_INIT_AUTOMAKE
 
 AM_MAINTAINER_MODE
+
+# for O_NOFOLLOW support
+AC_GNU_SOURCE
 
 AC_ISC_POSIX
 AC_PROG_CC
@@ -36,25 +38,43 @@ AM_GLIB_GNU_GETTEXT
 DBUS_REQUIRED_VERSION=0.30
 GLIB_REQUIRED_VERSION=2.7.0
 X11_REQUIRED_VERSION=1.0.0
+POLKIT_REQUIRED_VERSION=0.7
 
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(paths.h)
+AC_CHECK_HEADERS(sys/vt.h)
+AC_CHECK_HEADERS(sys/consio.h)
 
 AC_CHECK_FUNCS(getpeerucred getpeereid)
 
 AC_TYPE_UID_T
 
 PKG_CHECK_MODULES(CONSOLE_KIT,
-        dbus-glib-1 >= $DBUS_REQUIRED_VERSION
-        gobject-2.0 >= $GLIB_REQUIRED_VERSION
-        gthread-2.0 >= $GLIB_REQUIRED_VERSION
+  dbus-glib-1 >= $DBUS_REQUIRED_VERSION
+  gobject-2.0 >= $GLIB_REQUIRED_VERSION
+  gthread-2.0 >= $GLIB_REQUIRED_VERSION
 )
+
+PKG_CHECK_MODULES(POLKIT,
+  polkit >= $POLKIT_REQUIRED_VERSION,
+  have_polkit=yes,
+  have_polkit=no)
+if test "x$have_polkit" = "xyes" ; then
+       AC_DEFINE(HAVE_POLKIT, [], [Define if we have polkit])
+fi
+AM_CONDITIONAL(HAVE_POLKIT, test x$have_polkit = xyes)
+AC_SUBST(HAVE_POLKIT)
+
 PKG_CHECK_MODULES(LIBDBUS,
-	dbus-1 >= $DBUS_REQUIRED_VERSION
+  dbus-1 >= $DBUS_REQUIRED_VERSION
 )
 PKG_CHECK_MODULES(TOOLS,
-        x11 >= $X11_REQUIRED_VERSION
-        glib-2.0 >= $GLIB_REQUIRED_VERSION
+  x11 >= $X11_REQUIRED_VERSION
+  glib-2.0 >= $GLIB_REQUIRED_VERSION
+)
+
+PKG_CHECK_MODULES(HISTORY,
+  glib-2.0 >= $GLIB_REQUIRED_VERSION
 )
 
 AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
@@ -118,6 +138,20 @@ else
         DBUS_SYS_DIR="$sysconfdir/dbus-1/system.d"
 fi
 AC_SUBST(DBUS_SYS_DIR)
+
+
+dnl ---------------------------------------------------------------------------
+dnl - Check for libz
+dnl ---------------------------------------------------------------------------
+
+have_libz=no
+AC_CHECK_LIB(z, compress,
+  [AC_CHECK_HEADER(zlib.h, [have_libz=yes], [])], [])
+if test "x$have_libz" != "xyes"; then
+  AC_MSG_ERROR([Unable to find libz])
+fi
+Z_LIBS="${Z_LIBS} -lz"
+AC_SUBST(Z_LIBS)
 
 dnl ---------------------------------------------------------------------------
 dnl - PID file
@@ -258,6 +292,23 @@ if test "x$enable_inotify" = "xyes" ; then
 fi
 
 dnl ---------------------------------------------------------------------------
+dnl check for RBAC
+dnl ---------------------------------------------------------------------------
+
+msg_rbac_shutdown=no
+AC_ARG_ENABLE(rbac-shutdown,
+	[AC_HELP_STRING([--enable-rbac-shutdown=<key>],
+	[Build with RBAC support specifying shutdown/reboot RBAC authentication key])],
+	enable_rbac_shutdown=$enableval,enable_rbac_shutdown=no)
+if test "x$enable_rbac_shutdown" != "xno"; then
+	RBAC_LIBS="-lsecdb -lsocket -lnsl"
+	AC_DEFINE(ENABLE_RBAC_SHUTDOWN, [], [Set if we build with RBAC support])
+	AC_DEFINE_UNQUOTED(RBAC_SHUTDOWN_KEY, "$enable_rbac_shutdown", [Set if we build with RBAC support])
+	msg_rbac_shutdown="yes, using key $enable_rbac_shutdown"
+fi
+AC_SUBST(RBAC_LIBS)
+
+dnl ---------------------------------------------------------------------------
 dnl Finish
 dnl ---------------------------------------------------------------------------
 
@@ -336,6 +387,8 @@ Makefile
 src/Makefile
 tools/Makefile
 tools/linux/Makefile
+tools/freebsd/Makefile
+tools/solaris/Makefile
 data/Makefile
 doc/Makefile
 doc/ConsoleKit.xml
@@ -372,4 +425,5 @@ echo "
         PAM module dir:           ${PAM_MODULE_DIR}
         Build PAM module:         ${msg_pam_module}
         Build docs:               ${enable_docbook_docs}
+        Build with RBAC:          ${msg_rbac_shutdown}
 "

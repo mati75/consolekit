@@ -42,12 +42,14 @@
 
 #include "ck-session.h"
 #include "ck-vt-monitor.h"
+#include "ck-run-programs.h"
 
 #define CK_SEAT_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CK_TYPE_SEAT, CkSeatPrivate))
 
 #define CK_DBUS_PATH "/org/freedesktop/ConsoleKit"
 #define CK_DBUS_NAME "org.freedesktop.ConsoleKit"
 
+#define NONULL_STRING(x) ((x) != NULL ? (x) : "")
 
 struct CkSeatPrivate
 {
@@ -122,17 +124,37 @@ ck_seat_get_active_session (CkSeat         *seat,
                             char          **ssid,
                             GError        **error)
 {
+        gboolean ret;
+        char    *session_id;
+
         g_return_val_if_fail (CK_IS_SEAT (seat), FALSE);
 
+        g_debug ("CkSeat: get active session");
+        session_id = NULL;
+        ret = FALSE;
         if (seat->priv->active_session != NULL) {
-                ck_session_get_id (seat->priv->active_session, ssid, NULL);
+                gboolean res;
+                res = ck_session_get_id (seat->priv->active_session, &session_id, NULL);
+                if (res) {
+                        ret = TRUE;
+                }
+        } else {
+                g_debug ("CkSeat: seat has no active session");
+        }
+
+        if (! ret) {
+                g_set_error (error,
+                             CK_SEAT_ERROR,
+                             CK_SEAT_ERROR_GENERAL,
+                             "%s", "Seat has no active session");
         } else {
                 if (ssid != NULL) {
-                        *ssid = NULL;
+                        *ssid = g_strdup (session_id);
                 }
         }
 
-        return TRUE;
+        g_free (session_id);
+        return ret;
 }
 
 typedef struct
@@ -200,8 +222,11 @@ _seat_activate_session (CkSeat                *seat,
                 goto out;
         }
 
-        ck_session_get_display_device (session, &device, NULL);
-
+        device = NULL;
+        ck_session_get_x11_display_device (session, &device, NULL);
+        if (device == NULL) {
+                ck_session_get_display_device (session, &device, NULL);
+        }
         res = ck_get_console_num_from_device (device, &num);
         if (! res) {
                 GError *error;
@@ -263,6 +288,8 @@ ck_seat_activate_session (CkSeat                *seat,
         g_return_val_if_fail (CK_IS_SEAT (seat), FALSE);
 
         session = NULL;
+
+        g_debug ("Trying to activate session: %s", ssid);
 
         if (ssid != NULL) {
                 session = g_hash_table_lookup (seat->priv->sessions, ssid);
@@ -473,7 +500,7 @@ change_active_session (CkSeat    *seat,
                 ck_session_set_active (session, TRUE, NULL);
         }
 
-        g_debug ("Active session changed: %s", ssid);
+        g_debug ("Active session changed: %s", ssid ? ssid : "(null)");
 
         g_signal_emit (seat, signals [ACTIVE_SESSION_CHANGED], 0, ssid);
 
@@ -527,8 +554,11 @@ ck_seat_remove_session (CkSeat         *seat,
                         CkSession      *session,
                         GError        **error)
 {
-        char    *ssid;
-        gboolean ret;
+        char       *ssid;
+        char      *orig_ssid;
+        CkSession *orig_session;
+        gboolean   res;
+        gboolean   ret;
 
         g_return_val_if_fail (CK_IS_SEAT (seat), FALSE);
 
@@ -536,7 +566,12 @@ ck_seat_remove_session (CkSeat         *seat,
         ssid = NULL;
         ck_session_get_id (session, &ssid, NULL);
 
-        if (g_hash_table_lookup (seat->priv->sessions, ssid) == NULL) {
+        /* Need to get the original key/value */
+        res = g_hash_table_lookup_extended (seat->priv->sessions,
+                                            ssid,
+                                            (gpointer *)&orig_ssid,
+                                            (gpointer *)&orig_session);
+        if (! res) {
                 g_debug ("Session %s is not attached to seat %s", ssid, seat->priv->id);
                 g_set_error (error,
                              CK_SEAT_ERROR,
@@ -547,14 +582,22 @@ ck_seat_remove_session (CkSeat         *seat,
 
         g_signal_handlers_disconnect_by_func (session, session_activate, seat);
 
-        g_debug ("Emitting removed signal: %s", ssid);
+        /* Remove the session from the list but don't call
+         * unref until the signal is emitted */
+        g_hash_table_steal (seat->priv->sessions, ssid);
 
+        ck_session_run_programs (session, "session_removed");
+
+        g_debug ("Emitting session-removed: %s", ssid);
         g_signal_emit (seat, signals [SESSION_REMOVED], 0, ssid);
-
-        g_hash_table_remove (seat->priv->sessions, ssid);
 
         /* try to change the active session */
         maybe_update_active_session (seat);
+
+        if (orig_session != NULL) {
+                g_object_unref (orig_session);
+        }
+        g_free (orig_ssid);
 
         ret = TRUE;
  out:
@@ -580,6 +623,8 @@ ck_seat_add_session (CkSeat         *seat,
 
         g_signal_connect_object (session, "activate", G_CALLBACK (session_activate), seat, 0);
         /* FIXME: attach to property notify signals? */
+
+        ck_session_run_programs (session, "session_added");
 
         g_debug ("Emitting added signal: %s", ssid);
 
@@ -637,7 +682,6 @@ ck_seat_add_device (CkSeat         *seat,
         g_ptr_array_add (seat->priv->devices, g_boxed_copy (CK_TYPE_DEVICE, device));
 
         g_debug ("Emitting device added signal");
-
         g_signal_emit (seat, signals [DEVICE_ADDED], 0, device);
 
         return TRUE;
@@ -653,7 +697,6 @@ ck_seat_remove_device (CkSeat         *seat,
         /* FIXME: check if already present */
         if (0) {
                 g_debug ("Emitting device removed signal");
-
                 g_signal_emit (seat, signals [DEVICE_REMOVED], 0, device);
         }
 
@@ -1103,3 +1146,90 @@ ck_seat_new_from_file (const char *sid,
 
         return seat;
 }
+
+static void
+dump_seat_session_iter (char      *id,
+                        CkSession *session,
+                        GString   *str)
+{
+        char   *session_id;
+        GError *error;
+
+        error = NULL;
+        if (! ck_session_get_id (session, &session_id, &error)) {
+                g_warning ("Cannot get session id from seat: %s", error->message);
+                g_error_free (error);
+        } else {
+                if (str->len > 0) {
+                        g_string_append_c (str, ' ');
+                }
+                g_string_append (str, session_id);
+                g_free (session_id);
+        }
+}
+
+void
+ck_seat_dump (CkSeat   *seat,
+              GKeyFile *key_file)
+{
+        char    *group_name;
+        GString *str;
+        char    *s;
+        int      n;
+
+        group_name = g_strdup_printf ("Seat %s", seat->priv->id);
+
+        g_key_file_set_integer (key_file, group_name, "kind", seat->priv->kind);
+
+        str = g_string_new (NULL);
+        g_hash_table_foreach (seat->priv->sessions, (GHFunc) dump_seat_session_iter, str);
+        s = g_string_free (str, FALSE);
+        g_key_file_set_string (key_file, group_name, "sessions", s);
+        g_free (s);
+
+        str = g_string_new (NULL);
+        if (seat->priv->devices != NULL) {
+                for (n = 0; n < seat->priv->devices->len; n++) {
+                        int          m;
+                        GValueArray *va;
+
+                        va = seat->priv->devices->pdata[n];
+
+                        if (str->len > 0)
+                                g_string_append_c (str, ' ');
+                        for (m = 0; m < va->n_values; m++) {
+                                if (m > 0)
+                                        g_string_append_c (str, ':');
+                                g_string_append (str, g_value_get_string ((const GValue *) &((va->values)[m])));
+                        }
+
+                        g_debug ("foo %d", va->n_values);
+                }
+        }
+        s = g_string_free (str, FALSE);
+        g_key_file_set_string (key_file, group_name, "devices", s);
+        g_free (s);
+
+
+        if (seat->priv->active_session != NULL) {
+                char   *session_id;
+                GError *error;
+
+                error = NULL;
+                if (! ck_session_get_id (seat->priv->active_session, &session_id, &error)) {
+                        g_warning ("Cannot get session id for active session on seat %s: %s",
+                                   seat->priv->id,
+                                   error->message);
+                        g_error_free (error);
+                } else {
+                        g_key_file_set_string (key_file,
+                                               group_name,
+                                               "active_session",
+                                               NONULL_STRING (session_id));
+                        g_free (session_id);
+                }
+        }
+
+        g_free (group_name);
+}
+

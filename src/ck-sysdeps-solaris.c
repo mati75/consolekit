@@ -30,6 +30,10 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
+#ifdef HAVE_SYS_VT_H
+#include <sys/vt.h>
+#endif
+
 #define DEV_ENCODE(M,m) ( \
   ( (M&0xfff) << 8)   |   ( (m&0xfff00) << 12)   |   (m&0xff)   \
 )
@@ -173,16 +177,30 @@ stat2proc (pid_t        pid,
 
         snprintf (P->tty_text, sizeof P->tty_text, "%3d,%-3d", tty_maj, tty_min);
 
+	if (tty_maj == 15) {
+		snprintf (P->tty_text, sizeof P->tty_text, "/dev/vt/%u", tty_min);
+        }
         if (tty_maj == 24) {
-                snprintf (P->tty_text, sizeof P->tty_text, "pts/%-3u", tty_min);
+                snprintf (P->tty_text, sizeof P->tty_text, "/dev/pts/%u", tty_min);
         }
 
         if (P->tty == NO_TTY_VALUE) {
+#ifdef HAVE_SYS_VT_H
                 memcpy (P->tty_text, "   ?   ", 8);
+#else
+                /*
+                 * This is a bit of a hack.  On Solaris, pre-VT integration, the
+                 * Xorg process is not assigned a TTY.  So, just assign the value
+                 * to "/dev/console" if running without VT support.  This will
+                 * allow people using Solaris pre-VT integration to use
+                 * ConsoleKit.
+                 */
+                memcpy (P->tty_text, "/dev/console", 12);
+#endif
         }
 
         if (P->tty == DEV_ENCODE(0,0)) {
-                memcpy (P->tty_text, "console", 8);
+                memcpy (P->tty_text, "/dev/console", 12);
         }
 
         if (P->pid != pid) {
@@ -256,7 +274,7 @@ ck_unix_pid_get_env_hash (pid_t pid)
 
                         if (skip_prefix != NULL) {
                                 char **vals;
-                                vals = g_strsplit (buf, "=", 2);
+                                vals = g_strsplit (skip_prefix + 1, "=", 2);
                                 if (vals != NULL) {
                                         g_hash_table_insert (hash,
                                                              g_strdup (vals[0]),
@@ -360,7 +378,7 @@ ck_get_max_num_consoles (guint *num)
         error = NULL;
         svcprop_stdout = NULL;
         status = 0;
-        res = g_spawn_command_line_sync ("/usr/bin/svcprop -p options/vtnodecount vtdaemon",
+        res = g_spawn_command_line_sync ("/usr/bin/svcprop -p options/nodecount vtdaemon",
                                          &svcprop_stdout,
                                          NULL,
                                          &status,
@@ -395,7 +413,10 @@ ck_get_console_device_for_num (guint num)
 {
         char *device;
 
-        device = g_strdup_printf ("/dev/vt/%u", num);
+        if (num == 1)
+                device = g_strdup_printf ("/dev/console", num);
+        else
+                device = g_strdup_printf ("/dev/vt/%u", num);
 
         return device;
 }
@@ -414,7 +435,9 @@ ck_get_console_num_from_device (const char *device,
                 return FALSE;
         }
 
-        if (sscanf (device, "/dev/vt/%u", &n) == 1) {
+        if (strcmp (device, "/dev/console") == 0) {
+                *num = 1;
+        } else if (sscanf (device, "/dev/vt/%u", &n) == 1) {
                 ret = TRUE;
         }
 
@@ -432,6 +455,8 @@ ck_get_active_console_num (int    console_fd,
         gboolean       ret;
         int            res;
         guint          active;
+
+#ifdef VT_GETSTATE
         struct vt_stat stat;
 
         g_assert (console_fd != -1);
@@ -464,6 +489,14 @@ ck_get_active_console_num (int    console_fd,
         if (num != NULL) {
                 *num = active;
         }
+#else
+        /*
+         * If not using VT, not really an active number, but return 1,
+         * which maps to "/dev/console".
+         */
+        ret  = TRUE;
+        *num = 1;
+#endif
 
         return ret;
 }

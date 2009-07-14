@@ -58,10 +58,15 @@ typedef struct
 
 typedef enum
 {
-         CK_MANAGER_ERROR_GENERAL
+        CK_MANAGER_ERROR_GENERAL,
+        CK_MANAGER_ERROR_NOT_PRIVILEGED,
+        CK_MANAGER_NUM_ERRORS
 } CkManagerError;
 
 #define CK_MANAGER_ERROR ck_manager_error_quark ()
+
+GType               ck_manager_error_get_type                 (void);
+#define CK_MANAGER_TYPE_ERROR (ck_manager_error_get_type ())
 
 GQuark              ck_manager_error_quark                    (void);
 GType               ck_manager_get_type                       (void);
@@ -70,9 +75,19 @@ CkManager         * ck_manager_new                            (void);
 
 /* unprivileged methods */
 
+
+/* System actions */
+gboolean            ck_manager_stop                           (CkManager             *manager,
+                                                               DBusGMethodInvocation *context);
+gboolean            ck_manager_restart                        (CkManager             *manager,
+                                                               DBusGMethodInvocation *context);
+
 /* Authoritative properties */
 gboolean            ck_manager_open_session                   (CkManager             *manager,
                                                                DBusGMethodInvocation *context);
+gboolean            ck_manager_get_sessions                   (CkManager             *manager,
+                                                               GPtrArray            **sessions,
+                                                               GError               **error);
 gboolean            ck_manager_get_seats                      (CkManager             *manager,
                                                                GPtrArray            **seats,
                                                                GError               **error);

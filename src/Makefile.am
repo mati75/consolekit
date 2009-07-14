@@ -10,6 +10,7 @@ INCLUDES =							\
 	-I.							\
 	-I$(srcdir)						\
 	$(CONSOLE_KIT_CFLAGS)					\
+	$(POLKIT_CFLAGS)					\
 	$(DISABLE_DEPRECATED_CFLAGS)				\
 	-DPREFIX=\""$(prefix)"\" 				\
 	-DBINDIR=\""$(bindir)"\"				\
@@ -17,6 +18,7 @@ INCLUDES =							\
 	-DLIBEXECDIR=\""$(libexecdir)"\"			\
 	-DDATADIR=\""$(datadir)"\"				\
 	-DSYSCONFDIR=\""$(sysconfdir)"\" 			\
+	-DLOCALSTATEDIR=\""$(localstatedir)"\" 			\
 	-DCONSOLE_KIT_PID_FILE=\""$(CONSOLE_KIT_PID_FILE)"\"	\
 	$(WARN_CFLAGS)						\
 	$(DEBUG_CFLAGS)						\
@@ -24,8 +26,14 @@ INCLUDES =							\
 	$(NULL)
 
 noinst_LTLIBRARIES =            \
-        libck.la         	\
+        libck.la		\
+        libck-event-log.la	\
         $(NULL)
+
+libck_event_log_la_SOURCES =	\
+	ck-log-event.h		\
+	ck-log-event.c		\
+	$(NULL)
 
 libck_la_SOURCES =		\
 	ck-sysdeps.h		\
@@ -94,10 +102,16 @@ console_kit_daemon_SOURCES =	\
 	ck-job.c		\
 	ck-seat.h		\
 	ck-seat.c		\
+	ck-session-leader.h	\
+	ck-session-leader.c	\
 	ck-session.h		\
 	ck-session.c		\
 	ck-log.h		\
 	ck-log.c		\
+	ck-run-programs.c	\
+	ck-run-programs.h	\
+	ck-event-logger.c	\
+	ck-event-logger.h	\
 	$(BUILT_SOURCES)	\
 	$(NULL)
 
@@ -116,12 +130,29 @@ EXTRA_console_kit_daemon_SOURCES = 	\
 
 console_kit_daemon_LDADD =	\
 	$(CONSOLE_KIT_LIBS)	\
+	$(POLKIT_LIBS)		\
+	$(RBAC_LIBS)		\
 	libck.la		\
+	libck-event-log.la	\
 	$(NULL)
 
 noinst_PROGRAMS = 			\
+	test-event-logger		\
 	test-tty-idle-monitor		\
 	test-vt-monitor			\
+	$(NULL)
+
+test_event_logger_SOURCES = 		\
+	ck-event-logger.h		\
+	ck-event-logger.c		\
+	test-event-logger.c 		\
+	$(NULL)
+
+test_event_logger_LDADD =		\
+	$(CONSOLE_KIT_LIBS)		\
+	$(POLKIT_LIBS)			\
+	$(RBAC_LIBS)			\
+	libck-event-log.la		\
 	$(NULL)
 
 test_vt_monitor_SOURCES = 		\
@@ -132,6 +163,7 @@ test_vt_monitor_SOURCES = 		\
 
 test_vt_monitor_LDADD =			\
 	$(CONSOLE_KIT_LIBS)		\
+	$(POLKIT_LIBS)			\
 	libck.la			\
 	$(NULL)
 
@@ -145,6 +177,7 @@ test_tty_idle_monitor_SOURCES = 	\
 
 test_tty_idle_monitor_LDADD =		\
 	$(CONSOLE_KIT_LIBS)		\
+	$(POLKIT_LIBS)			\
 	libck.la			\
 	$(NULL)
 
@@ -163,3 +196,9 @@ CLEANFILES = $(BUILT_SOURCES)
 MAINTAINERCLEANFILES =			\
 	*~				\
 	Makefile.in
+
+install-data-local:
+	-mkdir -p $(DESTDIR)$(sysconfdir)/ConsoleKit/run-session.d
+	-mkdir -p $(DESTDIR)$(libdir)/ConsoleKit/run-session.d
+	-mkdir -p $(DESTDIR)$(localstatedir)/run/ConsoleKit
+	-mkdir -p $(DESTDIR)$(localstatedir)/log/ConsoleKit
