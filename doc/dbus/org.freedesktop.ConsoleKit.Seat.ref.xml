@@ -27,14 +27,11 @@
   </refsect1>
   <refsect1 role="impl_interfaces">
     <title role="impl_interfaces.title">Implemented Interfaces</title>
-    <para>org.freedesktop.ConsoleKit.Seat implements
+    <para>
+    Objects implementing org.freedesktop.ConsoleKit.Seat also implements
     org.freedesktop.DBus.Introspectable,
     org.freedesktop.DBus.Properties
     </para>
-  </refsect1>
-  <refsect1 role="properties">
-    <title role="properties.title">Properties</title>
-    <synopsis/>
   </refsect1>
   <refsect1 role="desc">
     <title role="desc.title">Description</title>
@@ -81,7 +78,4 @@ See also:
         <variablelist role="params"><varlistentry><term><parameter>device</parameter>:</term><listitem><simpara>Device structure</simpara></listitem></varlistentry></variablelist><refsect2><title><anchor role="function" id="Seat::DeviceRemoved"/>The DeviceRemoved signal</title><indexterm><primary>DeviceRemoved</primary><secondary>Seat</secondary></indexterm><programlisting>DeviceRemoved ('(ss)' device)</programlisting></refsect2>
           <para>Emitted when a device has been dissociated from the seat.</para>
         <variablelist role="params"><varlistentry><term><parameter>device</parameter>:</term><listitem><simpara>Device structure</simpara></listitem></varlistentry></variablelist></refsect1>
-  <refsect1 role="property_details">
-    <title role="property_details.title">Property Details</title>
-  </refsect1>
 </refentry>

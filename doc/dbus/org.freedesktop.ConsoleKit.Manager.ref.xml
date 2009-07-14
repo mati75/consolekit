@@ -39,14 +39,11 @@
   </refsect1>
   <refsect1 role="impl_interfaces">
     <title role="impl_interfaces.title">Implemented Interfaces</title>
-    <para>org.freedesktop.ConsoleKit.Manager implements
+    <para>
+    Objects implementing org.freedesktop.ConsoleKit.Manager also implements
     org.freedesktop.DBus.Introspectable,
     org.freedesktop.DBus.Properties
     </para>
-  </refsect1>
-  <refsect1 role="properties">
-    <title role="properties.title">Properties</title>
-    <synopsis/>
   </refsect1>
   <refsect1 role="desc">
     <title role="desc.title">Description</title>
@@ -118,7 +115,7 @@ See also:
           as members of this session.
           </para>
           <para>See the <link linkend="Session">Session</link> properties for a list of valid parameters.</para>
-        <variablelist role="params"><varlistentry><term><parameter>parameters</parameter>:</term><listitem><simpara>An array of sets of property names and values</simpara></listitem></varlistentry><varlistentry><term><parameter>cookie</parameter>:</term><listitem><simpara>The secret cookie that is used to identify the new session</simpara></listitem></varlistentry></variablelist><para role="permission">This method is restricted to privileged users by D-Bus policy.</para><para>
+        <variablelist role="params"><varlistentry><term><parameter>parameters</parameter>:</term><listitem><simpara>An array of sets of property names and values</simpara></listitem></varlistentry><varlistentry><term><parameter>cookie</parameter>:</term><listitem><simpara>The secret cookie that is used to identify the new session</simpara></listitem></varlistentry></variablelist><refsect3><title>Permissions</title><para role="permission">This method is restricted to privileged users by D-Bus policy.</para></refsect3><para>
 See also:
 <link linkend="Session">org.freedesktop.ConsoleKit.Session</link></para><refsect2><title><anchor role="function" id="Manager.CloseSession"/>CloseSession ()</title><indexterm><primary>CloseSession</primary><secondary>Manager</secondary></indexterm><programlisting>CloseSession (in  's' cookie,
               out 'b' result)</programlisting></refsect2>
@@ -193,7 +190,4 @@ instead.</para></warning></para><refsect2><title><anchor role="function" id="Man
           <para>Emitted when the value of the system-idle-hint has changed.
           </para>
         <variablelist role="params"><varlistentry><term><parameter>hint</parameter>:</term><listitem><simpara>The value of the system-idle-hint</simpara></listitem></varlistentry></variablelist></refsect1>
-  <refsect1 role="property_details">
-    <title role="property_details.title">Property Details</title>
-  </refsect1>
 </refentry>

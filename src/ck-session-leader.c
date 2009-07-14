@@ -58,6 +58,7 @@ struct CkSessionLeaderPrivate
         char       *cookie;
         GList      *pending_jobs;
         gboolean    cancelled;
+        GHashTable *override_parameters;
 };
 
 enum {
@@ -190,6 +191,39 @@ add_param_string (GPtrArray  *parameters,
         g_ptr_array_add (parameters, g_value_get_boxed (&param_val));
 }
 
+static gboolean
+have_override_parameter (CkSessionLeader *leader,
+                         const char      *prop_name)
+{
+        gpointer data;
+
+        if (leader->priv->override_parameters == NULL) {
+                return FALSE;
+        }
+
+        if (prop_name == NULL) {
+                return FALSE;
+        }
+
+        data = g_hash_table_lookup (leader->priv->override_parameters, prop_name);
+        if (data == NULL) {
+                return FALSE;
+        }
+
+        return TRUE;
+}
+
+static void
+add_to_parameters (gpointer   key,
+                   gpointer   data,
+                   GPtrArray *parameters)
+{
+        gpointer data_copy;
+
+        data_copy = g_boxed_copy (CK_TYPE_PARAMETER_STRUCT, data);
+        g_ptr_array_add (parameters, data_copy);
+}
+
 typedef void (* CkAddParamFunc) (GPtrArray  *arr,
                                  const char *key,
                                  const char *value);
@@ -198,6 +232,7 @@ static struct {
         char          *key;
         CkAddParamFunc func;
 } parse_ops[] = {
+        { "login-session-id",   add_param_string },
         { "display-device",     add_param_string },
         { "x11-display-device", add_param_string },
         { "x11-display",        add_param_string },
@@ -208,7 +243,8 @@ static struct {
 };
 
 static GPtrArray *
-parse_output (const char *output)
+parse_output (CkSessionLeader *leader,
+              const char      *output)
 {
         GPtrArray *parameters;
         char     **lines;
@@ -222,11 +258,18 @@ parse_output (const char *output)
 
         parameters = g_ptr_array_sized_new (10);
 
+        /* first add generated params */
         for (i = 0; lines[i] != NULL; i++) {
                 char **vals;
 
                 vals = g_strsplit (lines[i], " = ", 2);
                 if (vals == NULL || vals[0] == NULL) {
+                        g_strfreev (vals);
+                        continue;
+                }
+
+                /* we're going to override this anyway so just shortcut out */
+                if (have_override_parameter (leader, vals[0])) {
                         g_strfreev (vals);
                         continue;
                 }
@@ -239,12 +282,15 @@ parse_output (const char *output)
                 }
                 g_strfreev (vals);
         }
-
         g_strfreev (lines);
+
+        /* now overlay the overrides */
+        g_hash_table_foreach (leader->priv->override_parameters,
+                              (GHFunc)add_to_parameters,
+                              parameters);
 
         return parameters;
 }
-
 
 static void
 parameters_free (GPtrArray *parameters)
@@ -260,6 +306,61 @@ parameters_free (GPtrArray *parameters)
         }
 
         g_ptr_array_free (parameters, TRUE);
+}
+
+static void
+save_parameters (CkSessionLeader *leader,
+                 const GPtrArray *parameters)
+{
+        int i;
+
+        for (i = 0; i < parameters->len; i++) {
+                gpointer data;
+                data = g_ptr_array_index (parameters, i);
+
+                /* filter out the nulls? - sure why not */
+
+                if (data != NULL) {
+                        gpointer data_copy;
+                        GValue   val_struct = { 0, };
+                        char    *prop_name;
+                        gboolean res;
+
+                        g_value_init (&val_struct, CK_TYPE_PARAMETER_STRUCT);
+                        g_value_set_static_boxed (&val_struct, g_ptr_array_index (parameters, i));
+
+                        res = dbus_g_type_struct_get (&val_struct,
+                                                      0, &prop_name,
+                                                      G_MAXUINT);
+                        if (! res) {
+                                g_debug ("Unable to extract parameter input");
+                                g_free (prop_name);
+                                continue;
+                        }
+
+                        if (prop_name == NULL) {
+                                g_debug ("Skipping NULL parameter");
+                                g_free (prop_name);
+                                continue;
+                        }
+
+                        if (strcmp (prop_name, "id") == 0
+                            || strcmp (prop_name, "cookie") == 0) {
+                                g_debug ("Skipping restricted parameter: %s", prop_name);
+                                g_free (prop_name);
+                                continue;
+                        }
+
+                        g_debug ("Setting override parameters for: %s", prop_name);
+
+                        data_copy = g_boxed_copy (CK_TYPE_PARAMETER_STRUCT, data);
+
+                        /* takes ownership */
+                        g_hash_table_insert (leader->priv->override_parameters,
+                                             prop_name,
+                                             data_copy);
+                }
+        }
 }
 
 typedef struct {
@@ -283,7 +384,7 @@ job_completed (CkJob     *job,
                 ck_job_get_stdout (job, &output);
                 g_debug ("Job output: %s", output);
 
-                parameters = parse_output (output);
+                parameters = parse_output (data->leader, output);
                 g_free (output);
 
                 data->done_cb (data->leader,
@@ -447,6 +548,21 @@ ck_session_leader_set_service_name (CkSessionLeader       *session_leader,
         session_leader->priv->service_name = g_strdup (service_name);
 }
 
+void
+ck_session_leader_set_override_parameters (CkSessionLeader       *session_leader,
+                                           const GPtrArray       *parameters)
+{
+        g_return_if_fail (CK_IS_SESSION_LEADER (session_leader));
+
+        if (session_leader->priv->override_parameters != NULL) {
+                g_hash_table_remove_all (session_leader->priv->override_parameters);
+        }
+
+        if (parameters != NULL) {
+                save_parameters (session_leader, parameters);
+        }
+}
+
 static void
 ck_session_leader_set_property (GObject            *object,
                                 guint               prop_id,
@@ -512,9 +628,20 @@ ck_session_leader_class_init (CkSessionLeaderClass *klass)
 }
 
 static void
+parameter_free (gpointer data)
+{
+        g_boxed_free (CK_TYPE_PARAMETER_STRUCT, data);
+}
+
+static void
 ck_session_leader_init (CkSessionLeader *session_leader)
 {
         session_leader->priv = CK_SESSION_LEADER_GET_PRIVATE (session_leader);
+
+        session_leader->priv->override_parameters = g_hash_table_new_full (g_str_hash,
+                                                                           g_str_equal,
+                                                                           g_free,
+                                                                           (GDestroyNotify)parameter_free);
 }
 
 static void
@@ -535,6 +662,8 @@ ck_session_leader_finalize (GObject *object)
         session_leader->priv->cookie = NULL;
         g_free (session_leader->priv->service_name);
         session_leader->priv->service_name = NULL;
+
+        g_hash_table_destroy (session_leader->priv->override_parameters);
 
         G_OBJECT_CLASS (ck_session_leader_parent_class)->finalize (object);
 }
