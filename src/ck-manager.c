@@ -43,20 +43,22 @@
 #include "ck-job.h"
 #include "ck-marshal.h"
 
-#include "proc.h"
+#include "ck-sysdeps.h"
 
 #define CK_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CK_TYPE_MANAGER, CkManagerPrivate))
+
+#define CK_SEAT_DIR SYSCONFDIR "/ConsoleKit/seats.d"
 
 #define CK_DBUS_PATH         "/org/freedesktop/ConsoleKit"
 #define CK_MANAGER_DBUS_PATH CK_DBUS_PATH "/Manager"
 #define CK_MANAGER_DBUS_NAME "org.freedesktop.ConsoleKit.Manager"
 
 #define CK_TYPE_PARAMETER_STRUCT (dbus_g_type_get_struct ("GValueArray", \
-							  G_TYPE_STRING, \
-							  G_TYPE_VALUE, \
-							  G_TYPE_INVALID))
+                                                          G_TYPE_STRING, \
+                                                          G_TYPE_VALUE, \
+                                                          G_TYPE_INVALID))
 #define CK_TYPE_PARAMETER_LIST (dbus_g_type_get_collection ("GPtrArray", \
-							    CK_TYPE_PARAMETER_STRUCT))
+                                                            CK_TYPE_PARAMETER_STRUCT))
 struct CkManagerPrivate
 {
         GHashTable      *seats;
@@ -514,13 +516,13 @@ _g_time_val_to_iso8601 (GTimeVal *time_)
 
   g_return_val_if_fail (time_->tv_usec >= 0 && time_->tv_usec < G_USEC_PER_SEC, NULL);
 
-#define ISO_8601_LEN 	21
+#define ISO_8601_LEN    21
 #define ISO_8601_FORMAT "%Y-%m-%dT%H:%M:%SZ"
   retval = g_new0 (gchar, ISO_8601_LEN + 1);
 
   strftime (retval, ISO_8601_LEN,
-	    ISO_8601_FORMAT,
-	    gmtime (&(time_->tv_sec)));
+            ISO_8601_FORMAT,
+            gmtime (&(time_->tv_sec)));
 
   return retval;
 }
@@ -694,7 +696,7 @@ typedef void (* CkAddParamFunc) (GPtrArray  *arr,
                                  const char *value);
 
 static struct {
-	char          *key;
+        char          *key;
         CkAddParamFunc func;
 } parse_ops[] = {
         { "display-device",     add_param_string },
@@ -931,15 +933,15 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
                                    const char            *cookie,
                                    DBusGMethodInvocation *context)
 {
-        gboolean     res;
-        char        *sender;
-        uid_t        calling_uid;
-        pid_t        calling_pid;
-        proc_stat_t *stat;
-        char        *ssid;
-        CkSession   *session;
-        LeaderInfo  *leader_info;
-        GError      *local_error;
+        gboolean       res;
+        char          *sender;
+        uid_t          calling_uid;
+        pid_t          calling_pid;
+        CkProcessStat *stat;
+        char          *ssid;
+        CkSession     *session;
+        LeaderInfo    *leader_info;
+        GError        *local_error;
 
         ssid = NULL;
 
@@ -962,7 +964,7 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
         }
 
         local_error = NULL;
-        res = proc_stat_new_for_pid (calling_pid, &stat, &local_error);
+        res = ck_process_stat_new_for_unix_pid (calling_pid, &stat, &local_error);
         if (! res) {
                 GError *error;
                 error = g_error_new (CK_MANAGER_ERROR,
@@ -980,7 +982,7 @@ ck_manager_get_session_for_cookie (CkManager             *manager,
         }
 
         /* FIXME: should we restrict this by uid? */
-        proc_stat_free (stat);
+        ck_process_stat_free (stat);
 
         leader_info = g_hash_table_lookup (manager->priv->leaders, cookie);
         if (leader_info == NULL) {
@@ -1021,7 +1023,7 @@ get_cookie_for_pid (CkManager *manager,
 
         /* FIXME: need a better way to get the cookie */
 
-        cookie = proc_pid_get_env (pid, "XDG_SESSION_COOKIE");
+        cookie = ck_unix_pid_get_env (pid, "XDG_SESSION_COOKIE");
 
         return cookie;
 }
@@ -1038,13 +1040,13 @@ ck_manager_get_session_for_unix_process (CkManager             *manager,
                                          guint                  pid,
                                          DBusGMethodInvocation *context)
 {
-        gboolean     res;
-        char        *sender;
-        uid_t        calling_uid;
-        pid_t        calling_pid;
-        proc_stat_t *stat;
-        char        *cookie;
-        GError      *error;
+        gboolean       res;
+        char          *sender;
+        uid_t          calling_uid;
+        pid_t          calling_pid;
+        CkProcessStat *stat;
+        char          *cookie;
+        GError        *error;
 
         sender = dbus_g_method_get_sender (context);
 
@@ -1065,7 +1067,7 @@ ck_manager_get_session_for_unix_process (CkManager             *manager,
         }
 
         error = NULL;
-        res = proc_stat_new_for_pid (calling_pid, &stat, &error);
+        res = ck_process_stat_new_for_unix_pid (calling_pid, &stat, &error);
         if (! res) {
                 GError *error;
                 g_debug ("stat on pid %d failed", calling_pid);
@@ -1080,7 +1082,7 @@ ck_manager_get_session_for_unix_process (CkManager             *manager,
 
         /* FIXME: check stuff? */
 
-        proc_stat_free (stat);
+        ck_process_stat_free (stat);
 
         cookie = get_cookie_for_pid (manager, pid);
         if (cookie == NULL) {
@@ -1545,11 +1547,61 @@ ck_manager_get_seats (CkManager  *manager,
 }
 
 static void
-create_seats (CkManager *manager)
+add_seat_for_file (CkManager  *manager,
+                   const char *filename)
 {
+        char   *sid;
         CkSeat *seat;
 
-        seat = add_new_seat (manager, CK_SEAT_KIND_STATIC);
+        sid = generate_seat_id (manager);
+
+        seat = ck_seat_new_from_file (sid, filename);
+        if (seat == NULL) {
+                /* returns null if connection to bus fails */
+                g_free (sid);
+                return;
+        }
+
+        g_hash_table_insert (manager->priv->seats, sid, seat);
+
+        g_debug ("Added seat: %s", sid);
+
+        g_signal_emit (manager, signals [SEAT_ADDED], 0, sid);
+}
+
+static gboolean
+load_seats_from_dir (CkManager *manager)
+{
+        GDir       *d;
+        GError     *error;
+        const char *file;
+
+        error = NULL;
+        d = g_dir_open (CK_SEAT_DIR,
+                        0,
+                        &error);
+        if (d == NULL) {
+                g_warning ("Couldn't open seat dir: %s", error->message);
+                g_error_free (error);
+                return FALSE;
+        }
+
+        while ((file = g_dir_read_name (d)) != NULL) {
+                char *path;
+                path = g_build_filename (CK_SEAT_DIR, file, NULL);
+                add_seat_for_file (manager, path);
+                g_free (path);
+        }
+
+        g_dir_close (d);
+
+        return TRUE;
+}
+
+static void
+create_seats (CkManager *manager)
+{
+        load_seats_from_dir (manager);
 }
 
 static void

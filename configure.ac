@@ -2,7 +2,7 @@ dnl -*- mode: m4 -*-
 
 AC_PREREQ(2.59c)
 AC_INIT([ConsoleKit],
-        [0.2.1],
+        [0.2.3],
         [mccann@jhu.edu],
         [ConsoleKit])
 
@@ -39,6 +39,8 @@ X11_REQUIRED_VERSION=1.0.0
 
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(paths.h)
+
+AC_CHECK_FUNCS(getpeerucred getpeereid)
 
 AC_TYPE_UID_T
 
@@ -138,15 +140,25 @@ dnl Figure out what tools backend to build
 dnl ---------------------------------------------------------------------------
 
 CK_BACKEND=""
+KVM_LIBS=""
 case "$host" in
         *-*-freebsd*)
+        CK_BACKEND="freebsd"
+        AC_CHECK_LIB(kvm, kvm_openfiles, have_kvm=yes,
+                AC_MSG_ERROR([Unable to find libkvm which is needed on FreeBSD]))
+        if test "x$have_kvm" = "xyes"; then
+                KVM_LIBS="-lkvm"
+        fi
         ;;
         *-*-linux*)
         CK_BACKEND="linux"
         ;;
         *-*-solaris*)
+        CK_BACKEND="solaris"
         ;;
 esac
+
+AC_SUBST(KVM_LIBS)
 
 AM_CONDITIONAL(CK_COMPILE_LINUX, test x$CK_BACKEND = xlinux, [Compiling for Linux])
 AM_CONDITIONAL(CK_COMPILE_FREEBSD, test x$CK_BACKEND = xfreebsd, [Compiling for FreeBSD])
@@ -352,6 +364,7 @@ echo "
 	compiler:		  ${CC}
 	cflags:		          ${CFLAGS}
         Base libs:                ${CONSOLE_KIT_LIBS}
+        Tools libs:               ${TOOLS_LIBS}
         Maintainer mode:          ${USE_MAINTAINER_MODE}
 
         dbus-1 system.d dir:      ${DBUS_SYS_DIR}

@@ -25,17 +25,27 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/ioctl.h>
+
+#include <sys/vt.h>
+#include <linux/tty.h>
+#include <linux/kd.h>
 
 #ifdef HAVE_PATHS_H
 #include <paths.h>
 #endif /* HAVE_PATHS_H */
 
-#include "proc.h"
+#include "ck-sysdeps.h"
+
+#ifndef ERROR
+#define ERROR -1
+#endif
 
 /* adapted from procps */
-struct _proc_stat_t
+struct _CkProcessStat
 {
         int pid;
         int ppid;                       /* stat,status     pid of parent process */
@@ -111,7 +121,7 @@ load_drivers (void)
 
         buf[bytes] = '\0';
         p = buf;
-        while ((p = strstr (p, " " _PATH_DEV))){
+        while ((p = strstr (p, " " _PATH_DEV))) {
                 tty_map_node *tmn;
                 int len;
                 char *end;
@@ -263,7 +273,7 @@ link_name (guint       maj,
 }
 
 pid_t
-proc_stat_get_ppid (proc_stat_t *stat)
+ck_process_stat_get_ppid (CkProcessStat *stat)
 {
         g_return_val_if_fail (stat != NULL, -1);
 
@@ -271,7 +281,7 @@ proc_stat_get_ppid (proc_stat_t *stat)
 }
 
 char *
-proc_stat_get_cmd (proc_stat_t *stat)
+ck_process_stat_get_cmd (CkProcessStat *stat)
 {
         g_return_val_if_fail (stat != NULL, NULL);
 
@@ -280,7 +290,7 @@ proc_stat_get_cmd (proc_stat_t *stat)
 
 /* adapted from procps */
 char *
-proc_stat_get_tty (proc_stat_t *stat)
+ck_process_stat_get_tty (CkProcessStat *stat)
 {
         guint dev;
         char *tty;
@@ -328,8 +338,8 @@ proc_stat_get_tty (proc_stat_t *stat)
 #define KLF "l"
 /* adapted from procps */
 static void
-stat2proc (const char  *S,
-           proc_stat_t *P)
+stat2proc (const char    *S,
+           CkProcessStat *P)
 {
         unsigned num;
         char   * tmp;
@@ -392,16 +402,16 @@ stat2proc (const char  *S,
 }
 
 gboolean
-proc_stat_new_for_pid (pid_t         pid,
-                       proc_stat_t **stat,
-                       GError      **error)
+ck_process_stat_new_for_unix_pid (pid_t           pid,
+                                  CkProcessStat **stat,
+                                  GError        **error)
 {
-        char        *path;
-        char        *contents;
-        gsize        length;
-        gboolean     res;
-        GError      *local_error;
-        proc_stat_t *proc;
+        char          *path;
+        char          *contents;
+        gsize          length;
+        gboolean       res;
+        GError        *local_error;
+        CkProcessStat *proc;
 
         g_return_val_if_fail (pid > 1, FALSE);
 
@@ -418,7 +428,7 @@ proc_stat_new_for_pid (pid_t         pid,
                                    &length,
                                    &local_error);
         if (res) {
-                proc = g_new0 (proc_stat_t, 1);
+                proc = g_new0 (CkProcessStat, 1);
                 proc->pid = pid;
                 stat2proc (contents, proc);
                 *stat = proc;
@@ -434,13 +444,13 @@ proc_stat_new_for_pid (pid_t         pid,
 }
 
 void
-proc_stat_free (proc_stat_t *stat)
+ck_process_stat_free (CkProcessStat *stat)
 {
         g_free (stat);
 }
 
 GHashTable *
-proc_pid_get_env_hash (pid_t pid)
+ck_unix_pid_get_env_hash (pid_t pid)
 {
         char       *path;
         gboolean    res;
@@ -484,7 +494,10 @@ proc_pid_get_env_hash (pid_t pid)
                         char **vals;
                         vals = g_strsplit (contents + i, "=", 2);
                         if (vals != NULL) {
-                                g_hash_table_insert (hash, vals[0], vals[1]);
+                                g_hash_table_insert (hash,
+                                                     g_strdup (vals[0]),
+                                                     g_strdup (vals[1]));
+                                g_strfreev (vals);
                         }
                 }
                 last_was_null = FALSE;
@@ -498,8 +511,8 @@ proc_pid_get_env_hash (pid_t pid)
 }
 
 char *
-proc_pid_get_env (pid_t       pid,
-                  const char *var)
+ck_unix_pid_get_env (pid_t       pid,
+                     const char *var)
 {
         char      *path;
         gboolean   res;
@@ -558,7 +571,7 @@ proc_pid_get_env (pid_t       pid,
 }
 
 uid_t
-proc_pid_get_uid (pid_t pid)
+ck_unix_pid_get_uid (pid_t pid)
 {
         struct stat st;
         char       *path;
@@ -581,25 +594,113 @@ proc_pid_get_uid (pid_t pid)
 }
 
 pid_t
-proc_pid_get_ppid (pid_t pid)
+ck_unix_pid_get_ppid (pid_t pid)
 {
-        int          ppid;
-        gboolean     res;
-        proc_stat_t *stat;
+        int            ppid;
+        gboolean       res;
+        CkProcessStat *stat;
 
         g_return_val_if_fail (pid > 1, 0);
 
         ppid = -1;
 
-        res = proc_stat_new_for_pid (pid, &stat, NULL);
+        res = ck_process_stat_new_for_unix_pid (pid, &stat, NULL);
         if (! res) {
                 goto out;
         }
 
-        ppid = proc_stat_get_ppid (stat);
+        ppid = ck_process_stat_get_ppid (stat);
 
-        proc_stat_free (stat);
+        ck_process_stat_free (stat);
 
  out:
         return ppid;
+}
+
+gboolean
+ck_get_max_num_consoles (guint *num)
+{
+        if (num != NULL) {
+                *num = MAX_NR_CONSOLES;
+        }
+
+        return TRUE;
+}
+
+char *
+ck_get_console_device_for_num (guint num)
+{
+        char *device;
+
+        device = g_strdup_printf (_PATH_TTY "%u", num);
+
+        return device;
+}
+
+gboolean
+ck_get_console_num_from_device (const char *device,
+                                guint      *num)
+{
+        guint    n;
+        gboolean ret;
+
+        n = 0;
+        ret = FALSE;
+
+        if (device == NULL) {
+                return FALSE;
+        }
+
+        if (sscanf (device, _PATH_TTY "%u", &n) == 1) {
+                ret = TRUE;
+        }
+
+        if (num != NULL) {
+                *num = n;
+        }
+
+        return ret;
+}
+
+gboolean
+ck_get_active_console_num (int    console_fd,
+                           guint *num)
+{
+        gboolean       ret;
+        int            res;
+        guint          active;
+        struct vt_stat stat;
+
+        g_assert (console_fd != -1);
+
+        active = 0;
+        ret = FALSE;
+
+        res = ioctl (console_fd, VT_GETSTATE, &stat);
+        if (res == ERROR) {
+                perror ("ioctl VT_GETSTATE");
+                goto out;
+        }
+
+        {
+                int i;
+
+                g_debug ("Current VT: tty%d", stat.v_active);
+                for (i = 1; i <= 16; i++) {
+                        gboolean is_on;
+                        is_on = stat.v_state & (1 << i);
+
+                        g_debug ("VT %d:%s", i, is_on ? "on" : "off");
+                }
+        }
+
+        active = stat.v_active;
+        ret = TRUE;
+
+ out:
+        if (num != NULL) {
+                *num = active;
+        }
+
+        return ret;
 }

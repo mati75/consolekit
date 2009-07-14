@@ -14,6 +14,7 @@
 
 @SET_MAKE@
 
+
 srcdir = @srcdir@
 top_srcdir = @top_srcdir@
 VPATH = @srcdir@
@@ -36,8 +37,21 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@CK_COMPILE_LINUX_TRUE@am__append_1 = \
+@CK_COMPILE_LINUX_TRUE@	ck-sysdeps-linux.c	\
+@CK_COMPILE_LINUX_TRUE@	$(NULL)
+
+@CK_COMPILE_SOLARIS_TRUE@am__append_2 = \
+@CK_COMPILE_SOLARIS_TRUE@	ck-sysdeps-solaris.c	\
+@CK_COMPILE_SOLARIS_TRUE@	$(NULL)
+
+@CK_COMPILE_FREEBSD_TRUE@am__append_3 = \
+@CK_COMPILE_FREEBSD_TRUE@	ck-sysdeps-freebsd.c	\
+@CK_COMPILE_FREEBSD_TRUE@	$(NULL)
+
 sbin_PROGRAMS = console-kit-daemon$(EXEEXT) $(am__EXEEXT_1)
-noinst_PROGRAMS = test-tty-idle-monitor$(EXEEXT) $(am__EXEEXT_1)
+noinst_PROGRAMS = test-tty-idle-monitor$(EXEEXT) \
+	test-vt-monitor$(EXEEXT) $(am__EXEEXT_1)
 subdir = src
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -48,6 +62,22 @@ am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
+LTLIBRARIES = $(noinst_LTLIBRARIES)
+am__DEPENDENCIES_1 =
+@CK_COMPILE_FREEBSD_TRUE@libck_la_DEPENDENCIES =  \
+@CK_COMPILE_FREEBSD_TRUE@	$(am__DEPENDENCIES_1)
+am__libck_la_SOURCES_DIST = ck-sysdeps.h ck-sysdeps-unix.c \
+	ck-sysdeps-linux.c ck-sysdeps-solaris.c ck-sysdeps-freebsd.c
+am__objects_1 =
+@CK_COMPILE_LINUX_TRUE@am__objects_2 = ck-sysdeps-linux.lo \
+@CK_COMPILE_LINUX_TRUE@	$(am__objects_1)
+@CK_COMPILE_SOLARIS_TRUE@am__objects_3 = ck-sysdeps-solaris.lo \
+@CK_COMPILE_SOLARIS_TRUE@	$(am__objects_1)
+@CK_COMPILE_FREEBSD_TRUE@am__objects_4 = ck-sysdeps-freebsd.lo \
+@CK_COMPILE_FREEBSD_TRUE@	$(am__objects_1)
+am_libck_la_OBJECTS = ck-sysdeps-unix.lo $(am__objects_1) \
+	$(am__objects_2) $(am__objects_3) $(am__objects_4)
+libck_la_OBJECTS = $(am_libck_la_OBJECTS)
 am__EXEEXT_1 =
 am__installdirs = "$(DESTDIR)$(sbindir)"
 sbinPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
@@ -56,33 +86,35 @@ am__console_kit_daemon_SOURCES_DIST = main.c ck-manager.h ck-manager.c \
 	ck-vt-monitor.h ck-vt-monitor.c ck-tty-idle-monitor.h \
 	ck-tty-idle-monitor.c ck-file-monitor.h ck-job.h ck-job.c \
 	ck-seat.h ck-seat.c ck-session.h ck-session.c ck-log.h \
-	ck-log.c getfd.c proc.h proc-linux.c ck-manager-glue.h \
-	ck-seat-glue.h ck-session-glue.h ck-marshal.c ck-marshal.h \
-	ck-file-monitor-dummy.c ck-file-monitor-inotify.c
-am__objects_1 =
-am__objects_2 = proc-linux.$(OBJEXT) $(am__objects_1)
-am__objects_3 = ck-marshal.$(OBJEXT) $(am__objects_1)
-@ENABLE_INOTIFY_FALSE@am__objects_4 = ck-file-monitor-dummy.$(OBJEXT)
-@ENABLE_INOTIFY_TRUE@am__objects_4 =  \
+	ck-log.c ck-manager-glue.h ck-seat-glue.h ck-session-glue.h \
+	ck-marshal.c ck-marshal.h ck-file-monitor-dummy.c \
+	ck-file-monitor-inotify.c
+am__objects_5 = ck-marshal.$(OBJEXT) $(am__objects_1)
+@ENABLE_INOTIFY_FALSE@am__objects_6 = ck-file-monitor-dummy.$(OBJEXT)
+@ENABLE_INOTIFY_TRUE@am__objects_6 =  \
 @ENABLE_INOTIFY_TRUE@	ck-file-monitor-inotify.$(OBJEXT)
 am_console_kit_daemon_OBJECTS = main.$(OBJEXT) ck-manager.$(OBJEXT) \
 	ck-vt-monitor.$(OBJEXT) ck-tty-idle-monitor.$(OBJEXT) \
 	ck-job.$(OBJEXT) ck-seat.$(OBJEXT) ck-session.$(OBJEXT) \
-	ck-log.$(OBJEXT) getfd.$(OBJEXT) $(am__objects_2) \
-	$(am__objects_3) $(am__objects_1) $(am__objects_4)
+	ck-log.$(OBJEXT) $(am__objects_5) $(am__objects_1) \
+	$(am__objects_6)
 console_kit_daemon_OBJECTS = $(am_console_kit_daemon_OBJECTS)
-am__DEPENDENCIES_1 =
-console_kit_daemon_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+console_kit_daemon_DEPENDENCIES = $(am__DEPENDENCIES_1) libck.la \
 	$(am__DEPENDENCIES_1)
 am__test_tty_idle_monitor_SOURCES_DIST = ck-tty-idle-monitor.h \
 	ck-tty-idle-monitor.c ck-file-monitor.h \
 	ck-file-monitor-dummy.c ck-file-monitor-inotify.c \
 	test-tty-idle-monitor.c
 am_test_tty_idle_monitor_OBJECTS = ck-tty-idle-monitor.$(OBJEXT) \
-	$(am__objects_4) test-tty-idle-monitor.$(OBJEXT) \
+	$(am__objects_6) test-tty-idle-monitor.$(OBJEXT) \
 	$(am__objects_1)
 test_tty_idle_monitor_OBJECTS = $(am_test_tty_idle_monitor_OBJECTS)
-test_tty_idle_monitor_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+test_tty_idle_monitor_DEPENDENCIES = $(am__DEPENDENCIES_1) libck.la \
+	$(am__DEPENDENCIES_1)
+am_test_vt_monitor_OBJECTS = ck-vt-monitor.$(OBJEXT) \
+	test-vt-monitor.$(OBJEXT) $(am__objects_1)
+test_vt_monitor_OBJECTS = $(am_test_vt_monitor_OBJECTS)
+test_vt_monitor_DEPENDENCIES = $(am__DEPENDENCIES_1) libck.la \
 	$(am__DEPENDENCIES_1)
 DEFAULT_INCLUDES = -I. -I$(srcdir) -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
@@ -95,12 +127,15 @@ LTCOMPILE = $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) \
 CCLD = $(CC)
 LINK = $(LIBTOOL) --tag=CC --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
-SOURCES = $(console_kit_daemon_SOURCES) \
+SOURCES = $(libck_la_SOURCES) $(EXTRA_libck_la_SOURCES) \
+	$(console_kit_daemon_SOURCES) \
 	$(EXTRA_console_kit_daemon_SOURCES) \
-	$(test_tty_idle_monitor_SOURCES)
-DIST_SOURCES = $(am__console_kit_daemon_SOURCES_DIST) \
+	$(test_tty_idle_monitor_SOURCES) $(test_vt_monitor_SOURCES)
+DIST_SOURCES = $(am__libck_la_SOURCES_DIST) $(EXTRA_libck_la_SOURCES) \
+	$(am__console_kit_daemon_SOURCES_DIST) \
 	$(EXTRA_console_kit_daemon_SOURCES) \
-	$(am__test_tty_idle_monitor_SOURCES_DIST)
+	$(am__test_tty_idle_monitor_SOURCES_DIST) \
+	$(test_vt_monitor_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	html-recursive info-recursive install-data-recursive \
 	install-exec-recursive install-info-recursive \
@@ -176,6 +211,7 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INSTOBJEXT = @INSTOBJEXT@
 INTLLIBS = @INTLLIBS@
+KVM_LIBS = @KVM_LIBS@
 LDFLAGS = @LDFLAGS@
 LIBDBUS_CFLAGS = @LIBDBUS_CFLAGS@
 LIBDBUS_LIBS = @LIBDBUS_LIBS@
@@ -286,6 +322,19 @@ INCLUDES = \
 	$(DBUS_CFLAGS)						\
 	$(NULL)
 
+noinst_LTLIBRARIES = \
+        libck.la         	\
+        $(NULL)
+
+libck_la_SOURCES = ck-sysdeps.h ck-sysdeps-unix.c $(NULL) \
+	$(am__append_1) $(am__append_2) $(am__append_3)
+@CK_COMPILE_FREEBSD_TRUE@libck_la_LIBADD = $(KVM_LIBS)
+EXTRA_libck_la_SOURCES = \
+	ck-sysdeps-linux.c		\
+	ck-sysdeps-solaris.c		\
+	ck-sysdeps-freebsd.c		\
+	$(NULL)
+
 BUILT_SOURCES = \
 	ck-manager-glue.h	\
 	ck-seat-glue.h		\
@@ -294,16 +343,11 @@ BUILT_SOURCES = \
 	ck-marshal.h		\
 	$(NULL)
 
-PLATFORM_SOURCES = \
-	proc-linux.c		\
-	$(NULL)
-
 console_kit_daemon_SOURCES = main.c ck-manager.h ck-manager.c \
 	ck-vt-monitor.h ck-vt-monitor.c ck-tty-idle-monitor.h \
 	ck-tty-idle-monitor.c ck-file-monitor.h ck-job.h ck-job.c \
 	ck-seat.h ck-seat.c ck-session.h ck-session.c ck-log.h \
-	ck-log.c getfd.c proc.h $(PLATFORM_SOURCES) $(BUILT_SOURCES) \
-	$(NULL) $(FILE_MONITOR_BACKEND)
+	ck-log.c $(BUILT_SOURCES) $(NULL) $(FILE_MONITOR_BACKEND)
 @ENABLE_INOTIFY_FALSE@FILE_MONITOR_BACKEND = ck-file-monitor-dummy.c
 @ENABLE_INOTIFY_TRUE@FILE_MONITOR_BACKEND = ck-file-monitor-inotify.c
 EXTRA_console_kit_daemon_SOURCES = \
@@ -313,6 +357,18 @@ EXTRA_console_kit_daemon_SOURCES = \
 
 console_kit_daemon_LDADD = \
 	$(CONSOLE_KIT_LIBS)	\
+	libck.la		\
+	$(NULL)
+
+test_vt_monitor_SOURCES = \
+	ck-vt-monitor.h			\
+	ck-vt-monitor.c			\
+	test-vt-monitor.c 		\
+	$(NULL)
+
+test_vt_monitor_LDADD = \
+	$(CONSOLE_KIT_LIBS)		\
+	libck.la			\
 	$(NULL)
 
 test_tty_idle_monitor_SOURCES = \
@@ -325,6 +381,7 @@ test_tty_idle_monitor_SOURCES = \
 
 test_tty_idle_monitor_LDADD = \
 	$(CONSOLE_KIT_LIBS)		\
+	libck.la			\
 	$(NULL)
 
 EXTRA_DIST = \
@@ -377,6 +434,17 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; for p in $$list; do \
+	  dir="`echo $$p | sed -e 's|/[^/]*$$||'`"; \
+	  test "$$dir" != "$$p" || dir=.; \
+	  echo "rm -f \"$${dir}/so_locations\""; \
+	  rm -f "$${dir}/so_locations"; \
+	done
+libck.la: $(libck_la_OBJECTS) $(libck_la_DEPENDENCIES) 
+	$(LINK)  $(libck_la_LDFLAGS) $(libck_la_OBJECTS) $(libck_la_LIBADD) $(LIBS)
+
 clean-noinstPROGRAMS:
 	@list='$(noinst_PROGRAMS)'; for p in $$list; do \
 	  f=`echo $$p|sed 's/$(EXEEXT)$$//'`; \
@@ -417,6 +485,9 @@ console-kit-daemon$(EXEEXT): $(console_kit_daemon_OBJECTS) $(console_kit_daemon_
 test-tty-idle-monitor$(EXEEXT): $(test_tty_idle_monitor_OBJECTS) $(test_tty_idle_monitor_DEPENDENCIES) 
 	@rm -f test-tty-idle-monitor$(EXEEXT)
 	$(LINK) $(test_tty_idle_monitor_LDFLAGS) $(test_tty_idle_monitor_OBJECTS) $(test_tty_idle_monitor_LDADD) $(LIBS)
+test-vt-monitor$(EXEEXT): $(test_vt_monitor_OBJECTS) $(test_vt_monitor_DEPENDENCIES) 
+	@rm -f test-vt-monitor$(EXEEXT)
+	$(LINK) $(test_vt_monitor_LDFLAGS) $(test_vt_monitor_OBJECTS) $(test_vt_monitor_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -432,12 +503,15 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-marshal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-seat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-session.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-sysdeps-freebsd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-sysdeps-linux.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-sysdeps-solaris.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-sysdeps-unix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-tty-idle-monitor.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-vt-monitor.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/getfd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc-linux.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test-tty-idle-monitor.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test-vt-monitor.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	if $(COMPILE) -MT $@ -MD -MP -MF "$(DEPDIR)/$*.Tpo" -c -o $@ $<; \
@@ -647,7 +721,7 @@ distdir: $(DISTFILES)
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-recursive
-all-am: Makefile $(PROGRAMS)
+all-am: Makefile $(LTLIBRARIES) $(PROGRAMS)
 installdirs: installdirs-recursive
 installdirs-am:
 	for dir in "$(DESTDIR)$(sbindir)"; do \
@@ -683,8 +757,8 @@ maintainer-clean-generic:
 	-test -z "$(MAINTAINERCLEANFILES)" || rm -f $(MAINTAINERCLEANFILES)
 clean: clean-recursive
 
-clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
-	clean-sbinPROGRAMS mostlyclean-am
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
+	clean-noinstPROGRAMS clean-sbinPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
 	-rm -rf ./$(DEPDIR)
@@ -735,9 +809,9 @@ uninstall-am: uninstall-info-am uninstall-sbinPROGRAMS
 uninstall-info: uninstall-info-recursive
 
 .PHONY: $(RECURSIVE_TARGETS) CTAGS GTAGS all all-am check check-am \
-	clean clean-generic clean-libtool clean-noinstPROGRAMS \
-	clean-recursive clean-sbinPROGRAMS ctags ctags-recursive \
-	distclean distclean-compile distclean-generic \
+	clean clean-generic clean-libtool clean-noinstLTLIBRARIES \
+	clean-noinstPROGRAMS clean-recursive clean-sbinPROGRAMS ctags \
+	ctags-recursive distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-recursive distclean-tags distdir \
 	dvi dvi-am html html-am info info-am install install-am \
 	install-data install-data-am install-exec install-exec-am \
