@@ -1,4 +1,4 @@
-consolekit (0.3.0-3) UNRELEASED; urgency=low
+consolekit (0.3.0-3) unstable; urgency=low
 
   * debian/control
     - Update Vcs-* fields. Package is now managed with Git on git.debian.org.
@@ -13,7 +13,7 @@ consolekit (0.3.0-3) UNRELEASED; urgency=low
       register a CK session, even if XDG_SESSION_COOKIE is already set.
       (Closes: #520720)
 
- -- Michael Biebl <biebl@debian.org>  Tue, 14 Jul 2009 17:48:23 +0200
+ -- Michael Biebl <biebl@debian.org>  Tue, 14 Jul 2009 20:09:54 +0200
 
 consolekit (0.3.0-2) unstable; urgency=low
 
