@@ -5,6 +5,9 @@ consolekit (0.3.0-4) UNRELEASED; urgency=low
     ck-history to take a long while to run on login. ck-history already
     handles reading from rotated logs. (Closes: #537833)
     Thanks to James Westby for the patch.
+  * debian/libpam-ck-connector.pam-auth-update: Mark this module as applying
+    only to interactive sessions. (Closes: #543306)
+    Thanks to Steve Langasek for the patch.
 
  -- Michael Biebl <biebl@debian.org>  Wed, 02 Sep 2009 04:21:42 +0200
 
