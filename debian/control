@@ -61,7 +61,7 @@ Package: libpam-ck-connector
 Section: admin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libpam-runtime (>= 1.0.1-6)
-Description: ConsoleKit PAM module 
+Description: ConsoleKit PAM module
  ConsoleKit is a system daemon for tracking what users are logged
  into the system and how they interact with the computer (e.g.
  which keyboard and mouse they use).
