@@ -1,3 +1,411 @@
+commit a727d971f3dffc98bae043b69a95e02d3ab3eb88
+Author: Ray Strode <rstrode@redhat.com>
+Date:   Wed Jul 22 15:13:40 2009 -0400
+
+    Fix example upstart system start script
+
+    It was trying to write the log message way too early,
+    before the root filesystem was mounted.
+
+ NEWS                     |    2 +-
+ data/ck-log-system-start |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 0f5a014b1e722998e85a3e8482a1cc7654066b8f
+Author: Ray Strode <rstrode@redhat.com>
+Date:   Tue Jul 21 11:00:52 2009 -0400
+
+    Update NEWS for 0.3.1 release
+
+ NEWS |   21 +++++++++++++++++++++
+ 1 files changed, 21 insertions(+), 0 deletions(-)
+
+commit 671d3100d48af77eb03b79c73d20e7a4611339df
+Author: Ray Strode <rstrode@redhat.com>
+Date:   Tue Jul 21 10:38:26 2009 -0400
+
+    Reference entities relative to srcdir not cwd
+
+    The docs were failing to build when srcdir != builddir
+    because ConsoleKit.xml was ending up in builddir and
+    all its entities are in srcdir.
+
+    This commit makes ConsoleKit.xml load the entities from
+    srcdir, which fixes make distcheck.
+
+ doc/dbus/ConsoleKit.xml.in |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+commit bf40cd1b17e0bb55c606301f7d8ed65ae6791e54
+Author: Ray Strode <rstrode@redhat.com>
+Date:   Tue Jul 21 10:07:49 2009 -0400
+
+    Call "git log" instead of "git-log" in Makefile
+
+    git-log (with a hyphen) is an obsolete way to call
+    git log.
+
+ Makefile.am |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 23ab6a2ef30fb6fb56f33ac44ecda5887d2b1f94
+Author: Martin Pitt <martin.pitt@ubuntu.com>
+Date:   Mon Jul 20 17:09:36 2009 -0400
+
+    Add CanStop/Restart to D-Bus security policy
+
+    This change is necessarily following commit:
+
+    e0d9cc359b3099307067107b59ec691418e280b8
+
+ data/ConsoleKit.conf |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+commit 89b9256ad86ddc2a9fd12d3359bc431df45c6b25
+Author: Matthias Clasen <mclasen@redhat.com>
+Date:   Mon Jul 20 17:08:23 2009 -0400
+
+    Port to PolicyKit 1.0 apis
+
+ configure.ac                               |    5 +-
+ data/Makefile.am                           |    2 +-
+ data/org.freedesktop.consolekit.policy     |    4 +-
+ src/ck-manager.c                           |  673
+ +++++++++-------------------
+ src/ck-manager.h                           |    5 +
+ src/org.freedesktop.ConsoleKit.Manager.xml |   10 +
+ 6 files changed, 226 insertions(+), 473 deletions(-)
+
+commit 282c47eb102f839cbf3bee646ba2841362284760
+Author: Ray Strode <rstrode@redhat.com>
+Date:   Mon Jul 20 16:37:45 2009 -0400
+
+    Get VT from X display if no controlling tty
+
+    In some cases a controlling tty won't be able available to
+    peek at to find the VT of the X display.  In those cases,
+    we fall back to looking at the XFree86_VT property.
+
+    We can do this because we know the display is a local display
+    since we've already gotten peer credentials from its socket.
+
+ tools/ck-get-x11-display-device.c |   72
+ +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 72 insertions(+), 0 deletions(-)
+
+commit bcc18427eec07139c9d907ac3995f2c157a7c715
+Author: Halton Huo <halton.huo@sun.com>
+Date:   Mon Jul 20 16:29:46 2009 -0400
+
+    Fix connector build on Solaris
+
+    Solaris now builds with flags to give getpwnam_r
+    more standard semantics.
+
+    bug 22361
+
+ pam-ck-connector/pam-ck-connector.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
+
+commit bb5c86f61775039dca779959eb5822cb1d453bbd
+Author: Vincent Untz <vuntz@gnome.org>
+Date:   Mon Jul 20 16:22:43 2009 -0400
+
+    Allow GetSessions to get called
+
+    The manager interface GetSessions function was
+    disallowed by the dbus security policy, despite only
+    exporting information that's available in other ways.
+
+    This commit opens it up.
+
+    See http://bugs.freedesktop.org/show_bug.cgi?id=20471
+
+ data/ConsoleKit.conf |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+commit 0f5390165fd68322d077e13d828af8f32fc09327
+Author: Matthias Clasen <mclasen@redhat.com>
+Date:   Thu Jul 16 17:19:30 2009 -0400
+
+    avoid a (harmless) warning message
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=21310
+
+ src/ck-manager.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit cbfd9578d73f93e47b282bdf4e298067c4a9bf79
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Jul 16 17:15:14 2009 -0400
+
+    fix a bunch of xml validation errors
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=20232
+
+ configure.ac                               |    3 +
+ doc/dbus/Makefile.am                       |    5 ++-
+ doc/dbus/ck-design.xml                     |   58 +++++++++++-----------
+ doc/dbus/spec-to-docbook.xsl               |   72
+ ++++++++++++++++------------
+ src/org.freedesktop.ConsoleKit.Manager.xml |    2 +-
+ src/org.freedesktop.ConsoleKit.Seat.xml    |    5 +-
+ 6 files changed, 82 insertions(+), 63 deletions(-)
+
+commit 25145f35ab527a2219604e1710eb65e2178f6978
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Feb 12 14:59:15 2009 -0500
+
+    fix parsing log entries with no body
+
+ src/ck-log-event.c |   25 +++++++++++++++++--------
+ 1 files changed, 17 insertions(+), 8 deletions(-)
+
+commit b550333228b73bb3ed4a55ec74baade1bdded0ff
+Author: Daniel Macks <dmacks@netspace.org>
+Date:   Wed Feb 11 21:56:55 2009 -0500
+
+    clearer diagnostic if platform back-end isn't implemented
+
+    Error if no backend for target host
+
+ configure.ac |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+commit 87703597e24ba94c400ac8878a6835d86571da91
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Feb 11 21:51:41 2009 -0500
+
+    parse gecos field to get real name
+
+ tools/list-sessions.c |   15 +++++++++++++--
+ 1 files changed, 13 insertions(+), 2 deletions(-)
+
+commit 739b39203166eda0174672541a06ceeb182b6ed3
+Author: James Westby <jw+debian@jameswestby.net>
+Date:   Wed Feb 11 21:39:46 2009 -0500
+
+    don't leak dbus proxy
+
+ src/ck-session.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit fef7d6f777b017878ba225395fe4199af5f1c581
+Author: Halton Huo <halton.huo@sun.com>
+Date:   Wed Feb 11 20:39:18 2009 -0500
+
+    fix building with Solaris PAM
+
+    This patch is a little different with Brian's. Let's me explain the
+    whole patch
+    one by one.
+
+    1. pam-ck-connector/Makefile.am (same with Brian's)
+       Solaris does not have libpam_misc, so only build test_pam under
+       linux
+
+    2. +#include <limits.h>
+       This is to get macro PATH_MAX from system. I think it is better
+       than
+    +#ifndef PATH_MAX
+    +#define PATH_MAX 4096
+    +#endif
+       On ubuntu, PATH_MAX=4096, on Solaris, PATH_MAX=1024
+
+    3. +#include <security/pam_appl.h>
+       This is to include declaration of pam_handle_t, to resolve
+       error like:
+    "/usr/include/security/pam_modules.h", line 38: syntax error before
+    or at: *
+    "/usr/include/security/pam_modules.h", line 45: syntax error before
+    or at: *
+
+    4.-#include <security/_pam_macros.h>
+      Solaris does not have this file, I remove it, no more error,
+      seems no use
+    here.
+
+    5. +#ifndef PAM_EXTERN ... part
+      Solaris PAM_EXTERN marco in pam_modules.h, while Ubuntu has,
+      I just copy the
+    logic from Ubuntu.
+
+    6. getpwnam_r part (same with Brian's)
+       getpwnam_r() have difference behavior between Solaris and Ubuntu.
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=18173
+
+ pam-ck-connector/Makefile.am        |    2 ++
+ pam-ck-connector/pam-ck-connector.c |   18 +++++++++++++++++-
+ 2 files changed, 19 insertions(+), 1 deletions(-)
+
+commit da3a3fe00ad4c4e750e467db58d383ebf4da978f
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Feb 11 20:30:50 2009 -0500
+
+    fix zero-sized struct/union
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=18149
+
+ src/ck-log-event.h |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+commit 2ca61880db1da2b15fe83d0fe94b95245ace77b0
+Author: James Westby <jw+debian@jameswestby.net>
+Date:   Wed Feb 11 20:18:24 2009 -0500
+
+    serialize removals, and avoid using freed data caused by removals
+
+    I changed the code to also loop through watch->notifies when
+    removing the watch due to inotify, and NULL each notify->watch
+    reference, the code then checks this before trying to delete
+    the watch itself if asked to remove the notify.
+
+    In order to prevent other race conditions in this area I also
+    made the inotify code not pass a watch to emit_events_in_idle,
+    as the watch may get freed in the meantime. It instead passes
+    the wd and the emit loop looks up the watch, discarding the
+    event if the watch has been removed.
+
+    I did however leave in the code that checks for a removed watch
+    before doing anything with inotify, as I hoped that this would
+    just optimise this case.
+
+ src/ck-file-monitor-inotify.c |  126
+ ++++++++++++++++++++++++++++++----------
+ 1 files changed, 94 insertions(+), 32 deletions(-)
+
+commit 1ddd056da19a9e99b10601a557ebbcaf101d0de9
+Author: Steve Langasek <steve.langasek@canonical.com>
+Date:   Wed Feb 11 18:36:34 2009 -0500
+
+    close directory to fix leak
+
+    Chris Jones observed that console-kit-daemon had open a large
+    number of
+    redundant file descriptors, pointing to /etc/ConsoleKit/run-session.d
+    and
+    /usr/lib/ConsoleKit/run-session.d.  It turns out that
+    ck_run_programs() doesn't
+    close the directory handles after iterating, resulting in a fd leak
+    and a small
+    memory leak.
+
+    The attached patch corrects this.
+
+ src/ck-run-programs.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit a00c329d81be8691e13915ed36f5053bd0f820f3
+Author: Martin Pitt <martin.pitt@ubuntu.com>
+Date:   Wed Feb 11 16:30:34 2009 -0500
+
+    add "nox11" option to the PAM module
+
+    Ignores PAM sessions where PAM_TTY is an X11 display. This allows
+    adding
+    pam_ck_connector to PAM's "common-session" without interfering
+    with the already existing ConsoleKit operations in gdm, the
+    Xsession script, etc.
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=16746
+
+ pam-ck-connector/pam-ck-connector.c |    7 +++++++
+ pam-ck-connector/pam_ck_connector.8 |    4 ++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
+
+commit 946c2daf3f654475e767ae98e52cbcd69e2c3320
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Feb 11 16:06:04 2009 -0500
+
+    add example upstart events for logging
+
+    These can be used to add system start/stop/restart logging
+    but hooking into Upstart event mechanism.
+
+ data/Makefile.am           |    3 +++
+ data/ck-log-system-restart |    8 ++++++++
+ data/ck-log-system-start   |    8 ++++++++
+ data/ck-log-system-stop    |    8 ++++++++
+ 4 files changed, 27 insertions(+), 0 deletions(-)
+
+commit e0d9cc359b3099307067107b59ec691418e280b8
+Author: Colin Walters <walters@verbum.org>
+Date:   Sun Jan 18 13:06:37 2009 -0500
+
+    fix up D-Bus permissions
+
+ data/ConsoleKit.conf |  120
+ +++++++++++++++++++++++++++++++++-----------------
+ 1 files changed, 80 insertions(+), 40 deletions(-)
+
+commit 6ef0f62dc8b41c6904099c2d2836747da38d69df
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Oct 2 14:18:16 2008 -0400
+
+    check the result of the fchown call
+
+ src/ck-event-logger.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+commit a58a4bff451dcf8a6019aed1b2fb276e9836b0f4
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Oct 2 14:15:10 2008 -0400
+
+    don't close the log file fd twice
+
+    Fixes #17866
+
+ src/ck-event-logger.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
+
+commit 35794ece08bc678a537d0c2a680b79f9232dfe36
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Oct 2 13:56:58 2008 -0400
+
+    fix typo
+
+    Fixes #17741
+
+ libck-connector/ck-connector.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit f0fb2d1cfd0f0ea3ad922175e895a9e751498a03
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Aug 20 19:48:08 2008 -0400
+
+    allow calling method SetIdleHint by default
+
+ data/ConsoleKit.conf |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit cb445f89d64d2171c1050dbf8ba1280f2260bc9c
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 30 20:56:43 2008 -0400
+
+    post release bump again
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 9555166f23499642b64b247bd7106287c5b415c2
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 30 20:56:22 2008 -0400
+
+    undo
+
+ configure.ac |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+commit 6e26aa3e9ae08b4c35539100d1605cd7c3f29a25
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Wed Jul 30 20:55:28 2008 -0400
+
+    post release version bump
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
 commit 129efd6638cab89a3bc75a2b5f252e613a30163d
 Author: William Jon McCann <jmccann@redhat.com>
 Date:   Wed Jul 30 20:38:21 2008 -0400
@@ -1168,7 +1576,7 @@ Date:   Mon Oct 22 11:34:02 2007 -0400
  1 files changed, 109 insertions(+), 0 deletions(-)
 
 commit 73f5875de6c8d2e3f79fcb2c5d570836f6df74d5
-Merge: e419ced... 7b834cb...
+Merge: e419ced 7b834cb
 Author: William Jon McCann <mccann@jhu.edu>
 Date:   Sun Oct 21 23:59:55 2007 -0400
 

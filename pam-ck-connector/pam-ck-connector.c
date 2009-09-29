@@ -39,6 +39,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <limits.h>
 #include <errno.h>
 
 #ifdef HAVE_PATHS_H
@@ -51,8 +52,8 @@
 
 #define PAM_SM_SESSION
 
+#include <security/pam_appl.h>
 #include <security/pam_modules.h>
-#include <security/_pam_macros.h>
 #ifdef HAVE_SECURITY_PAM_MODUTIL_H
 #include <security/pam_modutil.h>
 #endif
@@ -63,11 +64,20 @@
 #include "ck-connector.h"
 
 static int opt_debug = FALSE;
+static int opt_nox11 = FALSE;
 
 #ifndef HAVE_PAM_SYSLOG
 
 #ifndef LOG_AUTHPRIV
 #define LOG_AUTHPRIV LOG_AUTH
+#endif
+
+#ifndef PAM_EXTERN
+#ifdef PAM_STATIC
+#define PAM_EXTERN static
+#else
+#define PAM_EXTERN extern
+#endif
 #endif
 
 static void
@@ -145,6 +155,8 @@ _parse_pam_args (const pam_handle_t *pamh,
         for (i = 0; i < argc && argv[i] != NULL; i++) {
                 if (strcmp (argv[i] , "debug") == 0) {
                         opt_debug = TRUE;
+                } else if (strcmp (argv[i] , "nox11") == 0) {
+                        opt_nox11 = TRUE;
                 } else {
                         ck_pam_syslog (pamh, LOG_ERR, "unknown option: %s", argv[i]);
                 }
@@ -276,6 +288,10 @@ pam_sm_open_session (pam_handle_t *pamh,
         x11_display = NULL;
         /* interpret any tty with a colon as a DISPLAY */
         if (strchr (display_device, ':') != NULL) {
+                if (opt_nox11) {
+                        ck_pam_syslog (pamh, LOG_WARNING, "nox11 mode, ignoring PAM_TTY %s", display_device);
+                        goto out;
+                }
                 x11_display = display_device;
                 display_device = "";
         } else if (strncmp (_PATH_DEV, display_device, 5) != 0) {

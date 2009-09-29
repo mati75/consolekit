@@ -7,7 +7,7 @@ seatdir = $(sysconfdir)/ConsoleKit/seats.d
 seat_DATA = 00-primary.seat
 
 if HAVE_POLKIT
-polkit_policydir = $(datadir)/PolicyKit/policy
+polkit_policydir = $(datadir)/polkit-1/actions
 dist_polkit_policy_DATA =	\
 	org.freedesktop.consolekit.policy	\
 	$(NULL)
@@ -27,6 +27,9 @@ edit = sed \
 	-e 's|@CONSOLE_KIT_PID_FILE[@]|$(CONSOLE_KIT_PID_FILE)|g'
 
 EXTRA_DIST =						\
+	ck-log-system-restart				\
+	ck-log-system-start				\
+	ck-log-system-stop				\
 	$(dbusconf_DATA)				\
 	$(seat_DATA)					\
 	$(service_in_files)				\
