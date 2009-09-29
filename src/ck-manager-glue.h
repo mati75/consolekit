@@ -53,7 +53,51 @@ G_BEGIN_DECLS
 #endif /* !G_ENABLE_DEBUG */
 
 
-/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.SK5TEU:1) */
+/* NONE:STRING,POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:1) */
+extern void dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
+                                                               GValue       *return_value,
+                                                               guint         n_param_values,
+                                                               const GValue *param_values,
+                                                               gpointer      invocation_hint,
+                                                               gpointer      marshal_data);
+void
+dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
+                                                   GValue       *return_value G_GNUC_UNUSED,
+                                                   guint         n_param_values,
+                                                   const GValue *param_values,
+                                                   gpointer      invocation_hint G_GNUC_UNUSED,
+                                                   gpointer      marshal_data)
+{
+  typedef void (*GMarshalFunc_VOID__STRING_POINTER) (gpointer     data1,
+                                                     gpointer     arg_1,
+                                                     gpointer     arg_2,
+                                                     gpointer     data2);
+  register GMarshalFunc_VOID__STRING_POINTER callback;
+  register GCClosure *cc = (GCClosure*) closure;
+  register gpointer data1, data2;
+
+  g_return_if_fail (n_param_values == 3);
+
+  if (G_CCLOSURE_SWAP_DATA (closure))
+    {
+      data1 = closure->data;
+      data2 = g_value_peek_pointer (param_values + 0);
+    }
+  else
+    {
+      data1 = g_value_peek_pointer (param_values + 0);
+      data2 = closure->data;
+    }
+  callback = (GMarshalFunc_VOID__STRING_POINTER) (marshal_data ? marshal_data : cc->callback);
+
+  callback (data1,
+            g_marshal_value_peek_string (param_values + 1),
+            g_marshal_value_peek_pointer (param_values + 2),
+            data2);
+}
+#define dbus_glib_marshal_ck_manager_NONE__STRING_POINTER	dbus_glib_marshal_ck_manager_VOID__STRING_POINTER
+
+/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:2) */
 extern void dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
                                                                    GValue       *return_value,
                                                                    guint         n_param_values,
@@ -100,59 +144,15 @@ dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:UINT,POINTER (/tmp/dbus-binding-tool-c-marshallers.SK5TEU:2) */
+/* NONE:UINT,POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:3) */
 #define dbus_glib_marshal_ck_manager_VOID__UINT_POINTER	g_cclosure_marshal_VOID__UINT_POINTER
 #define dbus_glib_marshal_ck_manager_NONE__UINT_POINTER	dbus_glib_marshal_ck_manager_VOID__UINT_POINTER
 
-/* NONE:STRING,POINTER (/tmp/dbus-binding-tool-c-marshallers.SK5TEU:3) */
-extern void dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
-                                                               GValue       *return_value,
-                                                               guint         n_param_values,
-                                                               const GValue *param_values,
-                                                               gpointer      invocation_hint,
-                                                               gpointer      marshal_data);
-void
-dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
-                                                   GValue       *return_value G_GNUC_UNUSED,
-                                                   guint         n_param_values,
-                                                   const GValue *param_values,
-                                                   gpointer      invocation_hint G_GNUC_UNUSED,
-                                                   gpointer      marshal_data)
-{
-  typedef void (*GMarshalFunc_VOID__STRING_POINTER) (gpointer     data1,
-                                                     gpointer     arg_1,
-                                                     gpointer     arg_2,
-                                                     gpointer     data2);
-  register GMarshalFunc_VOID__STRING_POINTER callback;
-  register GCClosure *cc = (GCClosure*) closure;
-  register gpointer data1, data2;
-
-  g_return_if_fail (n_param_values == 3);
-
-  if (G_CCLOSURE_SWAP_DATA (closure))
-    {
-      data1 = closure->data;
-      data2 = g_value_peek_pointer (param_values + 0);
-    }
-  else
-    {
-      data1 = g_value_peek_pointer (param_values + 0);
-      data2 = closure->data;
-    }
-  callback = (GMarshalFunc_VOID__STRING_POINTER) (marshal_data ? marshal_data : cc->callback);
-
-  callback (data1,
-            g_marshal_value_peek_string (param_values + 1),
-            g_marshal_value_peek_pointer (param_values + 2),
-            data2);
-}
-#define dbus_glib_marshal_ck_manager_NONE__STRING_POINTER	dbus_glib_marshal_ck_manager_VOID__STRING_POINTER
-
-/* NONE:POINTER (/tmp/dbus-binding-tool-c-marshallers.SK5TEU:4) */
+/* NONE:POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:4) */
 #define dbus_glib_marshal_ck_manager_VOID__POINTER	g_cclosure_marshal_VOID__POINTER
 #define dbus_glib_marshal_ck_manager_NONE__POINTER	dbus_glib_marshal_ck_manager_VOID__POINTER
 
-/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.SK5TEU:5) */
+/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:5) */
 extern void dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER (GClosure     *closure,
                                                               GValue       *return_value,
                                                               guint         n_param_values,
@@ -203,26 +203,28 @@ G_END_DECLS
 #include <dbus/dbus-glib.h>
 static const DBusGMethodInfo dbus_glib_ck_manager_methods[] = {
   { (GCallback) ck_manager_restart, dbus_glib_marshal_ck_manager_NONE__POINTER, 0 },
-  { (GCallback) ck_manager_stop, dbus_glib_marshal_ck_manager_NONE__POINTER, 46 },
-  { (GCallback) ck_manager_open_session, dbus_glib_marshal_ck_manager_NONE__POINTER, 89 },
-  { (GCallback) ck_manager_open_session_with_parameters, dbus_glib_marshal_ck_manager_NONE__BOXED_POINTER, 154 },
-  { (GCallback) ck_manager_close_session, dbus_glib_marshal_ck_manager_NONE__STRING_POINTER, 252 },
-  { (GCallback) ck_manager_get_seats, dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER, 329 },
-  { (GCallback) ck_manager_get_sessions, dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER, 391 },
-  { (GCallback) ck_manager_get_session_for_cookie, dbus_glib_marshal_ck_manager_NONE__STRING_POINTER, 459 },
-  { (GCallback) ck_manager_get_session_for_unix_process, dbus_glib_marshal_ck_manager_NONE__UINT_POINTER, 541 },
-  { (GCallback) ck_manager_get_current_session, dbus_glib_marshal_ck_manager_NONE__POINTER, 625 },
-  { (GCallback) ck_manager_get_sessions_for_unix_user, dbus_glib_marshal_ck_manager_NONE__UINT_POINTER, 694 },
-  { (GCallback) ck_manager_get_sessions_for_user, dbus_glib_marshal_ck_manager_NONE__UINT_POINTER, 781 },
-  { (GCallback) ck_manager_get_system_idle_hint, dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER, 864 },
-  { (GCallback) ck_manager_get_system_idle_since_hint, dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER, 938 },
+  { (GCallback) ck_manager_can_restart, dbus_glib_marshal_ck_manager_NONE__POINTER, 46 },
+  { (GCallback) ck_manager_stop, dbus_glib_marshal_ck_manager_NONE__POINTER, 115 },
+  { (GCallback) ck_manager_can_stop, dbus_glib_marshal_ck_manager_NONE__POINTER, 158 },
+  { (GCallback) ck_manager_open_session, dbus_glib_marshal_ck_manager_NONE__POINTER, 221 },
+  { (GCallback) ck_manager_open_session_with_parameters, dbus_glib_marshal_ck_manager_NONE__BOXED_POINTER, 286 },
+  { (GCallback) ck_manager_close_session, dbus_glib_marshal_ck_manager_NONE__STRING_POINTER, 384 },
+  { (GCallback) ck_manager_get_seats, dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER, 461 },
+  { (GCallback) ck_manager_get_sessions, dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER, 523 },
+  { (GCallback) ck_manager_get_session_for_cookie, dbus_glib_marshal_ck_manager_NONE__STRING_POINTER, 591 },
+  { (GCallback) ck_manager_get_session_for_unix_process, dbus_glib_marshal_ck_manager_NONE__UINT_POINTER, 673 },
+  { (GCallback) ck_manager_get_current_session, dbus_glib_marshal_ck_manager_NONE__POINTER, 757 },
+  { (GCallback) ck_manager_get_sessions_for_unix_user, dbus_glib_marshal_ck_manager_NONE__UINT_POINTER, 826 },
+  { (GCallback) ck_manager_get_sessions_for_user, dbus_glib_marshal_ck_manager_NONE__UINT_POINTER, 913 },
+  { (GCallback) ck_manager_get_system_idle_hint, dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER, 996 },
+  { (GCallback) ck_manager_get_system_idle_since_hint, dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER, 1070 },
 };
 
 const DBusGObjectInfo dbus_glib_ck_manager_object_info = {
   0,
   dbus_glib_ck_manager_methods,
-  14,
-"org.freedesktop.ConsoleKit.Manager\0Restart\0A\0\0org.freedesktop.ConsoleKit.Manager\0Stop\0A\0\0org.freedesktop.ConsoleKit.Manager\0OpenSession\0A\0cookie\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Manager\0OpenSessionWithParameters\0A\0parameters\0I\0a(sv)\0cookie\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Manager\0CloseSession\0A\0cookie\0I\0s\0result\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0GetSeats\0S\0seats\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSessions\0S\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionForCookie\0A\0cookie\0I\0s\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionForUnixProcess\0A\0pid\0I\0u\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Manager\0GetCurrentSession\0A\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionsForUnixUser\0A\0uid\0I\0u\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionsForUser\0A\0uid\0I\0u\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSystemIdleHint\0S\0idle_hint\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0GetSystemIdleSinceHint\0S\0iso8601_datetime\0O\0F\0N\0s\0\0\0",
+  16,
+"org.freedesktop.ConsoleKit.Manager\0Restart\0A\0\0org.freedesktop.ConsoleKit.Manager\0CanRestart\0A\0can_restart\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0Stop\0A\0\0org.freedesktop.ConsoleKit.Manager\0CanStop\0A\0can_stop\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0OpenSession\0A\0cookie\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Manager\0OpenSessionWithParameters\0A\0parameters\0I\0a(sv)\0cookie\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Manager\0CloseSession\0A\0cookie\0I\0s\0result\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0GetSeats\0S\0seats\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSessions\0S\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionForCookie\0A\0cookie\0I\0s\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionForUnixProcess\0A\0pid\0I\0u\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Manager\0GetCurrentSession\0A\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionsForUnixUser\0A\0uid\0I\0u\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionsForUser\0A\0uid\0I\0u\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSystemIdleHint\0S\0idle_hint\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0GetSystemIdleSinceHint\0S\0iso8601_datetime\0O\0F\0N\0s\0\0\0",
 "org.freedesktop.ConsoleKit.Manager\0SeatAdded\0org.freedesktop.ConsoleKit.Manager\0SeatRemoved\0org.freedesktop.ConsoleKit.Manager\0SystemIdleHintChanged\0\0",
 "\0"
 };

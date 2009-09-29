@@ -160,7 +160,12 @@ retry:
                 return FALSE;
         }
 
-        fchown (fd, 0, 0);
+        if (fchown (fd, 0, 0) == -1) {
+                close (fd);
+                g_warning ("Error setting owner of log file (%s)",
+                           g_strerror (errno));
+                return FALSE;
+        }
 
         event_logger->priv->file = fdopen (fd, "a");
         if (event_logger->priv->file == NULL) {
@@ -180,8 +185,10 @@ retry:
 static void
 reopen_file_stream (CkEventLogger *event_logger)
 {
-        close (event_logger->priv->fd);
-        fclose (event_logger->priv->file);
+        /* fclose will also close the underlying fd */
+        if (event_logger->priv->file != NULL) {
+                fclose (event_logger->priv->file);
+        }
 
         /* FIXME: retries */
         open_log_file (event_logger);
@@ -420,8 +427,8 @@ ck_event_logger_finalize (GObject *object)
                 g_async_queue_unref (event_logger->priv->event_queue);
         }
 
-        if (event_logger->priv->fd != -1) {
-                close (event_logger->priv->fd);
+        if (event_logger->priv->file != NULL) {
+                fclose (event_logger->priv->file);
         }
 
         g_free (event_logger->priv->log_filename);

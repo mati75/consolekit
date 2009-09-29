@@ -1,7 +1,7 @@
 
 AC_PREREQ(2.59c)
 AC_INIT([ConsoleKit],
-        [0.3.0],
+        [0.3.1],
         [https://bugs.freedesktop.org/enter_bug.cgi?product=ConsoleKit],
         [ConsoleKit])
 
@@ -38,7 +38,7 @@ AM_GLIB_GNU_GETTEXT
 DBUS_REQUIRED_VERSION=0.30
 GLIB_REQUIRED_VERSION=2.7.0
 X11_REQUIRED_VERSION=1.0.0
-POLKIT_REQUIRED_VERSION=0.7
+POLKIT_REQUIRED_VERSION=0.92
 
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(paths.h)
@@ -56,7 +56,7 @@ PKG_CHECK_MODULES(CONSOLE_KIT,
 )
 
 PKG_CHECK_MODULES(POLKIT,
-  polkit >= $POLKIT_REQUIRED_VERSION,
+  polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION,
   have_polkit=yes,
   have_polkit=no)
 if test "x$have_polkit" = "xyes" ; then
@@ -190,6 +190,9 @@ case "$host" in
         *-*-solaris*)
         CK_BACKEND="solaris"
         ;;
+	*)
+	AC_MSG_ERROR([No sysdeps back-end implemented for host $host])
+	;;
 esac
 
 AC_SUBST(KVM_LIBS)
@@ -273,6 +276,9 @@ if test x$enable_docbook_docs = xyes; then
 fi
 AM_CONDITIONAL(DOCBOOK_DOCS_ENABLED, test x$enable_docbook_docs = xyes)
 AC_MSG_RESULT(yes)
+
+AC_ARG_VAR([XMLTO],[Define/override the `xmlto' location.])
+AC_ARG_VAR([XMLTO_FLAGS],[Define/override `xmlto' options, like `--skip-validation'.])
 
 dnl ---------------------------------------------------------------------------
 dnl Check for xsltproc
@@ -442,3 +448,4 @@ if test x${have_polkit} = xno -a x${msg_rbac_shutdown} = xno; then
    echo "         ConsoleKit.conf to match your distro/site to avoid NASTY SECURITY HOLES."
    echo ""
 fi
+
