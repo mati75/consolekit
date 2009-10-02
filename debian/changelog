@@ -1,3 +1,25 @@
+consolekit (0.3.1-1) UNRELEASED; urgency=low
+
+  * New upstream release:
+    - port to PolicyKit 1.0
+    - D-Bus policy updates
+    - better diagnostic information for unimplemented backends
+    - file monitoring fixes
+    - get VT from X display if no controlling tty is available
+    - add "nox11" option to PAM module
+    - parse log entries with no body correctly
+    - fix zero-sized struct/unions
+    - solaris build fixes
+    - parse gecos field for real name
+    - leak fixes
+    - compile warning fixes
+    - fix doc xml validation errors
+    - fix doc generation when srcdir != builddir
+    - add example upstart events for logging
+    - fix ChangeLog generation script to work with git-log moved to libexecdir
+
+ -- Michael Biebl <biebl@debian.org>  Tue, 29 Sep 2009 05:44:40 +0200
+
 consolekit (0.3.0-4) unstable; urgency=low
 
   * debian/consolekit.logrotate: Install a logrotate configuration file for
