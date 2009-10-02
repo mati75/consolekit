@@ -19,6 +19,8 @@ consolekit (0.3.1-1) UNRELEASED; urgency=low
     - fix ChangeLog generation script to work with git-log moved to libexecdir
   * debian/control
     - Add Build-Depends on libpolkit-gobject-1-dev (>= 0.92).
+  * debian/consolekit.install
+    - Install policy definitions for ConsoleKit.
 
  -- Michael Biebl <biebl@debian.org>  Tue, 29 Sep 2009 05:44:40 +0200
 

@@ -1,6 +1,7 @@
 debian/tmp/etc/dbus-1/system.d/ConsoleKit.conf
 debian/tmp/etc/ConsoleKit/
 debian/tmp/usr/share/dbus-1/system-services/
+debian/tmp/usr/share/polkit-1/
 debian/tmp/usr/lib/ConsoleKit/
 debian/tmp/var/log/ConsoleKit/
 debian/tmp/usr/sbin/
