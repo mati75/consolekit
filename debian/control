@@ -14,6 +14,7 @@ Build-Depends: cdbs,
  libkvm-dev [kfreebsd-i386 kfreebsd-amd64],
  xmlto,
  libpam0g-dev,
+ libpolkit-gobject-1-dev (>= 0.92),
  zlib1g-dev
 Standards-Version: 3.8.3
 Vcs-Git: git://git.debian.org/git/pkg-utopia/consolekit.git
