@@ -1,13 +1,4 @@
 03-cleanup_console_tags.patch
-04-consolekit_park.patch
 04-defer_daemonizing.patch
-05-dbus_policy.patch
-05-pam-add-nox11.patch
-06-xmlto_skip_validation.patch
-08-fix-double-close.patch
-09-directory-handle-leak.patch
-10-file_monitor_remove_watch_crash.patch
-11-unref-dbus-proxy.patch
-12-allow-get-sessions.patch
 80-gnukfreebsd_support_configure.ac.patch
 81-gnukfreebsd_support_pseudo_run_autoconf.patch

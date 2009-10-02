@@ -21,6 +21,17 @@ consolekit (0.3.1-1) UNRELEASED; urgency=low
     - Add Build-Depends on libpolkit-gobject-1-dev (>= 0.92).
   * debian/consolekit.install
     - Install policy definitions for ConsoleKit.
+  * Drop patches
+    - 04-consolekit_park.patch (obsolete, not used)
+    - 05-dbus_policy.patch (merged upstream)
+    - 05-pam-add-nox11.patch (merged upstream)
+    - 06-xmlto_skip_validation.patch (fixed upstream, doc is valid xml now)
+    - 08-fix-double-close.patch (merged upstream)
+    - 09-directory-handle-leak.patch (merged upstream)
+    - 10-file_monitor_remove_watch_crash.patch (merged upstream)
+    - 11-unref-dbus-proxy.patch (merged upstream)
+    - 12-allow-get-sessions.patch (merged upstream)
+
 
  -- Michael Biebl <biebl@debian.org>  Tue, 29 Sep 2009 05:44:40 +0200
 
