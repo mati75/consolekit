@@ -31,7 +31,8 @@ consolekit (0.3.1-1) UNRELEASED; urgency=low
     - 10-file_monitor_remove_watch_crash.patch (merged upstream)
     - 11-unref-dbus-proxy.patch (merged upstream)
     - 12-allow-get-sessions.patch (merged upstream)
-
+  * debian/pam-foreground-compat.ck
+    - Don't create tag files for remote users. (Closes: #547347)
 
  -- Michael Biebl <biebl@debian.org>  Tue, 29 Sep 2009 05:44:40 +0200
 

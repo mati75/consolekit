@@ -5,7 +5,7 @@ TAGDIR=/var/run/console
 
 TAGFILE="$TAGDIR/`getent passwd $CK_SESSION_USER_UID | cut -f 1 -d:`"
 
-if [ "$1" = "session_added" ]; then
+if [ -z "$CK_SESSION_REMOTE_HOST_NAME" ] && [ "$1" = "session_added" ]; then
     mkdir -p "$TAGDIR"
     echo "$CK_SESSION_ID" >> "$TAGFILE"
 fi
