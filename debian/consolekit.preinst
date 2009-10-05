@@ -46,6 +46,14 @@ case "$1" in
 	    rm_conffile consolekit /etc/init.d/consolekit
 	    update-rc.d consolekit remove >/dev/null
 	fi
+	if dpkg --compare-versions "$2" lt-nl "0.2.10-1"; then
+	     # Ubuntu versions prior to 8.04 LTS introduced this script as
+	     # "90-console-kit", Debian/Ubuntu later settled for
+	     # "90consolekit"; needs to be kept until April 2010 (Ubuntu 10.04
+	     # LTS release)
+	    rm_conffile consolekit /etc/X11/Xsession.d/90-console-kit
+	fi
+
 	;;
 
     abort-upgrade)
