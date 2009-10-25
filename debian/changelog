@@ -1,4 +1,4 @@
-consolekit (0.3.1-2) UNRELEASED; urgency=low
+consolekit (0.3.1-2) unstable; urgency=low
 
   [ Martin Pitt ]
   * debian/consolekit.preinst: Remove obsolete 90-console-kit conffile for
@@ -19,7 +19,7 @@ consolekit (0.3.1-2) UNRELEASED; urgency=low
   * debian/patches/81-gnukfreebsd_support_pseudo_run_autoconf.patch
     - Remove, made obsolete by 99-autoreconf.patch.
 
- -- Michael Biebl <biebl@debian.org>  Mon, 26 Oct 2009 00:11:47 +0100
+ -- Michael Biebl <biebl@debian.org>  Mon, 26 Oct 2009 00:52:52 +0100
 
 consolekit (0.3.1-1) unstable; urgency=low
 
