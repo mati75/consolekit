@@ -1,9 +1,21 @@
 consolekit (0.3.1-2) UNRELEASED; urgency=low
 
+  [ Martin Pitt ]
   * debian/consolekit.preinst: Remove obsolete 90-console-kit conffile for
     upgrades from Ubuntu 8.04. (Can be dropped after 10.04 LTS release.)
 
- -- Martin Pitt <mpitt@debian.org>  Mon, 05 Oct 2009 09:22:51 +0200
+  [ Michael Biebl ]
+  * debian/patches/82-hurd_support.patch
+    - Add support for GNU/Hurd. (Closes: #552393)
+      The patch adds a sysdeps-gnu backend, which implements the process
+      management using Hurd's libps, the *ttyent API for the part of the
+      console implementation and the rest using similar (valid) approaches of
+      other backends.
+      Also, it fixes the PATH_MAX usage in pam-ck-connector/pam-ck-connector.c
+      by using a variable-length malloc'ed buffer.
+      Thanks to Pino Toscano for the patch.
+
+ -- Michael Biebl <biebl@debian.org>  Mon, 26 Oct 2009 00:11:47 +0100
 
 consolekit (0.3.1-1) unstable; urgency=low
 
