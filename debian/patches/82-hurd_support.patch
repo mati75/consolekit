@@ -9,6 +9,7 @@ Description: Add support for GNU/Hurd
  using a variable-length malloc'ed buffer.
 Author: Pino Toscano <pino@kde.org>
 Bug-Debian: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=552393
+Bug: https://bugs.freedesktop.org/show_bug.cgi?id=24738
 
 --- consolekit-0.3.1.orig/configure.ac
 +++ consolekit-0.3.1/configure.ac
