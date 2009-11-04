@@ -1,3 +1,9 @@
+consolekit (0.4.1-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+
+ -- Michael Biebl <biebl@debian.org>  Wed, 04 Nov 2009 19:37:38 +0100
+
 consolekit (0.3.1-2) unstable; urgency=low
 
   [ Martin Pitt ]
