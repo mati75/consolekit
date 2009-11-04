@@ -399,7 +399,6 @@ ck_session_set_active (CkSession      *session,
 
         if (session->priv->active != active) {
                 session->priv->active = active;
-                ck_session_run_programs (session, "session_active_changed");
                 g_signal_emit (session, signals [ACTIVE_CHANGED], 0, active);
         }
 
@@ -1285,6 +1284,8 @@ ck_session_run_programs (CkSession  *session,
         extra_env[n++] = g_strdup_printf ("CK_SESSION_IS_LOCAL=%s", session->priv->is_local ? "true" : "false");
         extra_env[n++] = NULL;
 
+        g_assert(n <= G_N_ELEMENTS(extra_env));
+
         ck_run_programs (SYSCONFDIR "/ConsoleKit/run-session.d", action, extra_env);
         ck_run_programs (PREFIX "/lib/ConsoleKit/run-session.d", action, extra_env);
 
@@ -1306,10 +1307,6 @@ ck_session_dump (CkSession *session,
                                group_name,
                                "seat",
                                NONULL_STRING (session->priv->seat_id));
-        g_key_file_set_string (key_file,
-                               group_name,
-                               "cookie",
-                               NONULL_STRING (session->priv->cookie));
         if (session->priv->session_type != NULL) {
                 g_key_file_set_string (key_file,
                                        group_name,
@@ -1362,4 +1359,3 @@ ck_session_dump (CkSession *session,
 
         g_free (group_name);
 }
-

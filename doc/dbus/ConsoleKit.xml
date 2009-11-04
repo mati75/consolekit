@@ -10,16 +10,15 @@
 
 <book id="index">
   <bookinfo>
-    <title>ConsoleKit 0.3.1 Documentation</title>
-    <releaseinfo>Version 0.3.1</releaseinfo>
-    <date>8 March, 2007</date>
+    <title>ConsoleKit 0.4.1 Documentation</title>
+    <releaseinfo>Version 0.4.1</releaseinfo>
     <authorgroup>
       <author>
         <firstname>William Jon</firstname>
         <surname>McCann</surname>
         <affiliation>
           <address>
-            <email>mccann@jhu.edu</email>
+            <email>william.jon.mccann@gmail.com</email>
           </address>
         </affiliation>
       </author>

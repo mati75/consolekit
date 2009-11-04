@@ -22,6 +22,14 @@ extern void ck_marshal_BOOLEAN__POINTER (GClosure     *closure,
                                          gpointer      invocation_hint,
                                          gpointer      marshal_data);
 
+/* VOID:OBJECT,OBJECT (ck-marshal.list:3) */
+extern void ck_marshal_VOID__OBJECT_OBJECT (GClosure     *closure,
+                                            GValue       *return_value,
+                                            guint         n_param_values,
+                                            const GValue *param_values,
+                                            gpointer      invocation_hint,
+                                            gpointer      marshal_data);
+
 G_END_DECLS
 
 #endif /* __ck_marshal_MARSHAL_H__ */

@@ -53,7 +53,7 @@ G_BEGIN_DECLS
 #endif /* !G_ENABLE_DEBUG */
 
 
-/* NONE:STRING,POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:1) */
+/* NONE:STRING,POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:1) */
 extern void dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
                                                                GValue       *return_value,
                                                                guint         n_param_values,
@@ -97,7 +97,7 @@ dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
 }
 #define dbus_glib_marshal_ck_manager_NONE__STRING_POINTER	dbus_glib_marshal_ck_manager_VOID__STRING_POINTER
 
-/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:2) */
+/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:2) */
 extern void dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
                                                                    GValue       *return_value,
                                                                    guint         n_param_values,
@@ -144,15 +144,15 @@ dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:UINT,POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:3) */
+/* NONE:UINT,POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:3) */
 #define dbus_glib_marshal_ck_manager_VOID__UINT_POINTER	g_cclosure_marshal_VOID__UINT_POINTER
 #define dbus_glib_marshal_ck_manager_NONE__UINT_POINTER	dbus_glib_marshal_ck_manager_VOID__UINT_POINTER
 
-/* NONE:POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:4) */
+/* NONE:POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:4) */
 #define dbus_glib_marshal_ck_manager_VOID__POINTER	g_cclosure_marshal_VOID__POINTER
 #define dbus_glib_marshal_ck_manager_NONE__POINTER	dbus_glib_marshal_ck_manager_VOID__POINTER
 
-/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.2MBKXU:5) */
+/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:5) */
 extern void dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER (GClosure     *closure,
                                                               GValue       *return_value,
                                                               guint         n_param_values,
