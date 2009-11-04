@@ -67,8 +67,11 @@ struct CkSeatPrivate
 
 enum {
         ACTIVE_SESSION_CHANGED,
-        SESSION_ADDED,
+        ACTIVE_SESSION_CHANGED_FULL,
+        SESSION_ADDED, /* Carries the session as path for D-Bus */
+        SESSION_ADDED_FULL, /* Carries the session as CkSession for other uses */
         SESSION_REMOVED,
+        SESSION_REMOVED_FULL,
         DEVICE_ADDED,
         DEVICE_REMOVED,
         LAST_SIGNAL
@@ -480,15 +483,17 @@ static void
 change_active_session (CkSeat    *seat,
                        CkSession *session)
 {
-        char *ssid;
+        char      *ssid;
+        CkSession *old_session;
 
         if (seat->priv->active_session == session) {
                 return;
         }
 
-        if (seat->priv->active_session != NULL) {
-                ck_session_set_active (seat->priv->active_session, FALSE, NULL);
-                g_object_unref (seat->priv->active_session);
+        old_session = seat->priv->active_session;
+
+        if (old_session != NULL) {
+                ck_session_set_active (old_session, FALSE, NULL);
         }
 
         seat->priv->active_session = session;
@@ -502,7 +507,20 @@ change_active_session (CkSeat    *seat,
 
         g_debug ("Active session changed: %s", ssid ? ssid : "(null)");
 
+        /* The order of signal emission matters here. The manager
+         * dumps the database when receiving the
+         * 'active-session-changed-full' signal and does callout
+         * handling. dbus-glib will then send out a D-Bus on the
+         * 'active-session-changed' signal. Since the D-Bus signal
+         * must be sent when the database dump is finished it is
+         * important that the '-full' signalled is emitted first. */
+
+        g_signal_emit (seat, signals [ACTIVE_SESSION_CHANGED_FULL], 0, old_session, session);
         g_signal_emit (seat, signals [ACTIVE_SESSION_CHANGED], 0, ssid);
+
+        if (old_session != NULL) {
+                g_object_unref (old_session);
+        }
 
         g_free (ssid);
 }
@@ -586,9 +604,13 @@ ck_seat_remove_session (CkSeat         *seat,
          * unref until the signal is emitted */
         g_hash_table_steal (seat->priv->sessions, ssid);
 
-        ck_session_run_programs (session, "session_removed");
-
         g_debug ("Emitting session-removed: %s", ssid);
+
+        /* The order of signal emission matters here, too, for similar
+         * reasons as for 'session-added'/'session-added-full'. See
+         * above. */
+
+        g_signal_emit (seat, signals [SESSION_REMOVED_FULL], 0, session);
         g_signal_emit (seat, signals [SESSION_REMOVED], 0, ssid);
 
         /* try to change the active session */
@@ -624,10 +646,12 @@ ck_seat_add_session (CkSeat         *seat,
         g_signal_connect_object (session, "activate", G_CALLBACK (session_activate), seat, 0);
         /* FIXME: attach to property notify signals? */
 
-        ck_session_run_programs (session, "session_added");
-
         g_debug ("Emitting added signal: %s", ssid);
 
+        /* The order of signal emission matters here, too. See
+         * above. */
+
+        g_signal_emit (seat, signals [SESSION_ADDED_FULL], 0, session);
         g_signal_emit (seat, signals [SESSION_ADDED], 0, ssid);
 
         maybe_update_active_session (seat);
@@ -741,8 +765,8 @@ active_vt_changed (CkVtMonitor    *vt_monitor,
         update_active_vt (seat, num);
 }
 
-static gboolean
-register_seat (CkSeat *seat)
+gboolean
+ck_seat_register (CkSeat *seat)
 {
         GError *error = NULL;
 
@@ -920,6 +944,15 @@ ck_seat_class_init (CkSeatClass *klass)
                                                          g_cclosure_marshal_VOID__STRING,
                                                          G_TYPE_NONE,
                                                          1, G_TYPE_STRING);
+        signals [ACTIVE_SESSION_CHANGED_FULL] = g_signal_new ("active-session-changed-full",
+                                                         G_TYPE_FROM_CLASS (object_class),
+                                                         G_SIGNAL_RUN_LAST,
+                                                         0,
+                                                         NULL,
+                                                         NULL,
+                                                         ck_marshal_VOID__OBJECT_OBJECT,
+                                                         G_TYPE_NONE,
+                                                         2, CK_TYPE_SESSION, CK_TYPE_SESSION);
         signals [SESSION_ADDED] = g_signal_new ("session-added",
                                                 G_TYPE_FROM_CLASS (object_class),
                                                 G_SIGNAL_RUN_LAST,
@@ -929,6 +962,15 @@ ck_seat_class_init (CkSeatClass *klass)
                                                 g_cclosure_marshal_VOID__BOXED,
                                                 G_TYPE_NONE,
                                                 1, DBUS_TYPE_G_OBJECT_PATH);
+        signals [SESSION_ADDED_FULL] = g_signal_new ("session-added-full",
+                                                G_TYPE_FROM_CLASS (object_class),
+                                                G_SIGNAL_RUN_LAST,
+                                                0,
+                                                NULL,
+                                                NULL,
+                                                g_cclosure_marshal_VOID__OBJECT,
+                                                G_TYPE_NONE,
+                                                1, CK_TYPE_SESSION);
         signals [SESSION_REMOVED] = g_signal_new ("session-removed",
                                                   G_TYPE_FROM_CLASS (object_class),
                                                   G_SIGNAL_RUN_LAST,
@@ -938,7 +980,15 @@ ck_seat_class_init (CkSeatClass *klass)
                                                   g_cclosure_marshal_VOID__BOXED,
                                                   G_TYPE_NONE,
                                                   1, DBUS_TYPE_G_OBJECT_PATH);
-
+        signals [SESSION_REMOVED_FULL] = g_signal_new ("session-removed-full",
+                                                  G_TYPE_FROM_CLASS (object_class),
+                                                  G_SIGNAL_RUN_LAST,
+                                                  0,
+                                                  NULL,
+                                                  NULL,
+                                                  g_cclosure_marshal_VOID__OBJECT,
+                                                  G_TYPE_NONE,
+                                                  1, CK_TYPE_SESSION);
         signals [DEVICE_ADDED] = g_signal_new ("device-added",
                                                G_TYPE_FROM_CLASS (object_class),
                                                G_SIGNAL_RUN_LAST,
@@ -1023,18 +1073,11 @@ ck_seat_new (const char *sid,
              CkSeatKind  kind)
 {
         GObject *object;
-        gboolean res;
 
         object = g_object_new (CK_TYPE_SEAT,
                                "id", sid,
                                "kind", kind,
                                NULL);
-
-        res = register_seat (CK_SEAT (object));
-        if (! res) {
-                g_object_unref (object);
-                return NULL;
-        }
 
         return CK_SEAT (object);
 }
@@ -1045,7 +1088,6 @@ ck_seat_new_with_devices (const char *sid,
                           GPtrArray  *devices)
 {
         GObject *object;
-        gboolean res;
         int      i;
 
         object = g_object_new (CK_TYPE_SEAT,
@@ -1057,12 +1099,6 @@ ck_seat_new_with_devices (const char *sid,
                 for (i = 0; i < devices->len; i++) {
                         ck_seat_add_device (CK_SEAT (object), g_ptr_array_index (devices, i), NULL);
                 }
-        }
-
-        res = register_seat (CK_SEAT (object));
-        if (! res) {
-                g_object_unref (object);
-                return NULL;
         }
 
         return CK_SEAT (object);
@@ -1083,6 +1119,8 @@ ck_seat_new_from_file (const char *sid,
         gsize      ndevices;
         gsize      i;
 
+        seat = NULL;
+
         key_file = g_key_file_new ();
         error = NULL;
         res = g_key_file_load_from_file (key_file,
@@ -1092,24 +1130,24 @@ ck_seat_new_from_file (const char *sid,
         if (! res) {
                 g_warning ("Unable to load seats from file %s: %s", path, error->message);
                 g_error_free (error);
-                return NULL;
+                goto out;
         }
 
         group = g_key_file_get_start_group (key_file);
         if (group == NULL || strcmp (group, "Seat Entry") != 0) {
                 g_warning ("Not a seat file: %s", path);
-                return NULL;
+                goto out;
         }
 
         hidden = g_key_file_get_boolean (key_file, group, "Hidden", NULL);
         if (hidden) {
                 g_debug ("Seat is hidden");
-                return NULL;
+                goto out;
         }
 
         device_list = g_key_file_get_string_list (key_file, group, "Devices", &ndevices, NULL);
 
-        g_debug ("Creating seat %s with %d devices", sid, ndevices);
+        g_debug ("Creating seat %s with %zd devices", sid, ndevices);
 
         devices = g_ptr_array_sized_new (ndevices);
 
@@ -1137,14 +1175,107 @@ ck_seat_new_from_file (const char *sid,
 
                 g_strfreev (split);
         }
-
+        g_strfreev (device_list);
         g_free (group);
 
         seat = ck_seat_new_with_devices (sid, CK_SEAT_KIND_STATIC, devices);
-
         g_ptr_array_free (devices, TRUE);
 
+out:
+
+        g_key_file_free (key_file);
+
         return seat;
+}
+
+static void
+env_add_session_info (CkSession  *session,
+                      const char *prefix,
+                      char      **extra_env,
+                      int        *n)
+{
+        char     *s;
+        gboolean  b;
+        guint     u;
+
+        if (session == NULL) {
+                return;
+        }
+
+        if (ck_session_get_id (session, &s, NULL) && s != NULL && *s != '\0') {
+                extra_env[(*n)++] = g_strdup_printf ("%sID=%s", prefix, s);
+                g_free (s);
+        }
+
+        if (ck_session_get_session_type (session, &s, NULL) && s != NULL && *s != '\0') {
+                extra_env[(*n)++] = g_strdup_printf ("%sTYPE=%s", prefix, s);
+                g_free (s);
+        }
+
+        if (ck_session_get_unix_user (session, &u, NULL)) {
+                extra_env[(*n)++] = g_strdup_printf ("%sUSER_UID=%u", prefix, u);
+        }
+
+        if (ck_session_get_display_device (session, &s, NULL) && s != NULL && *s != '\0') {
+                extra_env[(*n)++] = g_strdup_printf ("%sDISPLAY_DEVICE=%s", prefix, s);
+                g_free (s);
+        }
+
+        if (ck_session_get_x11_display_device (session, &s, NULL) && s != NULL && *s != '\0') {
+                extra_env[(*n)++] = g_strdup_printf ("%sX11_DISPLAY_DEVICE=%s", prefix, s);
+                g_free (s);
+        }
+
+        if (ck_session_get_x11_display (session, &s, NULL) && s != NULL && *s != '\0') {
+                extra_env[(*n)++] = g_strdup_printf ("%sX11_DISPLAY=%s", prefix, s);
+                g_free (s);
+        }
+
+        if (ck_session_get_remote_host_name (session, &s, NULL) && s != NULL && *s != '\0') {
+                extra_env[(*n)++] = g_strdup_printf ("%sREMOTE_HOST_NAME=%s", prefix, s);
+                g_free (s);
+        }
+
+        if (ck_session_is_local (session, &b, NULL))
+                extra_env[(*n)++] = g_strdup_printf ("%sIS_LOCAL=%s", prefix, b ? "true" : "false");
+}
+
+void
+ck_seat_run_programs (CkSeat    *seat,
+                      CkSession *old_session,
+                      CkSession *new_session,
+                      const char *action)
+{
+        int   n;
+        char *extra_env[18]; /* be sure to adjust this as needed when
+                              * you add more variables to the callout's
+                              * environment */
+
+        n = 0;
+
+        extra_env[n++] = g_strdup_printf ("CK_SEAT_ID=%s", seat->priv->id);
+
+        /* Callout scripts/binaries should check if CK_SEAT_SESSION_ID
+         * resp. CK_SEAT_OLD_SESSON_ID is set to figure out if there
+         * will be an active session after the switch, or if there was
+         * one before. At least one of those environment variables
+         * will be set, possibly both. Only after checking these
+         * variables the script should check for the other session
+         * property variables. */
+
+        env_add_session_info (old_session, "CK_SEAT_OLD_SESSION_", extra_env, &n);
+        env_add_session_info (new_session, "CK_SEAT_SESSION_", extra_env, &n);
+
+        extra_env[n++] = NULL;
+
+        g_assert(n <= G_N_ELEMENTS(extra_env));
+
+        ck_run_programs (SYSCONFDIR "/ConsoleKit/run-seat.d", action, extra_env);
+        ck_run_programs (PREFIX "/lib/ConsoleKit/run-seat.d", action, extra_env);
+
+        for (n = 0; extra_env[n] != NULL; n++) {
+                g_free (extra_env[n]);
+        }
 }
 
 static void
@@ -1232,4 +1363,3 @@ ck_seat_dump (CkSeat   *seat,
 
         g_free (group_name);
 }
-

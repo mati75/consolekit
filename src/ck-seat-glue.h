@@ -53,7 +53,7 @@ G_BEGIN_DECLS
 #endif /* !G_ENABLE_DEBUG */
 
 
-/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.RK8LXU:1) */
+/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.SGA4YU:1) */
 extern void dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER (GClosure     *closure,
                                                                 GValue       *return_value,
                                                                 guint         n_param_values,
@@ -100,7 +100,7 @@ dbus_glib_marshal_ck_seat_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.RK8LXU:2) */
+/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.SGA4YU:2) */
 extern void dbus_glib_marshal_ck_seat_VOID__BOXED_POINTER (GClosure     *closure,
                                                            GValue       *return_value,
                                                            guint         n_param_values,

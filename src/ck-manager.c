@@ -200,7 +200,7 @@ ck_manager_dump (CkManager *manager)
                 return;
         }
 
-        fd = g_open (filename_tmp, O_CREAT | O_WRONLY, 0600);
+        fd = g_open (filename_tmp, O_CREAT | O_WRONLY, 0644);
         if (fd == -1) {
                 g_warning ("Cannot create file %s: %s", filename_tmp, g_strerror (errno));
                 goto error;
@@ -810,11 +810,8 @@ check_polkit_permissions (CkManager             *manager,
                           AuthorizedCallback     callback)
 {
         const char    *sender;
-        GError        *error;
         PolkitSubject *subject;
         AuthorizedCallbackData *data;
-
-        error = NULL;
 
         g_debug ("constructing polkit data");
 
@@ -837,6 +834,7 @@ check_polkit_permissions (CkManager             *manager,
                                               NULL,
                                               (GAsyncReadyCallback)auth_ready_callback,
                                               data);
+        g_object_unref (subject);
 }
 
 static void
@@ -873,14 +871,12 @@ get_polkit_permissions (CkManager   *manager,
 {
         const char    *sender;
         PolkitSubject *subject;
-        GError *error;
 
         g_debug ("get permissions for action %s", action);
 
         sender = dbus_g_method_get_sender (context);
         subject = polkit_system_bus_name_new (sender);
 
-        error = NULL;
         polkit_authority_check_authorization (manager->priv->pol_ctx,
                                               subject,
                                               action,
@@ -890,7 +886,6 @@ get_polkit_permissions (CkManager   *manager,
                                               (GAsyncReadyCallback) ready_cb,
                                               context);
         g_object_unref (subject);
-
 }
 #endif
 
@@ -1228,29 +1223,50 @@ ck_manager_can_stop (CkManager  *manager,
 }
 
 static void
-on_seat_active_session_changed (CkSeat     *seat,
-                                const char *ssid,
-                                CkManager  *manager)
+on_seat_active_session_changed_full (CkSeat     *seat,
+                                     CkSession  *old_session,
+                                     CkSession  *session,
+                                     CkManager  *manager)
 {
+        char *ssid = NULL;
+
+        if (session != NULL) {
+                ck_session_get_id (session, &ssid, NULL);
+        }
+
         ck_manager_dump (manager);
+        ck_seat_run_programs (seat, old_session, session, "seat_active_session_changed");
+
         log_seat_active_session_changed_event (manager, seat, ssid);
 }
 
 static void
-on_seat_session_added (CkSeat     *seat,
-                       const char *ssid,
-                       CkManager  *manager)
+on_seat_session_added_full (CkSeat     *seat,
+                            CkSession  *session,
+                            CkManager  *manager)
 {
+        char *ssid = NULL;
+
+        ck_session_get_id (session, &ssid, NULL);
+
         ck_manager_dump (manager);
+        ck_session_run_programs (session, "session_added");
+
         log_seat_session_added_event (manager, seat, ssid);
 }
 
 static void
-on_seat_session_removed (CkSeat     *seat,
-                         const char *ssid,
-                         CkManager  *manager)
+on_seat_session_removed_full (CkSeat     *seat,
+                              CkSession  *session,
+                              CkManager  *manager)
 {
+        char *ssid = NULL;
+
+        ck_session_get_id (session, &ssid, NULL);
+
         ck_manager_dump (manager);
+        ck_session_run_programs (session, "session_removed");
+
         log_seat_session_removed_event (manager, seat, ssid);
 }
 
@@ -1276,9 +1292,9 @@ static void
 connect_seat_signals (CkManager *manager,
                       CkSeat    *seat)
 {
-        g_signal_connect (seat, "active-session-changed", G_CALLBACK (on_seat_active_session_changed), manager);
-        g_signal_connect (seat, "session-added", G_CALLBACK (on_seat_session_added), manager);
-        g_signal_connect (seat, "session-removed", G_CALLBACK (on_seat_session_removed), manager);
+        g_signal_connect (seat, "active-session-changed-full", G_CALLBACK (on_seat_active_session_changed_full), manager);
+        g_signal_connect (seat, "session-added-full", G_CALLBACK (on_seat_session_added_full), manager);
+        g_signal_connect (seat, "session-removed-full", G_CALLBACK (on_seat_session_removed_full), manager);
         g_signal_connect (seat, "device-added", G_CALLBACK (on_seat_device_added), manager);
         g_signal_connect (seat, "device-removed", G_CALLBACK (on_seat_device_removed), manager);
 }
@@ -1287,9 +1303,9 @@ static void
 disconnect_seat_signals (CkManager *manager,
                          CkSeat    *seat)
 {
-        g_signal_handlers_disconnect_by_func (seat, on_seat_active_session_changed, manager);
-        g_signal_handlers_disconnect_by_func (seat, on_seat_session_added, manager);
-        g_signal_handlers_disconnect_by_func (seat, on_seat_session_removed, manager);
+        g_signal_handlers_disconnect_by_func (seat, on_seat_active_session_changed_full, manager);
+        g_signal_handlers_disconnect_by_func (seat, on_seat_session_added_full, manager);
+        g_signal_handlers_disconnect_by_func (seat, on_seat_session_removed_full, manager);
         g_signal_handlers_disconnect_by_func (seat, on_seat_device_added, manager);
         g_signal_handlers_disconnect_by_func (seat, on_seat_device_removed, manager);
 }
@@ -1304,25 +1320,34 @@ add_new_seat (CkManager *manager,
         sid = generate_seat_id (manager);
 
         seat = ck_seat_new (sid, kind);
-        if (seat == NULL) {
-                /* returns null if connection to bus fails */
-                g_free (sid);
-                goto out;
-        }
+
+        /* First we connect our own signals to the seat, followed by
+         * the D-Bus signal hookup to make sure we can first dump the
+         * database and only then send out the D-Bus signals for
+         * it. GObject guarantees us that the signal handlers are
+         * called in the same order as they are registered. */
 
         connect_seat_signals (manager, seat);
+        if (!ck_seat_register (seat)) {
+                /* returns false if connection to bus fails */
+                disconnect_seat_signals (manager, seat);
+                g_object_unref (seat);
+                g_free (sid);
+                return NULL;
+        }
 
         g_hash_table_insert (manager->priv->seats, sid, seat);
 
         g_debug ("Added seat: %s kind:%d", sid, kind);
 
         ck_manager_dump (manager);
+        ck_seat_run_programs (seat, NULL, NULL, "seat_added");
 
+        g_debug ("Emitting seat-added: %s", sid);
         g_signal_emit (manager, signals [SEAT_ADDED], 0, sid);
 
         log_seat_added_event (manager, seat);
 
- out:
         return seat;
 }
 
@@ -1359,6 +1384,7 @@ remove_seat (CkManager *manager,
         }
 
         ck_manager_dump (manager);
+        ck_seat_run_programs (seat, NULL, NULL, "seat_removed");
 
         g_debug ("Emitting seat-removed: %s", sid);
         g_signal_emit (manager, signals [SEAT_REMOVED], 0, sid);
@@ -2407,20 +2433,24 @@ add_seat_for_file (CkManager  *manager,
         sid = generate_seat_id (manager);
 
         seat = ck_seat_new_from_file (sid, filename);
-        if (seat == NULL) {
-                /* returns null if connection to bus fails */
+
+        connect_seat_signals (manager, seat);
+        if (!ck_seat_register (seat)) {
+                /* returns false if connection to bus fails */
+                disconnect_seat_signals (manager, seat);
+                g_object_unref (seat);
                 g_free (sid);
                 return;
         }
-
-        connect_seat_signals (manager, seat);
 
         g_hash_table_insert (manager->priv->seats, sid, seat);
 
         g_debug ("Added seat: %s", sid);
 
         ck_manager_dump (manager);
+        ck_seat_run_programs (seat, NULL, NULL, "seat_added");
 
+        g_debug ("Emitting seat-added: %s", sid);
         g_signal_emit (manager, signals [SEAT_ADDED], 0, sid);
 
         log_seat_added_event (manager, seat);
