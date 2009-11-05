@@ -1,6 +1,10 @@
 consolekit (0.4.1-1) UNRELEASED; urgency=low
 
   * New upstream release.
+  * The 'session_active_changed' type has been removed for session.d/
+    callouts. Tools relying on that need to be ported to the new seat.d/
+    infrastructure and use 'seat_active_session_changed' instead.
+    This breaks older versions of udev-acl, so add a Breaks: udev (<< 147~).
 
  -- Michael Biebl <biebl@debian.org>  Wed, 04 Nov 2009 19:37:38 +0100
 
