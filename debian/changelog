@@ -1,3 +1,9 @@
+consolekit (0.4.1-2) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Michael Biebl <biebl@debian.org>  Tue, 10 Nov 2009 00:12:42 +0100
+
 consolekit (0.4.1-1) experimental; urgency=low
 
   * New upstream release.
