@@ -1,9 +1,9 @@
 Cleanup console tag files on application startup and shutdown.
 
-Index: ConsoleKit-0.2.10/src/main.c
+Index: consolekit/src/main.c
 ===================================================================
---- ConsoleKit-0.2.10.orig/src/main.c	2008-07-25 03:19:34.000000000 +0200
-+++ ConsoleKit-0.2.10/src/main.c	2008-07-26 00:25:13.000000000 +0200
+--- consolekit.orig/src/main.c	2010-01-12 11:00:33.082306952 +0100
++++ consolekit/src/main.c	2010-01-12 11:00:34.346283038 +0100
 @@ -149,6 +149,43 @@
          unlink (CONSOLE_KIT_PID_FILE);
  }
@@ -57,12 +57,12 @@ Index: ConsoleKit-0.2.10/src/main.c
          } else {
                  g_warning ("Unable to write pid file %s: %s",
                             CONSOLE_KIT_PID_FILE,
-@@ -312,6 +349,8 @@
- 
-         g_debug ("initializing console-kit-daemon %s", VERSION);
+@@ -318,6 +355,8 @@
+                 goto out;
+         }
  
 +	delete_console_tags ();
 +
          create_pid_file ();
  
-         manager = ck_manager_new ();
+         loop = g_main_loop_new (NULL, FALSE);
