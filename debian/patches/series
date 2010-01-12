@@ -1,5 +1,6 @@
 # Debian patches for consolekit
 01-dont_daemonize_when_activated.patch
+02-dont_take_bus_name_until_ready.patch
 03-cleanup_console_tags.patch
 80-gnukfreebsd_support_configure.ac.patch
 82-hurd_support.patch

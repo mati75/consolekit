@@ -10,6 +10,11 @@ consolekit (0.4.1-3) UNRELEASED; urgency=low
       Patch pulled from upstream Git.
   * debian/patches/04-defer_daemonizing.patch
     - Drop this patch, obsoleted by 01-dont_daemonize_when_activated.patch.
+  * debian/patches/02-dont_take_bus_name_until_ready.patch
+    - Claim bus name after registering the manager object. This fixes a race
+      when being activated by a method call on the manager object, where
+      ConsoleKit gets started but the method call fails. (Closes: #561592)
+      Patch pulled from upstream Git.
 
  -- Michael Biebl <biebl@debian.org>  Tue, 12 Jan 2010 10:46:57 +0100
 
