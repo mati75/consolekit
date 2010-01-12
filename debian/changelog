@@ -1,4 +1,4 @@
-consolekit (0.4.1-3) UNRELEASED; urgency=low
+consolekit (0.4.1-3) unstable; urgency=low
 
   [ Martin Pitt ]
   * Bump Breaks to udev to << 147, since 147-1 is in unstable now.
@@ -19,7 +19,7 @@ consolekit (0.4.1-3) UNRELEASED; urgency=low
     - Don't segfault when reading an invalid seats file and
       ck_seat_new_from_file returns NULL. (Closes: #561106)
 
- -- Michael Biebl <biebl@debian.org>  Tue, 12 Jan 2010 10:46:57 +0100
+ -- Michael Biebl <biebl@debian.org>  Tue, 12 Jan 2010 13:48:08 +0100
 
 consolekit (0.4.1-2) unstable; urgency=low
 
