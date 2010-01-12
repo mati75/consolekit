@@ -1,9 +1,9 @@
-consolekit (0.2.10-5+lenny2) UNRELEASED; urgency=low
+consolekit (0.2.10-5+lenny2) stable-proposed-updates; urgency=low
 
   * debian/pam-foreground-compat.ck
     - Don't create tag files for remote users. (Closes: #547347)
 
- -- Michael Biebl <biebl@debian.org>  Wed, 13 Jan 2010 00:20:08 +0100
+ -- Michael Biebl <biebl@debian.org>  Wed, 13 Jan 2010 00:23:47 +0100
 
 consolekit (0.2.10-5+lenny1) stable-proposed-updates; urgency=low
 
