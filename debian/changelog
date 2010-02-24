@@ -1,10 +1,11 @@
-consolekit (0.4.1-4) UNRELEASED; urgency=low
+consolekit (0.4.1-4) unstable; urgency=low
 
+  [ Martin Pitt ]
   * debian/90consolekit: gdm already creates a CK session for us, so do not
     run the expensive D-Bus calls if we have $GDMSESSION.
   * Bump Standards-Version to 3.8.4 (no changes necessary).
 
- -- Martin Pitt <mpitt@debian.org>  Fri, 19 Feb 2010 06:50:58 +0100
+ -- Michael Biebl <biebl@debian.org>  Wed, 24 Feb 2010 23:47:23 +0100
 
 consolekit (0.4.1-3) unstable; urgency=low
 
