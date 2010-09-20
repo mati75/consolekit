@@ -11,8 +11,10 @@ Author: Pino Toscano <pino@kde.org>
 Bug-Debian: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=552393
 Bug: https://bugs.freedesktop.org/show_bug.cgi?id=24738
 
---- consolekit-0.3.1.orig/configure.ac
-+++ consolekit-0.3.1/configure.ac
+Index: consolekit/configure.ac
+===================================================================
+--- consolekit.orig/configure.ac	2010-09-20 03:07:20.969097019 +0200
++++ consolekit/configure.ac	2010-09-20 03:07:22.189095438 +0200
 @@ -190,6 +190,9 @@
          *-*-solaris*)
          CK_BACKEND="solaris"
@@ -31,9 +33,11 @@ Bug: https://bugs.freedesktop.org/show_bug.cgi?id=24738
  AC_SUBST(CK_BACKEND)
  
  dnl ---------------------------------------------------------------------------
---- consolekit-0.3.1.orig/src/Makefile.am
-+++ consolekit-0.3.1/src/Makefile.am
-@@ -56,11 +56,18 @@
+Index: consolekit/src/Makefile.am
+===================================================================
+--- consolekit.orig/src/Makefile.am	2010-09-20 03:07:09.397095424 +0200
++++ consolekit/src/Makefile.am	2010-09-20 03:07:22.189095438 +0200
+@@ -57,11 +57,18 @@
  	$(NULL)
  libck_la_LIBADD = $(KVM_LIBS)
  endif
@@ -52,8 +56,10 @@ Bug: https://bugs.freedesktop.org/show_bug.cgi?id=24738
  	$(NULL)
  
  sbin_PROGRAMS = 		\
---- /dev/null
-+++ consolekit-0.3.1/src/ck-sysdeps-gnu.c
+Index: consolekit/src/ck-sysdeps-gnu.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ consolekit/src/ck-sysdeps-gnu.c	2010-09-20 03:07:22.189095438 +0200
 @@ -0,0 +1,396 @@
 +/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 8 -*-
 + *
@@ -451,8 +457,10 @@ Bug: https://bugs.freedesktop.org/show_bug.cgi?id=24738
 +
 +        return ret;
 +}
---- consolekit-0.3.1.orig/pam-ck-connector/pam-ck-connector.c
-+++ consolekit-0.3.1/pam-ck-connector/pam-ck-connector.c
+Index: consolekit/pam-ck-connector/pam-ck-connector.c
+===================================================================
+--- consolekit.orig/pam-ck-connector/pam-ck-connector.c	2010-09-20 03:07:09.397095424 +0200
++++ consolekit/pam-ck-connector/pam-ck-connector.c	2010-09-20 03:07:22.201093895 +0200
 @@ -244,7 +244,7 @@
          const char *s;
          uid_t       uid;
