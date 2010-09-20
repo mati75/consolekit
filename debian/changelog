@@ -4,6 +4,7 @@ consolekit (0.4.2-1) UNRELEASED; urgency=low
   * debian/control
     - Bump Standards-Version to 3.9.1.
     - Use architecture wildcard kfreebsd-any for the libkvm-dev Build-Depends.
+    - Bump Build-Depends on libglib2.0-dev to (>= 2.14.0) for GRegex.
 
  -- Michael Biebl <biebl@debian.org>  Mon, 20 Sep 2010 02:35:46 +0200
 
