@@ -33,6 +33,7 @@
 #ifdef HAVE_SYS_VT_H
 #include <sys/vt.h>
 #endif
+#include <libscf.h>
 
 #define DEV_ENCODE(M,m) ( \
   ( (M&0xfff) << 8)   |   ( (m&0xfff00) << 12)   |   (m&0xff)   \
@@ -124,6 +125,26 @@ ck_process_stat_get_tty (CkProcessStat *stat)
         return g_strdup (stat->tty_text);
 }
 
+#define VT0_FILE "/dev/vt/0"
+static int
+get_system_vt_major ()
+{
+        static      ret = -1;
+        struct stat st;
+        int         res;
+
+        if (ret >= 0)
+                return ret;
+
+        res = stat (VT0_FILE, &st);
+
+        if (res == 0) {
+                ret = major (st.st_rdev);
+        }
+        
+        return ret;
+}
+
 /* return 1 if it works, or 0 for failure */
 static gboolean
 stat2proc (pid_t        pid,
@@ -177,30 +198,11 @@ stat2proc (pid_t        pid,
 
         snprintf (P->tty_text, sizeof P->tty_text, "%3d,%-3d", tty_maj, tty_min);
 
-	if (tty_maj == 15) {
+	if (tty_maj == get_system_vt_major ()) {
 		snprintf (P->tty_text, sizeof P->tty_text, "/dev/vt/%u", tty_min);
         }
-        if (tty_maj == 24) {
-                snprintf (P->tty_text, sizeof P->tty_text, "/dev/pts/%u", tty_min);
-        }
-
         if (P->tty == NO_TTY_VALUE) {
-#ifdef HAVE_SYS_VT_H
                 memcpy (P->tty_text, "   ?   ", 8);
-#else
-                /*
-                 * This is a bit of a hack.  On Solaris, pre-VT integration, the
-                 * Xorg process is not assigned a TTY.  So, just assign the value
-                 * to "/dev/console" if running without VT support.  This will
-                 * allow people using Solaris pre-VT integration to use
-                 * ConsoleKit.
-                 */
-                memcpy (P->tty_text, "/dev/console", 12);
-#endif
-        }
-
-        if (P->tty == DEV_ENCODE(0,0)) {
-                memcpy (P->tty_text, "/dev/console", 12);
         }
 
         if (P->pid != pid) {
@@ -416,6 +418,23 @@ ck_get_max_num_consoles (guint *num)
         g_free (svcprop_stdout);
 
         return ret;
+}
+
+gboolean
+ck_supports_activatable_consoles (void)
+{
+        char *state = NULL;
+        gboolean vt_enabled;
+                               
+        state = smf_get_state ("svc:/system/vtdaemon:default");
+        if (state && g_str_equal (state, SCF_STATE_STRING_ONLINE)) {
+                vt_enabled = TRUE;
+        } else {
+                vt_enabled = FALSE;
+        }           
+                    
+        g_free (state);
+        return vt_enabled;
 }
 
 char *

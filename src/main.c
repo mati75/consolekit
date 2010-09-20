@@ -283,7 +283,7 @@ main (int    argc,
         res = g_option_context_parse (context, &argc, &argv, &error);
         g_option_context_free (context);
         if (! res) {
-                g_warning (error->message);
+                g_warning ("%s", error->message);
                 g_error_free (error);
                 goto out;
         }
@@ -294,8 +294,16 @@ main (int    argc,
 
         setup_debug_log (debug);
 
+        g_debug ("initializing console-kit-daemon %s", VERSION);
+
         connection = get_system_bus ();
         if (connection == NULL) {
+                goto out;
+        }
+
+        manager = ck_manager_new ();
+
+        if (manager == NULL) {
                 goto out;
         }
 
@@ -310,15 +318,7 @@ main (int    argc,
                 goto out;
         }
 
-        g_debug ("initializing console-kit-daemon %s", VERSION);
-
         create_pid_file ();
-
-        manager = ck_manager_new ();
-
-        if (manager == NULL) {
-                goto out;
-        }
 
         loop = g_main_loop_new (NULL, FALSE);
 

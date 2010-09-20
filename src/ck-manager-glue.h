@@ -27,6 +27,7 @@ G_BEGIN_DECLS
 #define g_marshal_value_peek_boxed(v)    g_value_get_boxed (v)
 #define g_marshal_value_peek_pointer(v)  g_value_get_pointer (v)
 #define g_marshal_value_peek_object(v)   g_value_get_object (v)
+#define g_marshal_value_peek_variant(v)  g_value_get_variant (v)
 #else /* !G_ENABLE_DEBUG */
 /* WARNING: This code accesses GValues directly, which is UNSUPPORTED API.
  *          Do not access GValues directly in your code. Instead, use the
@@ -50,10 +51,11 @@ G_BEGIN_DECLS
 #define g_marshal_value_peek_boxed(v)    (v)->data[0].v_pointer
 #define g_marshal_value_peek_pointer(v)  (v)->data[0].v_pointer
 #define g_marshal_value_peek_object(v)   (v)->data[0].v_pointer
+#define g_marshal_value_peek_variant(v)  (v)->data[0].v_pointer
 #endif /* !G_ENABLE_DEBUG */
 
 
-/* NONE:STRING,POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:1) */
+/* NONE:STRING,POINTER */
 extern void dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
                                                                GValue       *return_value,
                                                                guint         n_param_values,
@@ -97,7 +99,7 @@ dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
 }
 #define dbus_glib_marshal_ck_manager_NONE__STRING_POINTER	dbus_glib_marshal_ck_manager_VOID__STRING_POINTER
 
-/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:2) */
+/* BOOLEAN:POINTER,POINTER */
 extern void dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
                                                                    GValue       *return_value,
                                                                    guint         n_param_values,
@@ -144,15 +146,15 @@ dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:UINT,POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:3) */
+/* NONE:UINT,POINTER */
 #define dbus_glib_marshal_ck_manager_VOID__UINT_POINTER	g_cclosure_marshal_VOID__UINT_POINTER
 #define dbus_glib_marshal_ck_manager_NONE__UINT_POINTER	dbus_glib_marshal_ck_manager_VOID__UINT_POINTER
 
-/* NONE:POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:4) */
+/* NONE:POINTER */
 #define dbus_glib_marshal_ck_manager_VOID__POINTER	g_cclosure_marshal_VOID__POINTER
 #define dbus_glib_marshal_ck_manager_NONE__POINTER	dbus_glib_marshal_ck_manager_VOID__POINTER
 
-/* NONE:BOXED,POINTER (/tmp/dbus-binding-tool-c-marshallers.CGY3YU:5) */
+/* NONE:BOXED,POINTER */
 extern void dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER (GClosure     *closure,
                                                               GValue       *return_value,
                                                               guint         n_param_values,

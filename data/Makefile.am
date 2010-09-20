@@ -20,6 +20,41 @@ service_DATA = $(service_in_files:.service.in=.service)
 $(service_DATA): $(service_in_files) Makefile
 	$(edit) $< >$@
 
+if HAVE_SYSTEMD
+systemdsystemunit_DATA = \
+	console-kit-daemon.service \
+	console-kit-log-system-start.service \
+	console-kit-log-system-stop.service \
+	console-kit-log-system-restart.service
+
+console-kit-daemon.service: console-kit-daemon.service.in
+	$(edit) $< >$@
+
+console-kit-log-system-start.service: console-kit-log-system-start.service.in
+	$(edit) $< >$@
+
+console-kit-log-system-stop.service: console-kit-log-system-stop.service.in
+	$(edit) $< >$@
+
+console-kit-log-system-restart.service: console-kit-log-system-restart.service.in
+	$(edit) $< >$@
+
+install-data-hook:
+	$(MKDIR_P) -m 755 \
+		$(DESTDIR)$(systemdsystemunitdir)/basic.target.wants \
+		$(DESTDIR)$(systemdsystemunitdir)/halt.target.wants \
+		$(DESTDIR)$(systemdsystemunitdir)/poweroff.target.wants \
+		$(DESTDIR)$(systemdsystemunitdir)/reboot.target.wants
+	( cd $(DESTDIR)$(systemdsystemunitdir)/basic.target.wants && \
+		$(LN_S) ../console-kit-log-system-start.service )
+	( cd $(DESTDIR)$(systemdsystemunitdir)/halt.target.wants && \
+		$(LN_S) ../console-kit-log-system-stop.service )
+	( cd $(DESTDIR)$(systemdsystemunitdir)/poweroff.target.wants && \
+		$(LN_S) ../console-kit-log-system-stop.service )
+	( cd $(DESTDIR)$(systemdsystemunitdir)/reboot.target.wants && \
+		$(LN_S) ../console-kit-log-system-restart.service )
+endif
+
 edit = sed \
 	-e 's|@sbindir[@]|$(sbindir)|g' \
 	-e 's|@sysconfdir[@]|$(sysconfdir)|g' \
@@ -33,10 +68,19 @@ EXTRA_DIST =						\
 	$(dbusconf_DATA)				\
 	$(seat_DATA)					\
 	$(service_in_files)				\
+	console-kit-daemon.service.in                   \
+	console-kit-log-system-start.service.in         \
+	console-kit-log-system-stop.service.in          \
+	console-kit-log-system-restart.service.in       \
 	$(NULL)
 
 MAINTAINERCLEANFILES =			\
 	*~				\
 	Makefile.in
 
-CLEANFILES = $(service_DATA)
+CLEANFILES =                                            \
+	$(service_DATA)                                 \
+	console-kit-daemon.service                      \
+	console-kit-log-system-start.service        	\
+	console-kit-log-system-stop.service     	\
+	console-kit-log-system-restart.service
