@@ -1,4 +1,5 @@
 # Debian patches for consolekit
+01-fallback_no_vt_waitevent.patch
 03-cleanup_console_tags.patch
 80-gnukfreebsd_support_configure.ac.patch
 82-hurd_support.patch
