@@ -27,6 +27,7 @@ G_BEGIN_DECLS
 #define g_marshal_value_peek_boxed(v)    g_value_get_boxed (v)
 #define g_marshal_value_peek_pointer(v)  g_value_get_pointer (v)
 #define g_marshal_value_peek_object(v)   g_value_get_object (v)
+#define g_marshal_value_peek_variant(v)  g_value_get_variant (v)
 #else /* !G_ENABLE_DEBUG */
 /* WARNING: This code accesses GValues directly, which is UNSUPPORTED API.
  *          Do not access GValues directly in your code. Instead, use the
@@ -50,10 +51,11 @@ G_BEGIN_DECLS
 #define g_marshal_value_peek_boxed(v)    (v)->data[0].v_pointer
 #define g_marshal_value_peek_pointer(v)  (v)->data[0].v_pointer
 #define g_marshal_value_peek_object(v)   (v)->data[0].v_pointer
+#define g_marshal_value_peek_variant(v)  (v)->data[0].v_pointer
 #endif /* !G_ENABLE_DEBUG */
 
 
-/* NONE:BOOLEAN,POINTER (/tmp/dbus-binding-tool-c-marshallers.3QM4YU:1) */
+/* NONE:BOOLEAN,POINTER */
 extern void dbus_glib_marshal_ck_session_VOID__BOOLEAN_POINTER (GClosure     *closure,
                                                                 GValue       *return_value,
                                                                 guint         n_param_values,
@@ -97,7 +99,7 @@ dbus_glib_marshal_ck_session_VOID__BOOLEAN_POINTER (GClosure     *closure,
 }
 #define dbus_glib_marshal_ck_session_NONE__BOOLEAN_POINTER	dbus_glib_marshal_ck_session_VOID__BOOLEAN_POINTER
 
-/* BOOLEAN:POINTER,POINTER (/tmp/dbus-binding-tool-c-marshallers.3QM4YU:2) */
+/* BOOLEAN:POINTER,POINTER */
 extern void dbus_glib_marshal_ck_session_BOOLEAN__POINTER_POINTER (GClosure     *closure,
                                                                    GValue       *return_value,
                                                                    guint         n_param_values,
@@ -144,7 +146,7 @@ dbus_glib_marshal_ck_session_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:POINTER (/tmp/dbus-binding-tool-c-marshallers.3QM4YU:3) */
+/* NONE:POINTER */
 #define dbus_glib_marshal_ck_session_VOID__POINTER	g_cclosure_marshal_VOID__POINTER
 #define dbus_glib_marshal_ck_session_NONE__POINTER	dbus_glib_marshal_ck_session_VOID__POINTER
 

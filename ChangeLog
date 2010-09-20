@@ -1,3 +1,316 @@
+commit 55803876769bd0903cb0efda597bfd5a657adb86
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Mon Sep 6 16:34:13 2010 +0200
+
+    systemd: keep around console-kit-log-system-start.service after it
+    was run to avoid that it can be triggered twice
+
+ data/console-kit-log-system-start.service.in |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit 2782cc8d4950effbc4407455e72bd4750cef6e11
+Author: Kan-Ru Chen <koster@debian.org>
+Date:   Thu Aug 19 13:45:03 2010 +0800
+
+    linux: Use VT_WAITEVENT if available to avoid spawn too many threads
+
+    Starting from linux kernel 2.6.32 there is a new ioctl VT_WAITEVENT
+    which can monitor vt switches and return new vt number.
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=17720
+
+ NEWS                  |    1 +
+ src/ck-sysdeps-unix.c |   44 ++++++++++++++++++++++++++++++++++++++++++++
+ src/ck-sysdeps.h      |    2 ++
+ src/ck-vt-monitor.c   |   48
+ ++++++++++++++++++++++++++++++++++++++++--------
+ 4 files changed, 87 insertions(+), 8 deletions(-)
+
+commit 98e36b216189966f21259bb33f1a25290a9ab23e
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Sun Sep 5 23:28:45 2010 +0200
+
+    NEWS: update for 0.4.2
+
+ NEWS |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
+
+commit afedbb80497e0a26f2026336943b1e37a8e696af
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Fri Sep 3 19:24:18 2010 +0200
+
+    systemd: install unit files for CK logging calls
+
+    This follows the basic scheme of the Upstart scripts we already ship
+
+ data/.gitignore                                |    3 ++
+ data/Makefile.am                               |   38
+ ++++++++++++++++++++++-
+ data/console-kit-log-system-restart.service.in |    9 +++++
+ data/console-kit-log-system-start.service.in   |    9 +++++
+ data/console-kit-log-system-stop.service.in    |    9 +++++
+ 5 files changed, 66 insertions(+), 2 deletions(-)
+
+commit 5a81bb666df3d8469d282e63d452ac2dea96b313
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Wed Jul 21 16:55:44 2010 +0200
+
+    systemd: install systemd unit files
+
+ Makefile.am                                |    3 +++
+ configure.ac                               |    9 +++++++++
+ data/.gitignore                            |    1 +
+ data/Makefile.am                           |   12 +++++++++++-
+ data/console-kit-daemon.service.in         |   15 +++++++++++++++
+ data/org.freedesktop.ConsoleKit.service.in |    1 +
+ 6 files changed, 40 insertions(+), 1 deletions(-)
+
+commit 30f0968b9a7f544d1afc8908888dc403be6112b8
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Tue Aug 3 15:26:58 2010 -0400
+
+    Only load seat files with a .seat extension
+
+ src/ck-manager.c |   10 ++++++----
+ src/ck-seat.c    |    2 ++
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+commit 7b9212fa6aff55420c58f2cacd0a941762920337
+Author: Anders Kaseorg <andersk@mit.edu>
+Date:   Tue Aug 3 15:07:39 2010 -0400
+
+    Fix a few memory leaks
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=26227
+
+ src/ck-manager.c |    7 +++++++
+ src/ck-session.c |    3 ++-
+ 2 files changed, 9 insertions(+), 1 deletions(-)
+
+commit 4f88228f31a63c026c424a92827f26ad7535275c
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Jun 3 20:02:35 2010 -0400
+
+    Only set sessions to be is-local=true if set by a trusted party
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=28377
+
+ src/ck-manager.c                |  166
+ ++++++++++++++++++++++++++++++++++++++-
+ tools/ck-collect-session-info.c |   10 +--
+ 2 files changed, 165 insertions(+), 11 deletions(-)
+
+commit c9f2292339540d4b9d8940bcef16b7485480c8d9
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Fri Jun 11 15:53:22 2010 -0400
+
+    Add a --since option to show entries in a time window
+
+    Doesn't load any history files it doesn't need to which should
+    help performance on systems with long histories.
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=25660
+
+ tools/ck-history.c |   96
+ ++++++++++++++++++++++++++++++++++++++++------------
+ 1 files changed, 74 insertions(+), 22 deletions(-)
+
+commit b8a961f91105df661957f6b86922f744bac8b91c
+Author: Halton Huo <halton.huo@sun.com>
+Date:   Wed May 19 12:46:25 2010 +0800
+
+    Enhancement CanActivateSessions for OpenSolaris.
+
+    VT switching is always enabled on Linux, but for OpenSolaris VT
+    switching
+    can be truned of by 'svcadm disable vtdaemon'. So we should also check
+    whether the service vtdaemon is online on OpenSolaris.
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=26055
+
+ src/Makefile.am          |    1 +
+ src/ck-sysdeps-freebsd.c |    6 ++++++
+ src/ck-sysdeps-linux.c   |    6 ++++++
+ src/ck-sysdeps-solaris.c |   18 ++++++++++++++++++
+ src/ck-sysdeps.h         |    1 +
+ 5 files changed, 32 insertions(+), 0 deletions(-)
+
+commit 9f7ded3fb41f7f656895373463e5aa3ca04f86bc
+Author: Halton Huo <halton.huo@sun.com>
+Date:   Thu May 20 10:48:09 2010 +0800
+
+    Revert "Enhancement CanActivateSessions for OpenSolaris."
+
+    This reverts commit b2e65a0ab7f4c417c85433e3e9bf97befbe6da3b.
+
+ configure.ac    |   13 -------------
+ src/Makefile.am |    1 -
+ src/ck-seat.c   |   26 +-------------------------
+ 3 files changed, 1 insertions(+), 39 deletions(-)
+
+commit b2e65a0ab7f4c417c85433e3e9bf97befbe6da3b
+Author: Halton Huo <halton.huo@sun.com>
+Date:   Fri Jan 15 14:06:32 2010 +0800
+
+    Enhancement CanActivateSessions for OpenSolaris.
+
+    VT switching is always enabled on Linux, but for OpenSolaris VT
+    switching
+    can be truned of by 'svcadm disable vtdaemon'. So we should also check
+    whether the service vtdaemon is online on OpenSolaris.
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=26055
+
+ configure.ac    |   13 +++++++++++++
+ src/Makefile.am |    1 +
+ src/ck-seat.c   |   26 +++++++++++++++++++++++++-
+ 3 files changed, 39 insertions(+), 1 deletions(-)
+
+commit e7f3952632f077ff647e303bd08950085c293297
+Author: Frederic Crozat <fcrozat@mandriva.com>
+Date:   Fri Jan 29 06:43:29 2010 -0500
+
+    format not a string literal and no format arguments
+
+    Fixes http://bugs.freedesktop.org/show_bug.cgi?id=24152
+
+ src/ck-log-event.c |   16 ++++++++--------
+ src/main.c         |    2 +-
+ 2 files changed, 9 insertions(+), 9 deletions(-)
+
+commit 42315147af68f5e64f86d794061e8c03e2b8dc01
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Jan 28 18:24:49 2010 -0500
+
+    Use the correct property ID for idle-hint
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=25703
+
+ src/ck-session.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit f01e054a419d7aaf10c1da321bfbff554ffc3c54
+Author: Michael Biebl <mbiebl@gmail.com>
+Date:   Thu Jan 28 18:11:54 2010 -0500
+
+    Don't segfault if the seats file is invalid.
+
+    http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=561106
+
+ src/ck-manager.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+commit 2418840248f07025ad0edc96ed17e03ce5e47f3e
+Author: Ray Strode <rstrode@redhat.com>
+Date:   Mon Dec 21 11:14:54 2009 -0500
+
+    Don't take bus name until ready
+
+    Previously, we would take a bus name right away, but
+    not register the manager object until later.  This
+    causes a race when being activated by a method call
+    on the manager object, where ConsoleKit gets started
+    but the method call fails.
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=25744
+
+ src/main.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
+
+commit fc2870a65f6b3ed3b71bcac69c5faf3a9c759c64
+Author: Matthias Clasen <mclasen@redhat.com>
+Date:   Mon Dec 21 11:13:23 2009 -0500
+
+    Don't daemonize when activated
+
+    It confuses some versions of D-Bus and isn't needed
+    (or wanted it).
+
+    http://bugs.freedesktop.org/show_bug.cgi?id=25642
+
+ data/org.freedesktop.ConsoleKit.service.in |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 48b4b2d1174db98ee87ea4e71f4a21221043ca3f
+Author: Halton Huo <halton.huo@sun.com>
+Date:   Tue Nov 10 14:38:29 2009 +0800
+
+    Implement CanRestart and CanStop interfaces on Solaris.
+
+    Fixes http://bugs.freedesktop.org/show_bug.cgi?id=24992
+
+ src/ck-manager.c |   31 ++++++++++++++++++++++---------
+ 1 files changed, 22 insertions(+), 9 deletions(-)
+
+commit 42a909bbc8ede5c27e3d40606a98ab1251511dfc
+Author: Halton Huo <halton.huo@sun.com>
+Date:   Tue Nov 3 11:42:07 2009 +0800
+
+    Identify major device number for vt rather than hard code as 15.
+    Fixes bug http://defect.opensolaris.org/bz/show_bug.cgi?id=12322
+    This is solaris only bug, won't affect other platform.
+
+ src/ck-sysdeps-solaris.c |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
+
+commit b00450b3f9284d997e2e25fd470e7df7336f03ec
+Author: Halton Huo <halton.huo@sun.com>
+Date:   Fri Oct 16 11:10:37 2009 +0800
+
+    Fix bug console-kit-daemon exit when receiving  SIGPOLL on Solaris.
+    Refer to bug http://defect.opensolaris.org/bz/show_bug.cgi?id=11612
+
+ src/ck-vt-monitor.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+commit 909bb5d08a50384ae2a521b80768c283363dbb86
+Author: Halton Huo <halton.huo@sun.com>
+Date:   Fri Oct 16 11:09:58 2009 +0800
+
+    Correct tty return value after VT support is integrated in Solaris.
+
+ src/ck-sysdeps-solaris.c |   19 -------------------
+ 1 files changed, 0 insertions(+), 19 deletions(-)
+
+commit 4661908c6dc7964c87f698edc7bbeb30ab37c986
+Author: Ray Strode <rstrode@redhat.com>
+Date:   Fri Sep 25 15:33:23 2009 -0400
+
+    Turn on silent build by default
+
+    It's all the rage these days and makes seeing warnings much
+    easier.
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 3719fa53557d39d9b8a024d1cc7542ab6f9981d6
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Sep 24 02:34:31 2009 -0400
+
+    fix style
+
+ src/ck-seat.c |   21 ++++++++++++++-------
+ 1 files changed, 14 insertions(+), 7 deletions(-)
+
+commit f40de949f72bb0da2c64776fdda039a855ea0374
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Sep 24 02:31:49 2009 -0400
+
+    post release version bump
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 9ddc8aa9549425ead3bfeb2dc22f0c07ddca7718
+Author: William Jon McCann <jmccann@redhat.com>
+Date:   Thu Sep 24 02:29:46 2009 -0400
+
+    Another?  So soon?
+
+ NEWS |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
 commit 6bc4a3bf403acb762dfaa0cf4eb8288b73e6aa2d
 Author: William Jon McCann <jmccann@redhat.com>
 Date:   Thu Sep 24 02:15:59 2009 -0400
@@ -781,31 +1094,23 @@ Date:	Wed Jul 30 17:37:24 2008 -0400
 
     reorganize the docs a bit
 
- configure.ac			   |	4 +-
- doc/.gitignore			   |	2 -
- doc/ConsoleKit.xml.in		   |   74 -----
- doc/Makefile.am		   |   41 +---
- doc/config.xsl			   |	6 -
- doc/dbus-introspect-docs.dtd	   |   32 ---
- doc/dbus/.gitignore		   |	6 +
- doc/dbus/ConsoleKit.xml.in	   |   74 +++++
- doc/dbus/Makefile.am		   |   46 +++
- doc/dbus/ck-design.xml		   |  180 ++++++++++++
- doc/dbus/ck-introduction.xml	   |   28 ++
- doc/dbus/ck-terms.xml		   |   67 +++++
- doc/dbus/config.xsl		   |	6 +
- doc/dbus/dbus-introspect-docs.dtd |   32 +++
- doc/dbus/docbook.css		   |   78 ++++++
- doc/dbus/spec-to-docbook.xsl	   |  543
- +++++++++++++++++++++++++++++++++++++
- doc/docbook.css		   |   78 ------
- doc/xml/Makefile.am		   |   20 --
- doc/xml/ck-design.xml		   |  180 ------------
- doc/xml/ck-introduction.xml	   |   28 --
- doc/xml/ck-terms.xml		   |   67 -----
- doc/xml/spec-to-docbook.xsl	   |  543
- -------------------------------------
- 22 files changed, 1063 insertions(+), 1072 deletions(-)
+ configure.ac				 |    4 +-
+ doc/.gitignore				 |    2 -
+ doc/Makefile.am			 |   41
+ +---------------------------
+ doc/{ => dbus}/.gitignore		 |    0
+ doc/{ => dbus}/ConsoleKit.xml.in	 |    0
+ doc/dbus/Makefile.am			 |   46
+ +++++++++++++++++++++++++++++++
+ doc/{xml => dbus}/ck-design.xml	 |    0
+ doc/{xml => dbus}/ck-introduction.xml	 |    0
+ doc/{xml => dbus}/ck-terms.xml		 |    0
+ doc/{ => dbus}/config.xsl		 |    0
+ doc/{ => dbus}/dbus-introspect-docs.dtd |    0
+ doc/{ => dbus}/docbook.css		 |    0
+ doc/{xml => dbus}/spec-to-docbook.xsl	 |    0
+ doc/xml/Makefile.am			 |   20 -------------
+ 14 files changed, 49 insertions(+), 64 deletions(-)
 
 commit 77fe8e2e89af7cd21357116e9668b23d958fb2a5
 Author: William Jon McCann <jmccann@redhat.com>
@@ -844,11 +1149,10 @@ Date:	Wed Jul 23 23:42:17 2008 -0400
 
     fix the includes
 
- doc/ConsoleKit.xml.in		  |   23 +++++++----------------
- doc/dbus-introspect-docs.dtd	  |   32 ++++++++++++++++++++++++++++++++
- doc/xml/Makefile.am		  |    6 +++---
- doc/xml/dbus-introspect-docs.dtd |   32 --------------------------------
- 4 files changed, 42 insertions(+), 51 deletions(-)
+ doc/ConsoleKit.xml.in			|   23 +++++++----------------
+ doc/{xml => }/dbus-introspect-docs.dtd |    0
+ doc/xml/Makefile.am			|    6 +++---
+ 3 files changed, 10 insertions(+), 19 deletions(-)
 
 commit 460d6c9e42e84d3d66bfcadfbaa77a0e059caae7
 Author: William Jon McCann <jmccann@redhat.com>
@@ -872,34 +1176,26 @@ Date:	Wed Jul 23 23:22:36 2008 -0400
     unknown tags.  Apparently this is now fixed.  Also install the xml to
     /usr/share/dbus-1/interfaces.
 
- configure.ac				    |	 6 +
- doc/Makefile.am			    |	 6 +-
- doc/dbus-introspect-docs.dtd		    |	32 --
- doc/spec/ck-manager.xml		    |  343 ----------------------
- doc/spec/ck-seat.xml			    |  163 -----------
- doc/spec/ck-session.xml		    |  435
- ---------------------------
- doc/tools/spec-strip-docs		    |	34 ---
- doc/tools/spec-strip-docs.xsl		    |	36 ---
- doc/tools/spec-to-docbook		    |	34 ---
- doc/tools/spec-to-docbook.xsl		    |  436
- ----------------------------
- doc/tools/update-from-spec		    |	25 --
- doc/xml/dbus-introspect-docs.dtd	    |	32 ++
- doc/xml/ref-ck-manager.xml		    |  199 -------------
- doc/xml/ref-ck-seat.xml		    |	87 ------
- doc/xml/ref-ck-session.xml		    |  258 ----------------
- doc/xml/spec-to-docbook.xsl		    |  436
- ++++++++++++++++++++++++++++
- src/Makefile.am			    |	23 +-
- src/ck-manager.xml			    |	70 -----
- src/ck-seat.xml			    |	39 ---
- src/ck-session.xml			    |	81 -----
- src/org.freedesktop.ConsoleKit.Manager.xml |  343 ++++++++++++++++++++++
- src/org.freedesktop.ConsoleKit.Seat.xml    |  163 +++++++++++
- src/org.freedesktop.ConsoleKit.Session.xml |  435
- +++++++++++++++++++++++++++
- 23 files changed, 1432 insertions(+), 2284 deletions(-)
+ configure.ac					    |	 6 +
+ doc/Makefile.am				    |	 6 +-
+ doc/tools/spec-strip-docs			    |	34 ---
+ doc/tools/spec-strip-docs.xsl			    |	36 ---
+ doc/tools/spec-to-docbook			    |	34 ---
+ doc/tools/update-from-spec			    |	25 --
+ doc/{ => xml}/dbus-introspect-docs.dtd		    |	 0
+ doc/xml/ref-ck-manager.xml			    |  199 ---------------
+ doc/xml/ref-ck-seat.xml			    |	87 -------
+ doc/xml/ref-ck-session.xml			    |  258
+ --------------------
+ doc/{tools => xml}/spec-to-docbook.xsl		    |	 0
+ src/Makefile.am				    |	23 +-
+ src/ck-manager.xml				    |	70 ------
+ src/ck-seat.xml				    |	39 ---
+ src/ck-session.xml				    |	81 ------
+ .../org.freedesktop.ConsoleKit.Manager.xml	    |	 0
+ .../org.freedesktop.ConsoleKit.Seat.xml	    |	 0
+ .../org.freedesktop.ConsoleKit.Session.xml	    |	 0
+ 18 files changed, 23 insertions(+), 875 deletions(-)
 
 commit 34cefc96f7661ed92927bffa1cf7cbc79a84e5ab
 Author: William Jon McCann <jmccann@redhat.com>
@@ -1169,11 +1465,8 @@ Date:	Tue Feb 26 14:18:22 2008 -0500
 
     rename policy file
 
- data/ConsoleKit.policy			|   48
- --------------------------------
- data/org.freedesktop.consolekit.policy |   48
- ++++++++++++++++++++++++++++++++
- 2 files changed, 48 insertions(+), 48 deletions(-)
+ ...it.policy => org.freedesktop.consolekit.policy} |	 0
+ 1 files changed, 0 insertions(+), 0 deletions(-)
 
 commit 1d7b97d3a393996ffb95d9c23b081b4cf6c54ed0
 Author: William Jon McCann <jmccann@redhat.com>
@@ -2542,20 +2835,18 @@ Date:	Thu Aug 16 22:29:18 2007 -0400
 
     move all proc stuff into ck-sysdeps
 
- src/Makefile.am		   |   23 +-
- src/ck-manager.c		   |   52 ++--
- src/ck-sysdeps-linux.c		   |  605
- +++++++++++++++++++++++++++++++++++++
- src/ck-sysdeps-solaris.c	   |  324 ++++++++++++++++++++
- src/ck-sysdeps.h		   |   49 +++
- src/proc-linux.c		   |  605
- -------------------------------------
- src/proc-solaris.c		   |  324 --------------------
- src/proc.h			   |   48 ---
- tools/Makefile.am		   |	6 +-
- tools/ck-collect-session-info.c   |   36 ++--
- tools/ck-get-x11-display-device.c |   18 +-
- 11 files changed, 1046 insertions(+), 1044 deletions(-)
+ src/Makefile.am			      |   23 +++++-----
+ src/ck-manager.c			      |   52
+ ++++++++++++-----------
+ src/{proc-linux.c => ck-sysdeps-linux.c}     |   60
+ +++++++++++++-------------
+ src/{proc-solaris.c => ck-sysdeps-solaris.c} |   40 +++++++++---------
+ src/ck-sysdeps.h			      |   49 +++++++++++++++++++++
+ src/proc.h				      |   48 --------------------
+ tools/Makefile.am			      |    6 +-
+ tools/ck-collect-session-info.c	      |   36 ++++++++--------
+ tools/ck-get-x11-display-device.c	      |   18 ++++----
+ 9 files changed, 167 insertions(+), 165 deletions(-)
 
 commit e56a95f64c9c9f57adebf6cb3e6c88790cec40e4
 Author: William Jon McCann <mccann@jhu.edu>
@@ -2564,18 +2855,15 @@ Date:	Tue Aug 14 17:03:00 2007 -0400
     move tools out of linux subdirectory since they apparently work
     on solaris
 
- tools/.gitignore			 |    3 +
- tools/Makefile.am			 |   36 +++
- tools/ck-collect-session-info.c	 |  410
- +++++++++++++++++++++++++++++++
- tools/ck-get-x11-display-device.c	 |  152 ++++++++++++
- tools/ck-get-x11-server-pid.c		 |  100 ++++++++
- tools/linux/Makefile.am		 |   32 ---
- tools/linux/ck-collect-session-info.c	 |  410
- -------------------------------
- tools/linux/ck-get-x11-display-device.c |  152 ------------
- tools/linux/ck-get-x11-server-pid.c	 |  100 --------
- 9 files changed, 701 insertions(+), 694 deletions(-)
+ tools/.gitignore			       |    3 ++
+ tools/Makefile.am			       |   36
+ +++++++++++++++++++++++++
+ tools/{linux => }/ck-collect-session-info.c   |    0
+ tools/{linux => }/ck-get-x11-display-device.c |    0
+ tools/{linux => }/ck-get-x11-server-pid.c     |    0
+ tools/linux/Makefile.am		       |   32
+ ----------------------
+ 6 files changed, 39 insertions(+), 32 deletions(-)
 
 commit dc97e6caabc9932922d26f3400424626462f5ad2
 Author: William Jon McCann <mccann@jhu.edu>
@@ -3185,14 +3473,14 @@ Date:	Tue Mar 13 12:11:04 2007 -0400
 
     add more doc stubs
 
- doc/ConsoleKit.html	     |	122
- +++++++++++++++++++++++--------------------
- doc/ConsoleKit.xml.in	     |	  4 ++
- doc/Makefile.am	     |	  2 +
- doc/xml/ck-design.xml	     |	  5 ++
- doc/xml/ck-introduction.xml |	  6 ++
- doc/xml/ck-terms.xml	     |	 26 +++++++++
- 6 files changed, 108 insertions(+), 57 deletions(-)
+ doc/ConsoleKit.html			       |  122
+ +++++++++++++------------
+ doc/ConsoleKit.xml.in			       |    4 +
+ doc/Makefile.am			       |    2 +
+ doc/xml/ck-design.xml			       |    5 +
+ doc/xml/ck-introduction.xml		       |    6 +
+ doc/xml/{ck-introduction.xml => ck-terms.xml} |   14 ++-
+ 6 files changed, 92 insertions(+), 61 deletions(-)
 
 commit 4a639d92a6f1a5dd8f59d57ade37d4cff420b66a
 Author: William Jon McCann <mccann@jhu.edu>
@@ -3230,35 +3518,33 @@ Date:	Tue Mar 13 03:42:04 2007 -0400
     docs.  There are tools to build docbook and strip
     the docs to make dbus introspect xml.
 
- doc/ConsoleKit.html	       |  336 +++++++++++++++++++++++++++--------
- doc/ConsoleKit.xml.in	       |    9 +-
- doc/Makefile.am	       |    8 +-
- doc/ck-introduction.xml       |   23 ---
- doc/dbus-introspect-docs.dtd  |   31 ++++
- doc/docbook-dbus.xsl	       |  261 ---------------------------
- doc/docbook.css	       |    5 +
- doc/docize-dbus-xml.sh        |   34 ----
- doc/ref-ck-manager.xml        |  181 -------------------
- doc/ref-ck-seat.xml	       |  111 ------------
- doc/ref-ck-session.xml        |  350 -----------------------------------
- doc/spec/ck-manager.xml       |  286 +++++++++++++++++++++++++++++
- doc/spec/ck-seat.xml	       |  110 +++++++++++
- doc/spec/ck-session.xml       |  401
- +++++++++++++++++++++++++++++++++++++++++
- doc/tools/spec-strip-docs     |   34 ++++
- doc/tools/spec-strip-docs.xsl |   36 ++++
- doc/tools/spec-to-docbook     |   34 ++++
- doc/tools/spec-to-docbook.xsl |  379
- ++++++++++++++++++++++++++++++++++++++
- doc/tools/update-from-spec    |   25 +++
- doc/xml/ck-introduction.xml   |   20 ++
- doc/xml/ref-ck-manager.xml    |  174 ++++++++++++++++++
- doc/xml/ref-ck-seat.xml       |   72 ++++++++
- doc/xml/ref-ck-session.xml    |  240 ++++++++++++++++++++++++
- src/ck-manager.xml	       |   16 +--
- src/ck-seat.xml	       |   14 +-
- src/ck-session.xml	       |   11 +-
- 26 files changed, 2131 insertions(+), 1070 deletions(-)
+ doc/ConsoleKit.html				    |  336
+ +++++++++++++----
+ doc/ConsoleKit.xml.in				    |	 9 +-
+ doc/Makefile.am				    |	 8 +-
+ doc/dbus-introspect-docs.dtd			    |	31 ++
+ doc/docbook.css				    |	 5 +
+ doc/ref-ck-manager.xml				    |  181 ---------
+ doc/ref-ck-seat.xml				    |  111 ------
+ doc/ref-ck-session.xml				    |  350
+ -----------------
+ doc/spec/ck-manager.xml			    |  286 ++++++++++++++
+ doc/spec/ck-seat.xml				    |  110 ++++++
+ doc/spec/ck-session.xml			    |  401
+ ++++++++++++++++++++
+ doc/{docize-dbus-xml.sh => tools/spec-strip-docs}  |	 4 +-
+ doc/tools/spec-strip-docs.xsl			    |	36 ++
+ doc/{docize-dbus-xml.sh => tools/spec-to-docbook}  |	 2 +-
+ .../spec-to-docbook.xsl}			    |  148 +++++++-
+ doc/tools/update-from-spec			    |	25 ++
+ doc/{ => xml}/ck-introduction.xml		    |	 3 -
+ doc/xml/ref-ck-manager.xml			    |  174 +++++++++
+ doc/xml/ref-ck-seat.xml			    |	72 ++++
+ doc/xml/ref-ck-session.xml			    |  240 ++++++++++++
+ src/ck-manager.xml				    |	16 +-
+ src/ck-seat.xml				    |	14 +-
+ src/ck-session.xml				    |	11 +-
+ 23 files changed, 1800 insertions(+), 773 deletions(-)
 
 commit 4595ab3d4953d6257a6fedfe5b294df67ff3581f
 Author: William Jon McCann <mccann@jhu.edu>
@@ -3381,12 +3667,12 @@ Date:	Thu Mar 8 21:24:25 2007 -0500
 
     update all .gitignore files
 
- .gitignore		     |	  1 +
- libck-connector/.gitignore  |	  9 +++++++++
- pam-ck-connector/.gitignore |	  8 ++++++++
- tools/.gitignore	     |	  2 +-
- tools/linux/.gitignore      |	  9 +++++++++
- 5 files changed, 28 insertions(+), 1 deletions(-)
+ .gitignore				|    1 +
+ {tools => libck-connector}/.gitignore	|    3 ++-
+ {tools => pam-ck-connector}/.gitignore |    2 +-
+ tools/.gitignore			|    2 +-
+ tools/linux/.gitignore			|    9 +++++++++
+ 5 files changed, 14 insertions(+), 3 deletions(-)
 
 commit 1702970a3ea3de88f04623f69a3ab5260f77d2c5
 Author: William Jon McCann <mccann@jhu.edu>
@@ -3801,10 +4087,10 @@ Date:	Wed Feb 28 10:50:46 2007 -0500
 
     System dependent tools will be built in subdirectories under tools.
 
- configure.ac		 |   23 +++++++++++++++++++++++
- tools/Makefile.am	 |    8 ++++++++
- tools/linux/Makefile.am |   33 +++++++++++++++++++++++++++++++++
- 3 files changed, 64 insertions(+), 0 deletions(-)
+ configure.ac		       |   23 +++++++++++++++++++++++
+ tools/Makefile.am	       |    8 ++++++++
+ tools/{ => linux}/Makefile.am |   13 ++-----------
+ 3 files changed, 33 insertions(+), 11 deletions(-)
 
 commit 593d2ae454f225c545c35398ddfd2c92389e48a7
 Author: William Jon McCann <mccann@jhu.edu>
@@ -3897,14 +4183,10 @@ Date:	Wed Feb 21 11:31:54 2007 -0500
 
     make separate test scripts for open session methods
 
- src/ck-manager.c		       |    1 +
- src/test-open-session		       |   44
- ++++++++++++++++++++++++++++++
- src/test-open-session-with-parameters |   47
- +++++++++++++++++++++++++++++++++
- src/test-session		       |   47
- ---------------------------------
- 4 files changed, 92 insertions(+), 47 deletions(-)
+ src/ck-manager.c				    |	 1 +
+ src/{test-session => test-open-session}	    |	13 +++++--------
+ ...t-session => test-open-session-with-parameters} |	 0
+ 3 files changed, 6 insertions(+), 8 deletions(-)
 
 commit 0a8a82bf2701eadb3ef8c3ea927b1d61ea0f68ba
 Author: William Jon McCann <mccann@jhu.edu>
@@ -4250,12 +4532,9 @@ Date:	Fri Jan 12 16:11:00 2007 -0500
 
     Rename dbus config file.
 
- data/ConsoleKit.conf  |   49
- +++++++++++++++++++++++++++++++++++++++++++++++++
- data/Makefile.am      |    2 +-
- data/console-kit.conf |   49
- -------------------------------------------------
- 3 files changed, 50 insertions(+), 50 deletions(-)
+ data/{console-kit.conf => ConsoleKit.conf} |	 0
+ data/Makefile.am			    |	 2 +-
+ 2 files changed, 1 insertions(+), 1 deletions(-)
 
 commit be3fef886b70ccfd5ee48bcd5d9f4cb0256ecbdc
 Author: William Jon McCann <mccann@jhu.edu>
@@ -4373,16 +4652,14 @@ Date:	Fri Oct 27 10:20:57 2006 -0400
 
     Add .gitignore files and rename tool.
 
- .gitignore	       |   45 ++++++
- data/.gitignore       |    3 +
- src/.gitignore        |   13 ++
- tools/.gitignore      |    8 +
- tools/Makefile.am     |    8 +-
- tools/list-consoles.c |  362
- -------------------------------------------------
- tools/list-sessions.c |  362
- +++++++++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 435 insertions(+), 366 deletions(-)
+ .gitignore				    |	45
+ ++++++++++++++++++++++++++++
+ data/.gitignore			    |	 3 ++
+ src/.gitignore				    |	13 ++++++++
+ tools/.gitignore			    |	 8 +++++
+ tools/Makefile.am			    |	 8 ++--
+ tools/{list-consoles.c => list-sessions.c} |	 0
+ 6 files changed, 73 insertions(+), 4 deletions(-)
 
 commit 6b71d5dcaf9178645d83b4cbfc8febbb43ebe9c2
 Author: William Jon McCann <mccann@jhu.edu>
