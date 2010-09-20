@@ -5,6 +5,10 @@ consolekit (0.4.2-1) UNRELEASED; urgency=low
     - Bump Standards-Version to 3.9.1.
     - Use architecture wildcard kfreebsd-any for the libkvm-dev Build-Depends.
     - Bump Build-Depends on libglib2.0-dev to (>= 2.14.0) for GRegex.
+  * Remove patches which have been merged upstream.
+    - debian/patches/01-dont_daemonize_when_activated.patch
+    - debian/patches/02-dont_take_bus_name_until_ready.patch
+    - debian/patches/04-dont_fail_with_invalid_seats_file.patch
 
  -- Michael Biebl <biebl@debian.org>  Mon, 20 Sep 2010 02:35:46 +0200
 
