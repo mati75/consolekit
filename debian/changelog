@@ -1,6 +1,9 @@
 consolekit (0.4.2-1) UNRELEASED; urgency=low
 
   * New upstream release.
+  * debian/control
+    - Bump Standards-Version to 3.9.1.
+    - Use architecture wildcard kfreebsd-any for the libkvm-dev Build-Depends.
 
  -- Michael Biebl <biebl@debian.org>  Mon, 20 Sep 2010 02:35:46 +0200
 

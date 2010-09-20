@@ -11,12 +11,12 @@ Build-Depends: cdbs,
  libdbus-glib-1-dev (>= 0.30),
  libglib2.0-dev (>= 2.7.0),
  libx11-dev (>= 1.0.0),
- libkvm-dev [kfreebsd-i386 kfreebsd-amd64],
+ libkvm-dev [kfreebsd-any],
  xmlto,
  libpam0g-dev,
  libpolkit-gobject-1-dev (>= 0.92),
  zlib1g-dev
-Standards-Version: 3.8.4
+Standards-Version: 3.9.1
 Vcs-Git: git://git.debian.org/git/pkg-utopia/consolekit.git
 Vcs-Browser: http://git.debian.org/?p=pkg-utopia/consolekit.git;a=summary
 Homepage: http://www.freedesktop.org/wiki/Software/ConsoleKit
