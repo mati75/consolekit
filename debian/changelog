@@ -1,6 +1,9 @@
 consolekit (0.4.2-1) UNRELEASED; urgency=low
 
   * New upstream release.
+    - Use VT_WAITEVENT ioctl to monitor VT switches to avoid spawning a thread
+      for each possible VT. This requires a Linux kernel 2.6.32 or newer.
+      (Closes: #526499)
   * debian/control
     - Bump Standards-Version to 3.9.1.
     - Use architecture wildcard kfreebsd-any for the libkvm-dev Build-Depends.
