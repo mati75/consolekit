@@ -1,4 +1,4 @@
-consolekit (0.4.2-1) UNRELEASED; urgency=low
+consolekit (0.4.2-1) unstable; urgency=low
 
   * New upstream release.
     - Use VT_WAITEVENT ioctl to monitor VT switches to avoid spawning a thread
@@ -20,7 +20,7 @@ consolekit (0.4.2-1) UNRELEASED; urgency=low
     - Check return value of malloc() to correctly handle OOM situations.
       Thanks Pino Toscano for the updated patch.
 
- -- Michael Biebl <biebl@debian.org>  Mon, 20 Sep 2010 02:35:46 +0200
+ -- Michael Biebl <biebl@debian.org>  Tue, 21 Sep 2010 05:52:04 +0200
 
 consolekit (0.4.1-4) unstable; urgency=low
 
