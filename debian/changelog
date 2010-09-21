@@ -12,10 +12,13 @@ consolekit (0.4.2-1) UNRELEASED; urgency=low
     - debian/patches/01-dont_daemonize_when_activated.patch
     - debian/patches/02-dont_take_bus_name_until_ready.patch
     - debian/patches/04-dont_fail_with_invalid_seats_file.patch
-  * Refresh patches.
   * debian/patches/01-fallback_no_vt_waitevent.patch
     - Add runtime check for VT_WAITEVENT and fallback to old behaviour of
       creating a thread for every possible VT.
+  * debian/patches/82-hurd_support.patch
+    - Updated for 0.4.2.
+    - Check return value of malloc() to correctly handle OOM situations.
+      Thanks Pino Toscano for the updated patch.
 
  -- Michael Biebl <biebl@debian.org>  Mon, 20 Sep 2010 02:35:46 +0200
 

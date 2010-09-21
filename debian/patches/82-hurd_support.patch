@@ -10,6 +10,7 @@ Description: Add support for GNU/Hurd
 Author: Pino Toscano <pino@kde.org>
 Bug-Debian: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=552393
 Bug: https://bugs.freedesktop.org/show_bug.cgi?id=24738
+Last-Update: 2010-09-20
 
 Index: consolekit/configure.ac
 ===================================================================
@@ -60,7 +61,7 @@ Index: consolekit/src/ck-sysdeps-gnu.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
 +++ consolekit/src/ck-sysdeps-gnu.c	2010-09-20 03:07:22.189095438 +0200
-@@ -0,0 +1,396 @@
+@@ -0,0 +1,402 @@
 +/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 8 -*-
 + *
 + * Copyright (C) 2009 Pino Toscano <pino@kde.org>
@@ -385,6 +386,12 @@ Index: consolekit/src/ck-sysdeps-gnu.c
 +        return ret;
 +}
 +
++gboolean
++ck_supports_activatable_consoles (void)
++{
++        return TRUE;
++}
++
 +char *
 +ck_get_console_device_for_num (guint num)
 +{
@@ -459,9 +466,9 @@ Index: consolekit/src/ck-sysdeps-gnu.c
 +}
 Index: consolekit/pam-ck-connector/pam-ck-connector.c
 ===================================================================
---- consolekit.orig/pam-ck-connector/pam-ck-connector.c	2010-09-20 03:07:09.397095424 +0200
-+++ consolekit/pam-ck-connector/pam-ck-connector.c	2010-09-20 03:07:22.201093895 +0200
-@@ -244,7 +244,7 @@
+--- consolekit.orig/pam-ck-connector/pam-ck-connector.c	2010-09-20 17:15:53.000000000 +0200
++++ consolekit/pam-ck-connector/pam-ck-connector.c	2010-09-20 17:33:54.000000000 +0200
+@@ -244,12 +244,12 @@
          const char *s;
          uid_t       uid;
          char        buf[256];
@@ -470,31 +477,33 @@ Index: consolekit/pam-ck-connector/pam-ck-connector.c
          DBusError   error;
          dbus_bool_t is_local;
  
-@@ -252,6 +252,8 @@
- 
+         ret = PAM_IGNORE;
+-
++        ttybuf = NULL;
          is_local = TRUE;
  
-+        ttybuf = NULL;
-+
          _parse_pam_args (pamh, flags, argc, argv);
- 
-         /* Register with ConsoleKit as part of the session management */
-@@ -295,7 +297,9 @@
+@@ -295,7 +295,13 @@
                  x11_display = display_device;
                  display_device = "";
          } else if (strncmp (_PATH_DEV, display_device, 5) != 0) {
 -                snprintf (ttybuf, sizeof (ttybuf), _PATH_DEV "%s", display_device);
 +                int len = strlen (_PATH_DEV) + strlen (display_device) + 1;
 +                ttybuf = malloc (len);
++                if (ttybuf == NULL) {
++                        ck_pam_syslog (pamh, LOG_ERR, "oom allocating ttybuf");
++                        goto out;
++                }
 +                snprintf (ttybuf, len, _PATH_DEV "%s", display_device);
                  display_device = ttybuf;
          }
  
-@@ -411,6 +415,7 @@
+@@ -411,6 +417,8 @@
          ret = PAM_SUCCESS;
  
  out:
 +        free (ttybuf);
++
          return ret;
  }
  
