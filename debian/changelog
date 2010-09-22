@@ -1,3 +1,13 @@
+consolekit (0.4.2-2) UNRELEASED; urgency=low
+
+  * Switch to source format 3.0 (quilt).
+    - Add debian/source/format.
+    - Drop Build-Depends on quilt.
+    - Remove /usr/share/cdbs/1/rules/patchsys-quilt.mk from debian/rules.
+    - Remove debian/README.source.
+
+ -- Michael Biebl <biebl@debian.org>  Thu, 23 Sep 2010 01:52:18 +0200
+
 consolekit (0.4.2-1) unstable; urgency=low
 
   * New upstream release.
