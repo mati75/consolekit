@@ -23,6 +23,9 @@ consolekit (0.4.3-1) UNRELEASED; urgency=low
   * debian/libck-connector-dev.install
     - Install D-Bus interfaces files.
   * Install systemd unit files.
+  * debian/consolekit.docs
+    - Install AUTHORS, NEWS, README and TODO. cdbs did this automatically for
+      us, with dh we have to list them explicitly.
 
  -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 06:51:57 +0100
 
