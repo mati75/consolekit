@@ -10,5 +10,3 @@ if [ "$1" = remove ]; then
 fi
 
 #DEBHELPER#
-
-exit 0
