@@ -2,9 +2,9 @@ Cleanup console tag files on application startup and shutdown.
 
 Index: consolekit/src/main.c
 ===================================================================
---- consolekit.orig/src/main.c	2010-01-12 11:00:33.082306952 +0100
-+++ consolekit/src/main.c	2010-01-12 11:00:34.346283038 +0100
-@@ -149,6 +149,43 @@
+--- consolekit.orig/src/main.c	2010-11-17 07:02:23.030817878 +0100
++++ consolekit/src/main.c	2010-11-17 07:03:17.434814872 +0100
+@@ -148,6 +148,43 @@
          unlink (CONSOLE_KIT_PID_FILE);
  }
  
@@ -48,7 +48,7 @@ Index: consolekit/src/main.c
  /* copied from nautilus */
  static int debug_log_pipes[2];
  
-@@ -229,7 +266,7 @@
+@@ -228,7 +265,7 @@
                  snprintf (pid, sizeof (pid), "%lu\n", (long unsigned) getpid ());
                  written = write (pf, pid, strlen (pid));
                  close (pf);
@@ -57,7 +57,7 @@ Index: consolekit/src/main.c
          } else {
                  g_warning ("Unable to write pid file %s: %s",
                             CONSOLE_KIT_PID_FILE,
-@@ -318,6 +355,8 @@
+@@ -317,6 +354,8 @@
                  goto out;
          }
  

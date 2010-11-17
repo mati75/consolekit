@@ -4,6 +4,10 @@ consolekit (0.4.3-1) UNRELEASED; urgency=low
     - The VT_WAITEVENT mechanism proved to be racy and e.g. caused events
       being lost on suspend and resume. So this changes was reverted again.
       (Closes: #600756)
+  * Remove patches
+    - d/p/01-fallback_no_vt_waitevent.patch (obsolete)
+    - d/p/80-gnukfreebsd_support_configure.ac.patch (merged upstream)
+    - d/p/debian/patches/99-autoreconf.patch (use dh-autoreconf instead)
 
  -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 06:51:57 +0100
 
