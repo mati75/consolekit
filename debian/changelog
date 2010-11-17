@@ -20,6 +20,8 @@ consolekit (0.4.3-1) UNRELEASED; urgency=low
     - Drop Build-Depends on cdbs.
     - Bump Build-Depends on debhelper to (>= 7.0.50~) for override targets.
     - Convert debian/rules to use dh.
+  * debian/libck-connector-dev.install
+    - Install D-Bus interfaces files.
 
  -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 06:51:57 +0100
 
