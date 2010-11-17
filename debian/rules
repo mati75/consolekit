@@ -1,16 +1,16 @@
 #!/usr/bin/make -f
-  
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/autotools.mk
-include /usr/share/cdbs/1/rules/utils.mk
-include /usr/share/cdbs/1/rules/autoreconf.mk
 
-DEB_CONFIGURE_LIBEXECDIR := "\$$(prefix)/lib/ConsoleKit"
+%:
+	dh $@ --with autoreconf
 
-DEB_CONFIGURE_EXTRA_FLAGS := --enable-pam-module \
-                             --enable-docbook-docs \
-			     --with-pid-file=/var/run/console-kit-daemon.pid
+override_dh_auto_configure:
+	dh_auto_configure -- \
+		--libexecdir="\$$(prefix)/lib/ConsoleKit" \
+		--enable-pam-module \
+		--enable-docbook-docs \
+		--with-pid-file=/var/run/console-kit-daemon.pid
 
-install/consolekit::
+override_dh_auto_install:
+	dh_auto_install
 	install -m 755 debian/pam-foreground-compat.ck debian/tmp/usr/lib/ConsoleKit/run-session.d/
 	install -D -m 644 debian/libpam-ck-connector.pam-auth-update debian/tmp/usr/share/pam-configs/consolekit

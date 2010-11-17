@@ -10,12 +10,16 @@ consolekit (0.4.3-1) UNRELEASED; urgency=low
     - d/p/debian/patches/99-autoreconf.patch (use dh-autoreconf instead)
   * Use dh-autoreconf to update the build system
     - Add Build-Depends on dh-autoreconf.
-    - Add /usr/share/cdbs/1/rules/autoreconf.mk include in debian/rules.
+    - Run autoreconf dh addon in debian/rules.
   * Switch to source format 3.0 (quilt)
     - Add debian/source/format.
     - Drop quilt from Build-Depends.
     - Remove /usr/share/cdbs/1/rules/patchsys-quilt.mk include.
     - Remove debian/README.source.
+  * Move from cdbs to dh
+    - Drop Build-Depends on cdbs.
+    - Bump Build-Depends on debhelper to (>= 7.0.50~) for override targets.
+    - Convert debian/rules to use dh.
 
  -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 06:51:57 +0100
 
