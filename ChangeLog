@@ -1,3 +1,151 @@
+commit bea922dbab5fb65997c62a98585a35741cbb1a5a
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Wed Nov 17 02:03:34 2010 +0100
+
+    update NEWS
+
+ NEWS |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
+
+commit 72bc55ded76c567adee241094ba3147c72706f79
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Wed Nov 17 01:50:46 2010 +0100
+
+    Revert "linux: Use VT_WAITEVENT if available to avoid spawn too
+    many threads"
+
+    This reverts commit 2782cc8d4950effbc4407455e72bd4750cef6e11.
+
+    VT_WAITEVENT is racy unfortunately, since events that happen
+    between the
+    time we woke up from a VT_WAITEVENT and we go into the next
+    VT_WAITEVENT
+    are lost completely.
+
+ NEWS                  |    1 -
+ src/ck-sysdeps-unix.c |   44 --------------------------------------------
+ src/ck-sysdeps.h      |    2 --
+ src/ck-vt-monitor.c   |   48
+ ++++++++----------------------------------------
+ 4 files changed, 8 insertions(+), 87 deletions(-)
+
+commit d36415dcc3cd26a7d1def2f12b4d1c59e13d704e
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Wed Nov 17 01:49:37 2010 +0100
+
+    Revert "linux: Check for VT_WAITEVENT ioctl during runtime"
+
+    This reverts commit 24dc214f55e7c7c17d888d0ccf94cd3625767462.
+
+    VT_WAITEVENT is racy unfortunately, since events that happen
+    between the
+    time we woke up from a VT_WAITEVENT and we go into the next
+    VT_WAITEVENT
+    are lost completely.
+
+ src/ck-vt-monitor.c |   58
+ ++++++++-------------------------------------------
+ 1 files changed, 9 insertions(+), 49 deletions(-)
+
+commit e74c174728bfa582d8187392bdbc11fe940c2df3
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Wed Nov 17 00:45:40 2010 +0100
+
+    systemd: simplify unit files a little
+
+ data/console-kit-log-system-restart.service.in |    6 +++---
+ data/console-kit-log-system-start.service.in   |    6 +++---
+ data/console-kit-log-system-stop.service.in    |    6 +++---
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+commit 8564260aa0a2ab18f908079f886f7689844bfad5
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Wed Nov 17 00:45:16 2010 +0100
+
+    systemd: log shutdown when doing kexec reboot
+
+ data/Makefile.am |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+commit 25b5d47b961542ceca5f589cc69041b2d941c054
+Author: Michael Biebl <biebl@debian.org>
+Date:   Sun Sep 19 21:17:26 2010 +0200
+
+    dbus: bump dependency on dbus-glib to 0.82
+
+    dbus-glib >= 0.82 requires dbus >= 1.1 so we can safely remove
+    DBUS_API_SUBJECT_TO_CHANGE.
+
+ configure.ac            |    2 +-
+ src/ck-manager.c        |    1 -
+ src/ck-seat.c           |    1 -
+ src/ck-session-leader.c |    1 -
+ src/ck-session.c        |    1 -
+ src/ck-vt-monitor.c     |    1 -
+ src/main.c              |    1 -
+ tools/list-sessions.c   |    1 -
+ 8 files changed, 1 insertions(+), 8 deletions(-)
+
+commit 24dc214f55e7c7c17d888d0ccf94cd3625767462
+Author: Michael Biebl <biebl@debian.org>
+Date:   Mon Sep 20 00:45:16 2010 +0200
+
+    linux: Check for VT_WAITEVENT ioctl during runtime
+
+    Since 2782cc8d4950effbc4407455e72bd4750cef6e11 ConsoleKit fails, if it
+    has been compiled on a linux kernel >= 2.6.32 but is run with an older
+    kernel. Check for VT_WAITEVENT ioctl during runtime and fallback
+    to the
+    old behaviour of creating a thread for every possible vt.
+
+ src/ck-vt-monitor.c |   58
+ +++++++++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 49 insertions(+), 9 deletions(-)
+
+commit 2d16bc565247b8d8653e7eb4a7a6b0d940142bb6
+Author: Michael Biebl <biebl@debian.org>
+Date:   Mon Sep 6 22:52:25 2010 +0200
+
+    build-sys: Bump GLIB_REQUIRED_VERSION to 2.14 for GRegex
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=30041
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit 95ba1f7d70251830cf1dc0e0516ea0a4715272df
+Author: Luca Favatella <slackydeb@gmail.com>
+Date:   Mon Sep 20 00:13:33 2010 +0200
+
+    build-sys: extend configure check for kfreebsd
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=30051
+    http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=511270
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+commit c163d26a97f4f69422ec4ea0cfe4c7e211d824c1
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Tue Sep 14 01:08:06 2010 +0200
+
+    systemd: make sure the file system is writable before we write
+    log data
+
+ data/console-kit-log-system-restart.service.in |    3 ++-
+ data/console-kit-log-system-start.service.in   |    3 ++-
+ data/console-kit-log-system-stop.service.in    |    3 ++-
+ 3 files changed, 6 insertions(+), 3 deletions(-)
+
+commit 146e68f5c39653ba5878c6f32b3700d7fbabf777
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Tue Sep 7 02:58:59 2010 +0200
+
+    post release version bump
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
 commit 55803876769bd0903cb0efda597bfd5a657adb86
 Author: Lennart Poettering <lennart@poettering.net>
 Date:   Mon Sep 6 16:34:13 2010 +0200

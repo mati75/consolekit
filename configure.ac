@@ -1,7 +1,7 @@
 
 AC_PREREQ(2.59c)
 AC_INIT([ConsoleKit],
-        [0.4.2],
+        [0.4.3],
         [https://bugs.freedesktop.org/enter_bug.cgi?product=ConsoleKit],
         [ConsoleKit])
 
@@ -35,8 +35,8 @@ AM_GLIB_GNU_GETTEXT
 
 # Dependencies
 
-DBUS_REQUIRED_VERSION=0.30
-GLIB_REQUIRED_VERSION=2.7.0
+DBUS_REQUIRED_VERSION=0.82
+GLIB_REQUIRED_VERSION=2.14
 X11_REQUIRED_VERSION=1.0.0
 POLKIT_REQUIRED_VERSION=0.92
 
@@ -176,7 +176,7 @@ dnl ---------------------------------------------------------------------------
 CK_BACKEND=""
 KVM_LIBS=""
 case "$host" in
-        *-*-freebsd*)
+        *-*-freebsd* | *-*-kfreebsd*-gnu)
         CK_BACKEND="freebsd"
         AC_CHECK_LIB(kvm, kvm_openfiles, have_kvm=yes,
                 AC_MSG_ERROR([Unable to find libkvm which is needed on FreeBSD]))
