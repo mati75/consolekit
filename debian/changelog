@@ -1,4 +1,4 @@
-consolekit (0.4.3-1) UNRELEASED; urgency=low
+consolekit (0.4.3-1) unstable; urgency=low
 
   * New upstream release.
     - The VT_WAITEVENT mechanism proved to be racy and e.g. caused events
@@ -27,7 +27,7 @@ consolekit (0.4.3-1) UNRELEASED; urgency=low
     - Install AUTHORS, NEWS, README and TODO. cdbs did this automatically for
       us, with dh we have to list them explicitly.
 
- -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 06:51:57 +0100
+ -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 08:40:58 +0100
 
 consolekit (0.4.2-1) unstable; urgency=low
 
