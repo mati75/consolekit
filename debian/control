@@ -15,7 +15,8 @@ Build-Depends: cdbs,
  xmlto,
  libpam0g-dev,
  libpolkit-gobject-1-dev (>= 0.92),
- zlib1g-dev
+ zlib1g-dev,
+ dh-autoreconf
 Standards-Version: 3.9.1
 Vcs-Git: git://git.debian.org/git/pkg-utopia/consolekit.git
 Vcs-Browser: http://git.debian.org/?p=pkg-utopia/consolekit.git;a=summary

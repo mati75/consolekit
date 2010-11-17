@@ -8,6 +8,9 @@ consolekit (0.4.3-1) UNRELEASED; urgency=low
     - d/p/01-fallback_no_vt_waitevent.patch (obsolete)
     - d/p/80-gnukfreebsd_support_configure.ac.patch (merged upstream)
     - d/p/debian/patches/99-autoreconf.patch (use dh-autoreconf instead)
+  * Use dh-autoreconf to update the build system
+    - Add Build-Depends on dh-autoreconf.
+    - Add /usr/share/cdbs/1/rules/autoreconf.mk include in debian/rules.
 
  -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 06:51:57 +0100
 
