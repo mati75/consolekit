@@ -11,6 +11,11 @@ consolekit (0.4.3-1) UNRELEASED; urgency=low
   * Use dh-autoreconf to update the build system
     - Add Build-Depends on dh-autoreconf.
     - Add /usr/share/cdbs/1/rules/autoreconf.mk include in debian/rules.
+  * Switch to source format 3.0 (quilt)
+    - Add debian/source/format.
+    - Drop quilt from Build-Depends.
+    - Remove /usr/share/cdbs/1/rules/patchsys-quilt.mk include.
+    - Remove debian/README.source.
 
  -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 06:51:57 +0100
 
