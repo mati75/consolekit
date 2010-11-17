@@ -1,3 +1,12 @@
+consolekit (0.4.3-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+    - The VT_WAITEVENT mechanism proved to be racy and e.g. caused events
+      being lost on suspend and resume. So this changes was reverted again.
+      (Closes: #600756)
+
+ -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 06:51:57 +0100
+
 consolekit (0.4.2-1) unstable; urgency=low
 
   * New upstream release.
