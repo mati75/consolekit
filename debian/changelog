@@ -22,6 +22,7 @@ consolekit (0.4.3-1) UNRELEASED; urgency=low
     - Convert debian/rules to use dh.
   * debian/libck-connector-dev.install
     - Install D-Bus interfaces files.
+  * Install systemd unit files.
 
  -- Michael Biebl <biebl@debian.org>  Wed, 17 Nov 2010 06:51:57 +0100
 

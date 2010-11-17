@@ -8,7 +8,8 @@ override_dh_auto_configure:
 		--libexecdir="\$$(prefix)/lib/ConsoleKit" \
 		--enable-pam-module \
 		--enable-docbook-docs \
-		--with-pid-file=/var/run/console-kit-daemon.pid
+		--with-pid-file=/var/run/console-kit-daemon.pid \
+		--with-systemdsystemunitdir=/lib/systemd/system
 
 override_dh_auto_install:
 	dh_auto_install
