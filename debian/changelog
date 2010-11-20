@@ -1,3 +1,14 @@
+consolekit (0.4.3-2) UNRELEASED; urgency=low
+
+  * Add 01-retry-console-open-on-EIO.patch: As reported in LP: #544139,
+    ConsoleKit sometimes fails to track the active VT. This particular case
+    was tracked down to a race condition that happens if you try to open
+    /dev/console while the current TTY is currently being closed. This yields
+    an -EIO error, in which case CK should just try again. Thanks Colin Watson
+    for the patch!
+
+ -- Martin Pitt <mpitt@debian.org>  Sat, 20 Nov 2010 18:09:00 +0100
+
 consolekit (0.4.3-1) unstable; urgency=low
 
   * New upstream release.
