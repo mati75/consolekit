@@ -1,4 +1,4 @@
-consolekit (0.4.3-2) UNRELEASED; urgency=low
+consolekit (0.4.3-2) unstable; urgency=low
 
   * Add 01-retry-console-open-on-EIO.patch: As reported in LP: #544139,
     ConsoleKit sometimes fails to track the active VT. This particular case
@@ -7,7 +7,7 @@ consolekit (0.4.3-2) UNRELEASED; urgency=low
     an -EIO error, in which case CK should just try again. Thanks Colin Watson
     for the patch!
 
- -- Martin Pitt <mpitt@debian.org>  Sat, 20 Nov 2010 18:09:00 +0100
+ -- Martin Pitt <mpitt@debian.org>  Sat, 20 Nov 2010 18:17:28 +0100
 
 consolekit (0.4.3-1) unstable; urgency=low
 
