@@ -2,8 +2,8 @@
 Description=Console System Shutdown Logging
 DefaultDependencies=no
 Wants=sysinit.target
-After=sysinit.target console-kit-system-start.service
-Before=shutdown.service
+After=sysinit.target console-kit-log-system-start.service
+Before=shutdown.target
 
 [Service]
 Type=oneshot
