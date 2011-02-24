@@ -1,3 +1,57 @@
+commit f19bd45476536439b0f9fe01808f5d118238c5b1
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Thu Feb 17 00:53:54 2011 +0100
+
+    build-sys: make sure make install can be run twice in a row
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=32130
+
+ data/Makefile.am |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
+
+commit a3db5f00cfb924d3d93da5eca0914d23d7102fcd
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Thu Jan 20 19:19:46 2011 +0100
+
+    systemd: fix reference to systemd units
+
+ data/console-kit-log-system-restart.service.in |    2 +-
+ data/console-kit-log-system-stop.service.in    |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+commit bdd4b0ca1c7e766649349a4b2a131f1f795d6ad6
+Author: DJ Lucas <dj@linuxfromscratch.org>
+Date:   Fri Dec 17 15:23:35 2010 -0500
+
+    ck-connector: advertise libexecdir
+
+    This lets apps know where consolekit helpers are installed.
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=18427
+
+ libck-connector/ck-connector.pc.in |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+commit ad93ff6f212815f7b8cdd4b0f6796965f61f26a3
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Fri Nov 19 02:33:52 2010 +0100
+
+    systemd: fix name of unit
+
+ data/console-kit-log-system-restart.service.in |    2 +-
+ data/console-kit-log-system-start.service.in   |    2 +-
+ data/console-kit-log-system-stop.service.in    |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+commit 14bab7395cad34e1780c984b9028fdd5555f6165
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Fri Nov 19 02:33:42 2010 +0100
+
+    build-sys: post release version bump
+
+ configure.ac |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
 commit bea922dbab5fb65997c62a98585a35741cbb1a5a
 Author: Lennart Poettering <lennart@poettering.net>
 Date:   Wed Nov 17 02:03:34 2010 +0100
