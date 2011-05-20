@@ -1,3 +1,55 @@
+commit 4a1e58fd29c7cdf48dea879191a45db2cfcca0d1
+Author: Colin Watson <cjwatson@ubuntu.com>
+Date:   Sat Nov 20 17:57:22 2010 +0100
+
+    Retry opening console device on EIO
+
+    As reported in https://launchpad.net/bugs/544139, ConsoleKit sometimes
+    fails to
+    track the active VT. This particular case was tracked down to a
+    race condition
+    that happens if you try to open /dev/console while the current TTY
+    is currently
+    being closed. This yields an -EIO error, in which case CK should
+    just try
+    again.
+
+    For a more detailled summary of the problem from a kernel perspective,
+    please
+    see
+    https://bugs.launchpad.net/ubuntu/+source/linux/+bug/554172/comments/245
+    .
+
+    https://bugs.freedesktop.org/show_bug.cgi?id=31790
+
+ src/ck-sysdeps-unix.c |   17 +++++++++++++++++
+ 1 files changed, 17 insertions(+), 0 deletions(-)
+
+commit 14d5ef815d3f1a1a7d72bdc242c7ebb085372c8d
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Thu Apr 14 01:12:51 2011 +0200
+
+    systemd: don't pull in sysinit.target
+
+    In case of shutdown when sysinit.target is not up yet (i.e. emergency
+    mode or suchlike) ensure that we don't try to start sysinit.target
+    before shutting down.
+
+ data/console-kit-log-system-restart.service.in |    1 -
+ data/console-kit-log-system-start.service.in   |    1 -
+ data/console-kit-log-system-stop.service.in    |    1 -
+ 3 files changed, 0 insertions(+), 3 deletions(-)
+
+commit 91c73e774a033b6399624d8d5991543c70623ee0
+Author: Lennart Poettering <lennart@poettering.net>
+Date:   Thu Feb 17 01:37:33 2011 +0100
+
+    build-sys: post release version bump
+
+ NEWS         |    6 ++++++
+ configure.ac |    3 +--
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
 commit f19bd45476536439b0f9fe01808f5d118238c5b1
 Author: Lennart Poettering <lennart@poettering.net>
 Date:   Thu Feb 17 00:53:54 2011 +0100
@@ -3873,8 +3925,8 @@ Date:	Thu Mar 8 21:24:25 2007 -0500
  {tools => libck-connector}/.gitignore	|    3 ++-
  {tools => pam-ck-connector}/.gitignore |    2 +-
  tools/.gitignore			|    2 +-
- tools/linux/.gitignore			|    9 +++++++++
- 5 files changed, 14 insertions(+), 3 deletions(-)
+ tools/{ => linux}/.gitignore		|    3 ++-
+ 5 files changed, 7 insertions(+), 4 deletions(-)
 
 commit 1702970a3ea3de88f04623f69a3ab5260f77d2c5
 Author: William Jon McCann <mccann@jhu.edu>
