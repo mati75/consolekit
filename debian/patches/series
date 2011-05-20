@@ -1,4 +1,3 @@
 # Debian patches for consolekit
-01-retry-console-open-on-EIO.patch
 03-cleanup_console_tags.patch
 82-hurd_support.patch
