@@ -1,3 +1,10 @@
+consolekit (0.4.5-2) UNRELEASED; urgency=low
+
+  * Add 00git_truncate_frequent.patch: ck-history: don't truncate --frequent
+    output to 8 chars. (Closes: #660171, LP: #476811)
+
+ -- Martin Pitt <mpitt@debian.org>  Fri, 24 Feb 2012 10:07:19 +0100
+
 consolekit (0.4.5-1) unstable; urgency=low
 
   [ Michael Biebl ]
