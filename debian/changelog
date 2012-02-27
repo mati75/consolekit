@@ -1,6 +1,7 @@
 consolekit (0.4.5-3) UNRELEASED; urgency=low
 
   * Strip debian/tmp/ from .install files.
+  * Remove pre-lenny migration code, drop debian/consolekit.preinst.
 
  -- Michael Biebl <biebl@debian.org>  Mon, 27 Feb 2012 17:56:35 +0100
 
