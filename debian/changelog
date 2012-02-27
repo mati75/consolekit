@@ -4,8 +4,10 @@ consolekit (0.4.5-3) UNRELEASED; urgency=low
   * Remove pre-lenny migration code, drop debian/consolekit.preinst.
   * debian/consolekit.docs: Don't install a second copy of the spec file,
     there is already one in libck-connector-dev.
+  * Bump debhelper compatibility level to 9 for hardening build flags via
+    dpkg-buildflags and multiarch support.
 
- -- Michael Biebl <biebl@debian.org>  Mon, 27 Feb 2012 17:56:35 +0100
+ -- Michael Biebl <biebl@debian.org>  Mon, 27 Feb 2012 18:29:01 +0100
 
 consolekit (0.4.5-2) unstable; urgency=low
 
