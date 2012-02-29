@@ -9,8 +9,9 @@ consolekit (0.4.5-3) UNRELEASED; urgency=low
   * Install libck-connector and libpam-ck-connector into multiarch paths and
     mark them as Multi-Arch: same.
   * Tighten dependencies on libck-connector0.
+  * Bump Standards-Version to 3.9.3. No further changes.
 
- -- Michael Biebl <biebl@debian.org>  Wed, 29 Feb 2012 23:01:28 +0100
+ -- Michael Biebl <biebl@debian.org>  Wed, 29 Feb 2012 23:03:24 +0100
 
 consolekit (0.4.5-2) unstable; urgency=low
 

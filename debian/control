@@ -15,7 +15,7 @@ Build-Depends: debhelper (>= 9),
  libpolkit-gobject-1-dev (>= 0.92),
  zlib1g-dev,
  dh-autoreconf
-Standards-Version: 3.9.2
+Standards-Version: 3.9.3
 Vcs-Git: git://git.debian.org/git/pkg-utopia/consolekit.git
 Vcs-Browser: http://git.debian.org/?p=pkg-utopia/consolekit.git;a=summary
 Homepage: http://www.freedesktop.org/wiki/Software/ConsoleKit
