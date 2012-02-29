@@ -6,6 +6,8 @@ consolekit (0.4.5-3) UNRELEASED; urgency=low
     there is already one in libck-connector-dev.
   * Bump debhelper compatibility level to 9 for hardening build flags via
     dpkg-buildflags and multiarch support.
+  * Install libck-connector and libpam-ck-connector into multiarch paths and
+    mark them as Multi-Arch: same.
 
  -- Michael Biebl <biebl@debian.org>  Mon, 27 Feb 2012 18:29:01 +0100
 

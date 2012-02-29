@@ -38,6 +38,8 @@ Description: framework for defining and tracking users, sessions and seats
 Package: libck-connector0
 Section: libs
 Architecture: any
+Multi-Arch: same
+Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: ConsoleKit libraries
  ConsoleKit is a system daemon for tracking what users are logged
@@ -61,6 +63,7 @@ Description: ConsoleKit development files
 Package: libpam-ck-connector
 Section: admin
 Architecture: any
+Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}, libpam-runtime (>= 1.0.1-6)
 Description: ConsoleKit PAM module
  ConsoleKit is a system daemon for tracking what users are logged

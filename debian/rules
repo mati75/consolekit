@@ -9,7 +9,8 @@ override_dh_auto_configure:
 		--enable-pam-module \
 		--enable-docbook-docs \
 		--with-pid-file=/var/run/console-kit-daemon.pid \
-		--with-systemdsystemunitdir=/lib/systemd/system
+		--with-systemdsystemunitdir=/lib/systemd/system \
+		--with-pam-module-dir=/lib/$(DEB_HOST_MULTIARCH)/security
 
 override_dh_auto_install:
 	dh_auto_install
