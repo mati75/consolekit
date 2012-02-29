@@ -23,7 +23,7 @@ Homepage: http://www.freedesktop.org/wiki/Software/ConsoleKit
 Package: consolekit
 Section: admin
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, dbus (>= 1.1.2)
+Depends: ${shlibs:Depends}, ${misc:Depends}, libck-connector0 (= ${binary:Version}), dbus (>= 1.1.2)
 Recommends: libpam-ck-connector
 Breaks: udev (<< 147)
 Description: framework for defining and tracking users, sessions and seats
@@ -64,7 +64,7 @@ Package: libpam-ck-connector
 Section: admin
 Architecture: any
 Multi-Arch: same
-Depends: ${shlibs:Depends}, ${misc:Depends}, libpam-runtime (>= 1.0.1-6)
+Depends: ${shlibs:Depends}, ${misc:Depends}, libck-connector0 (= ${binary:Version}), libpam-runtime (>= 1.0.1-6)
 Description: ConsoleKit PAM module
  ConsoleKit is a system daemon for tracking what users are logged
  into the system and how they interact with the computer (e.g.

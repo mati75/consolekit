@@ -8,8 +8,9 @@ consolekit (0.4.5-3) UNRELEASED; urgency=low
     dpkg-buildflags and multiarch support.
   * Install libck-connector and libpam-ck-connector into multiarch paths and
     mark them as Multi-Arch: same.
+  * Tighten dependencies on libck-connector0.
 
- -- Michael Biebl <biebl@debian.org>  Mon, 27 Feb 2012 18:29:01 +0100
+ -- Michael Biebl <biebl@debian.org>  Wed, 29 Feb 2012 23:01:28 +0100
 
 consolekit (0.4.5-2) unstable; urgency=low
 
