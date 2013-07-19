@@ -25,7 +25,8 @@ Section: admin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libck-connector0 (= ${binary:Version}), dbus (>= 1.1.2)
 Recommends: libpam-ck-connector
-Breaks: udev (<< 147)
+Breaks: udev (<< 204-1)
+Replaces: udev (<< 204-1)
 Description: framework for defining and tracking users, sessions and seats
  ConsoleKit is a system daemon for tracking what users are logged
  into the system and how they interact with the computer (e.g.
