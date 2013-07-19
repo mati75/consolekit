@@ -3,6 +3,7 @@ consolekit (0.4.6-1) UNRELEASED; urgency=low
   * New upstream release.
   * Track .xz tarballs instead of .gz.
   * Remove patches which are now applied upstream.
+  * Enable support for udev-acl which has been removed from udev.
 
  -- Michael Biebl <biebl@debian.org>  Fri, 19 Jul 2013 16:14:06 +0200
 
