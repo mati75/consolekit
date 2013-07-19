@@ -15,5 +15,3 @@ lib/systemd/system/basic.target.wants/console-kit-log-system-start.service
 lib/systemd/system/halt.target.wants/console-kit-log-system-stop.service
 lib/systemd/system/poweroff.target.wants/console-kit-log-system-stop.service
 lib/systemd/system/reboot.target.wants/console-kit-log-system-restart.service
-lib/udev/udev-acl
-lib/udev/rules.d/70-udev-acl.rules
