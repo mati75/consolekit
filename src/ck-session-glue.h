@@ -10,7 +10,7 @@ G_BEGIN_DECLS
 
 #ifdef G_ENABLE_DEBUG
 #define g_marshal_value_peek_boolean(v)  g_value_get_boolean (v)
-#define g_marshal_value_peek_char(v)     g_value_get_char (v)
+#define g_marshal_value_peek_char(v)     g_value_get_schar (v)
 #define g_marshal_value_peek_uchar(v)    g_value_get_uchar (v)
 #define g_marshal_value_peek_int(v)      g_value_get_int (v)
 #define g_marshal_value_peek_uint(v)     g_value_get_uint (v)
@@ -55,49 +55,9 @@ G_BEGIN_DECLS
 #endif /* !G_ENABLE_DEBUG */
 
 
-/* NONE:BOOLEAN,POINTER */
-extern void dbus_glib_marshal_ck_session_VOID__BOOLEAN_POINTER (GClosure     *closure,
-                                                                GValue       *return_value,
-                                                                guint         n_param_values,
-                                                                const GValue *param_values,
-                                                                gpointer      invocation_hint,
-                                                                gpointer      marshal_data);
-void
-dbus_glib_marshal_ck_session_VOID__BOOLEAN_POINTER (GClosure     *closure,
-                                                    GValue       *return_value G_GNUC_UNUSED,
-                                                    guint         n_param_values,
-                                                    const GValue *param_values,
-                                                    gpointer      invocation_hint G_GNUC_UNUSED,
-                                                    gpointer      marshal_data)
-{
-  typedef void (*GMarshalFunc_VOID__BOOLEAN_POINTER) (gpointer     data1,
-                                                      gboolean     arg_1,
-                                                      gpointer     arg_2,
-                                                      gpointer     data2);
-  register GMarshalFunc_VOID__BOOLEAN_POINTER callback;
-  register GCClosure *cc = (GCClosure*) closure;
-  register gpointer data1, data2;
-
-  g_return_if_fail (n_param_values == 3);
-
-  if (G_CCLOSURE_SWAP_DATA (closure))
-    {
-      data1 = closure->data;
-      data2 = g_value_peek_pointer (param_values + 0);
-    }
-  else
-    {
-      data1 = g_value_peek_pointer (param_values + 0);
-      data2 = closure->data;
-    }
-  callback = (GMarshalFunc_VOID__BOOLEAN_POINTER) (marshal_data ? marshal_data : cc->callback);
-
-  callback (data1,
-            g_marshal_value_peek_boolean (param_values + 1),
-            g_marshal_value_peek_pointer (param_values + 2),
-            data2);
-}
-#define dbus_glib_marshal_ck_session_NONE__BOOLEAN_POINTER	dbus_glib_marshal_ck_session_VOID__BOOLEAN_POINTER
+/* NONE:POINTER */
+#define dbus_glib_marshal_ck_session_VOID__POINTER	g_cclosure_marshal_VOID__POINTER
+#define dbus_glib_marshal_ck_session_NONE__POINTER	dbus_glib_marshal_ck_session_VOID__POINTER
 
 /* BOOLEAN:POINTER,POINTER */
 extern void dbus_glib_marshal_ck_session_BOOLEAN__POINTER_POINTER (GClosure     *closure,
@@ -146,9 +106,49 @@ dbus_glib_marshal_ck_session_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:POINTER */
-#define dbus_glib_marshal_ck_session_VOID__POINTER	g_cclosure_marshal_VOID__POINTER
-#define dbus_glib_marshal_ck_session_NONE__POINTER	dbus_glib_marshal_ck_session_VOID__POINTER
+/* NONE:BOOLEAN,POINTER */
+extern void dbus_glib_marshal_ck_session_VOID__BOOLEAN_POINTER (GClosure     *closure,
+                                                                GValue       *return_value,
+                                                                guint         n_param_values,
+                                                                const GValue *param_values,
+                                                                gpointer      invocation_hint,
+                                                                gpointer      marshal_data);
+void
+dbus_glib_marshal_ck_session_VOID__BOOLEAN_POINTER (GClosure     *closure,
+                                                    GValue       *return_value G_GNUC_UNUSED,
+                                                    guint         n_param_values,
+                                                    const GValue *param_values,
+                                                    gpointer      invocation_hint G_GNUC_UNUSED,
+                                                    gpointer      marshal_data)
+{
+  typedef void (*GMarshalFunc_VOID__BOOLEAN_POINTER) (gpointer     data1,
+                                                      gboolean     arg_1,
+                                                      gpointer     arg_2,
+                                                      gpointer     data2);
+  register GMarshalFunc_VOID__BOOLEAN_POINTER callback;
+  register GCClosure *cc = (GCClosure*) closure;
+  register gpointer data1, data2;
+
+  g_return_if_fail (n_param_values == 3);
+
+  if (G_CCLOSURE_SWAP_DATA (closure))
+    {
+      data1 = closure->data;
+      data2 = g_value_peek_pointer (param_values + 0);
+    }
+  else
+    {
+      data1 = g_value_peek_pointer (param_values + 0);
+      data2 = closure->data;
+    }
+  callback = (GMarshalFunc_VOID__BOOLEAN_POINTER) (marshal_data ? marshal_data : cc->callback);
+
+  callback (data1,
+            g_marshal_value_peek_boolean (param_values + 1),
+            g_marshal_value_peek_pointer (param_values + 2),
+            data2);
+}
+#define dbus_glib_marshal_ck_session_NONE__BOOLEAN_POINTER	dbus_glib_marshal_ck_session_VOID__BOOLEAN_POINTER
 
 G_END_DECLS
 
@@ -177,12 +177,11 @@ static const DBusGMethodInfo dbus_glib_ck_session_methods[] = {
   { (GCallback) ck_session_set_idle_hint, dbus_glib_marshal_ck_session_NONE__BOOLEAN_POINTER, 1180 },
 };
 
-const DBusGObjectInfo dbus_glib_ck_session_object_info = {
-  0,
+const DBusGObjectInfo dbus_glib_ck_session_object_info = {  1,
   dbus_glib_ck_session_methods,
   19,
 "org.freedesktop.ConsoleKit.Session\0GetId\0S\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Session\0GetSeatId\0S\0sid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Session\0GetSessionType\0S\0type\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Session\0GetUser\0S\0uid\0O\0F\0N\0u\0\0org.freedesktop.ConsoleKit.Session\0GetUnixUser\0S\0uid\0O\0F\0N\0u\0\0org.freedesktop.ConsoleKit.Session\0GetX11Display\0S\0display\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Session\0GetX11DisplayDevice\0S\0x11_display_device\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Session\0GetDisplayDevice\0S\0display_device\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Session\0GetRemoteHostName\0S\0remote_host_name\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Session\0GetLoginSessionId\0S\0login_session_id\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Session\0IsActive\0S\0active\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Session\0IsLocal\0S\0local\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Session\0GetCreationTime\0S\0iso8601_datetime\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Session\0Activate\0A\0\0org.freedesktop.ConsoleKit.Session\0Lock\0A\0\0org.freedesktop.ConsoleKit.Session\0Unlock\0A\0\0org.freedesktop.ConsoleKit.Session\0GetIdleHint\0S\0idle_hint\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Session\0GetIdleSinceHint\0S\0iso8601_datetime\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Session\0SetIdleHint\0A\0idle_hint\0I\0b\0\0\0",
 "org.freedesktop.ConsoleKit.Session\0ActiveChanged\0org.freedesktop.ConsoleKit.Session\0IdleHintChanged\0org.freedesktop.ConsoleKit.Session\0Lock\0org.freedesktop.ConsoleKit.Session\0Unlock\0\0",
-"org.freedesktop.ConsoleKit.Session\0unix-user\0org.freedesktop.ConsoleKit.Session\0user\0org.freedesktop.ConsoleKit.Session\0session-type\0org.freedesktop.ConsoleKit.Session\0remote-host-name\0org.freedesktop.ConsoleKit.Session\0display-device\0org.freedesktop.ConsoleKit.Session\0x11-display\0org.freedesktop.ConsoleKit.Session\0x11-display-device\0org.freedesktop.ConsoleKit.Session\0active\0org.freedesktop.ConsoleKit.Session\0is-local\0org.freedesktop.ConsoleKit.Session\0idle-hint\0\0"
+"org.freedesktop.ConsoleKit.Session\0unix-user\0unix-user\0readwrite\0org.freedesktop.ConsoleKit.Session\0user\0user\0readwrite\0org.freedesktop.ConsoleKit.Session\0session-type\0session-type\0readwrite\0org.freedesktop.ConsoleKit.Session\0remote-host-name\0remote-host-name\0readwrite\0org.freedesktop.ConsoleKit.Session\0display-device\0display-device\0readwrite\0org.freedesktop.ConsoleKit.Session\0x11-display\0x11-display\0readwrite\0org.freedesktop.ConsoleKit.Session\0x11-display-device\0x11-display-device\0readwrite\0org.freedesktop.ConsoleKit.Session\0active\0active\0readwrite\0org.freedesktop.ConsoleKit.Session\0is-local\0is-local\0readwrite\0org.freedesktop.ConsoleKit.Session\0idle-hint\0idle-hint\0readwrite\0\0"
 };
 

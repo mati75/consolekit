@@ -10,7 +10,7 @@ G_BEGIN_DECLS
 
 #ifdef G_ENABLE_DEBUG
 #define g_marshal_value_peek_boolean(v)  g_value_get_boolean (v)
-#define g_marshal_value_peek_char(v)     g_value_get_char (v)
+#define g_marshal_value_peek_char(v)     g_value_get_schar (v)
 #define g_marshal_value_peek_uchar(v)    g_value_get_uchar (v)
 #define g_marshal_value_peek_int(v)      g_value_get_int (v)
 #define g_marshal_value_peek_uint(v)     g_value_get_uint (v)
@@ -55,6 +55,14 @@ G_BEGIN_DECLS
 #endif /* !G_ENABLE_DEBUG */
 
 
+/* NONE:POINTER */
+#define dbus_glib_marshal_ck_manager_VOID__POINTER	g_cclosure_marshal_VOID__POINTER
+#define dbus_glib_marshal_ck_manager_NONE__POINTER	dbus_glib_marshal_ck_manager_VOID__POINTER
+
+/* NONE:UINT,POINTER */
+#define dbus_glib_marshal_ck_manager_VOID__UINT_POINTER	g_cclosure_marshal_VOID__UINT_POINTER
+#define dbus_glib_marshal_ck_manager_NONE__UINT_POINTER	dbus_glib_marshal_ck_manager_VOID__UINT_POINTER
+
 /* NONE:STRING,POINTER */
 extern void dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
                                                                GValue       *return_value,
@@ -98,6 +106,50 @@ dbus_glib_marshal_ck_manager_VOID__STRING_POINTER (GClosure     *closure,
             data2);
 }
 #define dbus_glib_marshal_ck_manager_NONE__STRING_POINTER	dbus_glib_marshal_ck_manager_VOID__STRING_POINTER
+
+/* NONE:BOXED,POINTER */
+extern void dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER (GClosure     *closure,
+                                                              GValue       *return_value,
+                                                              guint         n_param_values,
+                                                              const GValue *param_values,
+                                                              gpointer      invocation_hint,
+                                                              gpointer      marshal_data);
+void
+dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER (GClosure     *closure,
+                                                  GValue       *return_value G_GNUC_UNUSED,
+                                                  guint         n_param_values,
+                                                  const GValue *param_values,
+                                                  gpointer      invocation_hint G_GNUC_UNUSED,
+                                                  gpointer      marshal_data)
+{
+  typedef void (*GMarshalFunc_VOID__BOXED_POINTER) (gpointer     data1,
+                                                    gpointer     arg_1,
+                                                    gpointer     arg_2,
+                                                    gpointer     data2);
+  register GMarshalFunc_VOID__BOXED_POINTER callback;
+  register GCClosure *cc = (GCClosure*) closure;
+  register gpointer data1, data2;
+
+  g_return_if_fail (n_param_values == 3);
+
+  if (G_CCLOSURE_SWAP_DATA (closure))
+    {
+      data1 = closure->data;
+      data2 = g_value_peek_pointer (param_values + 0);
+    }
+  else
+    {
+      data1 = g_value_peek_pointer (param_values + 0);
+      data2 = closure->data;
+    }
+  callback = (GMarshalFunc_VOID__BOXED_POINTER) (marshal_data ? marshal_data : cc->callback);
+
+  callback (data1,
+            g_marshal_value_peek_boxed (param_values + 1),
+            g_marshal_value_peek_pointer (param_values + 2),
+            data2);
+}
+#define dbus_glib_marshal_ck_manager_NONE__BOXED_POINTER	dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER
 
 /* BOOLEAN:POINTER,POINTER */
 extern void dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
@@ -146,58 +198,6 @@ dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER (GClosure     *closure,
   g_value_set_boolean (return_value, v_return);
 }
 
-/* NONE:UINT,POINTER */
-#define dbus_glib_marshal_ck_manager_VOID__UINT_POINTER	g_cclosure_marshal_VOID__UINT_POINTER
-#define dbus_glib_marshal_ck_manager_NONE__UINT_POINTER	dbus_glib_marshal_ck_manager_VOID__UINT_POINTER
-
-/* NONE:POINTER */
-#define dbus_glib_marshal_ck_manager_VOID__POINTER	g_cclosure_marshal_VOID__POINTER
-#define dbus_glib_marshal_ck_manager_NONE__POINTER	dbus_glib_marshal_ck_manager_VOID__POINTER
-
-/* NONE:BOXED,POINTER */
-extern void dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER (GClosure     *closure,
-                                                              GValue       *return_value,
-                                                              guint         n_param_values,
-                                                              const GValue *param_values,
-                                                              gpointer      invocation_hint,
-                                                              gpointer      marshal_data);
-void
-dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER (GClosure     *closure,
-                                                  GValue       *return_value G_GNUC_UNUSED,
-                                                  guint         n_param_values,
-                                                  const GValue *param_values,
-                                                  gpointer      invocation_hint G_GNUC_UNUSED,
-                                                  gpointer      marshal_data)
-{
-  typedef void (*GMarshalFunc_VOID__BOXED_POINTER) (gpointer     data1,
-                                                    gpointer     arg_1,
-                                                    gpointer     arg_2,
-                                                    gpointer     data2);
-  register GMarshalFunc_VOID__BOXED_POINTER callback;
-  register GCClosure *cc = (GCClosure*) closure;
-  register gpointer data1, data2;
-
-  g_return_if_fail (n_param_values == 3);
-
-  if (G_CCLOSURE_SWAP_DATA (closure))
-    {
-      data1 = closure->data;
-      data2 = g_value_peek_pointer (param_values + 0);
-    }
-  else
-    {
-      data1 = g_value_peek_pointer (param_values + 0);
-      data2 = closure->data;
-    }
-  callback = (GMarshalFunc_VOID__BOXED_POINTER) (marshal_data ? marshal_data : cc->callback);
-
-  callback (data1,
-            g_marshal_value_peek_boxed (param_values + 1),
-            g_marshal_value_peek_pointer (param_values + 2),
-            data2);
-}
-#define dbus_glib_marshal_ck_manager_NONE__BOXED_POINTER	dbus_glib_marshal_ck_manager_VOID__BOXED_POINTER
-
 G_END_DECLS
 
 #endif /* __dbus_glib_marshal_ck_manager_MARSHAL_H__ */
@@ -222,8 +222,7 @@ static const DBusGMethodInfo dbus_glib_ck_manager_methods[] = {
   { (GCallback) ck_manager_get_system_idle_since_hint, dbus_glib_marshal_ck_manager_BOOLEAN__POINTER_POINTER, 1070 },
 };
 
-const DBusGObjectInfo dbus_glib_ck_manager_object_info = {
-  0,
+const DBusGObjectInfo dbus_glib_ck_manager_object_info = {  1,
   dbus_glib_ck_manager_methods,
   16,
 "org.freedesktop.ConsoleKit.Manager\0Restart\0A\0\0org.freedesktop.ConsoleKit.Manager\0CanRestart\0A\0can_restart\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0Stop\0A\0\0org.freedesktop.ConsoleKit.Manager\0CanStop\0A\0can_stop\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0OpenSession\0A\0cookie\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Manager\0OpenSessionWithParameters\0A\0parameters\0I\0a(sv)\0cookie\0O\0F\0N\0s\0\0org.freedesktop.ConsoleKit.Manager\0CloseSession\0A\0cookie\0I\0s\0result\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0GetSeats\0S\0seats\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSessions\0S\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionForCookie\0A\0cookie\0I\0s\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionForUnixProcess\0A\0pid\0I\0u\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Manager\0GetCurrentSession\0A\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionsForUnixUser\0A\0uid\0I\0u\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSessionsForUser\0A\0uid\0I\0u\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Manager\0GetSystemIdleHint\0S\0idle_hint\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Manager\0GetSystemIdleSinceHint\0S\0iso8601_datetime\0O\0F\0N\0s\0\0\0",

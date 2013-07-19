@@ -10,7 +10,7 @@ G_BEGIN_DECLS
 
 #ifdef G_ENABLE_DEBUG
 #define g_marshal_value_peek_boolean(v)  g_value_get_boolean (v)
-#define g_marshal_value_peek_char(v)     g_value_get_char (v)
+#define g_marshal_value_peek_char(v)     g_value_get_schar (v)
 #define g_marshal_value_peek_uchar(v)    g_value_get_uchar (v)
 #define g_marshal_value_peek_int(v)      g_value_get_int (v)
 #define g_marshal_value_peek_uint(v)     g_value_get_uint (v)
@@ -160,8 +160,7 @@ static const DBusGMethodInfo dbus_glib_ck_seat_methods[] = {
   { (GCallback) ck_seat_activate_session, dbus_glib_marshal_ck_seat_NONE__BOXED_POINTER, 325 },
 };
 
-const DBusGObjectInfo dbus_glib_ck_seat_object_info = {
-  0,
+const DBusGObjectInfo dbus_glib_ck_seat_object_info = {  1,
   dbus_glib_ck_seat_methods,
   6,
 "org.freedesktop.ConsoleKit.Seat\0GetId\0S\0sid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Seat\0GetSessions\0S\0sessions\0O\0F\0N\0ao\0\0org.freedesktop.ConsoleKit.Seat\0GetDevices\0S\0devices\0O\0F\0N\0a(ss)\0\0org.freedesktop.ConsoleKit.Seat\0GetActiveSession\0S\0ssid\0O\0F\0N\0o\0\0org.freedesktop.ConsoleKit.Seat\0CanActivateSessions\0S\0can_activate\0O\0F\0N\0b\0\0org.freedesktop.ConsoleKit.Seat\0ActivateSession\0A\0ssid\0I\0o\0\0\0",

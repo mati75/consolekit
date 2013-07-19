@@ -143,6 +143,21 @@ ck_get_x11_display_device_LDADD =	\
 	$(top_builddir)/src/libck.la	\
 	$(NULL)
 
+if ENABLE_UDEV_ACL
+udevdir = $(UDEVDIR)
+udevrulesdir = $(UDEVDIR)/rules.d
+
+dist_udevrules_DATA = 70-udev-acl.rules
+udev_PROGRAMS = udev-acl
+
+udev_acl_SOURCES = udev-acl.c
+udev_acl_LDADD = $(UDEV_ACL_LIBS)
+udev_acl_CFLAGS = $(UDEV_ACL_CFLAGS)
+
+install-exec-hook:
+	mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d
+	ln -sf $(UDEVDIR)/udev-acl $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d/udev-acl.ck
+endif
 
 EXTRA_DIST =				\
 	$(NULL)
