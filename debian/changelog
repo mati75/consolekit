@@ -8,6 +8,7 @@ consolekit (0.4.6-4) UNRELEASED; urgency=medium
   * Add 04-long_device_names.patch: Allow for device names longer than 16
     characters.  Thanks to Aleix Conchillo Flaqué for the patch.
     (LP: #1130923)
+  * Bump Standards-Version to 3.9.5 (no changes necessary).
 
  -- Martin Pitt <mpitt@debian.org>  Wed, 23 Apr 2014 16:25:06 +0200
 
