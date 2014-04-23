@@ -1,4 +1,4 @@
-consolekit (0.4.6-4) UNRELEASED; urgency=medium
+consolekit (0.4.6-4) unstable; urgency=medium
 
   [ Steve Langasek ]
   * 03-cleanup_console_tags.patch: call g_dir_close() when we're done, fixing
@@ -10,7 +10,7 @@ consolekit (0.4.6-4) UNRELEASED; urgency=medium
     (LP: #1130923)
   * Bump Standards-Version to 3.9.5 (no changes necessary).
 
- -- Martin Pitt <mpitt@debian.org>  Wed, 23 Apr 2014 16:25:06 +0200
+ -- Martin Pitt <mpitt@debian.org>  Wed, 23 Apr 2014 16:37:49 +0200
 
 consolekit (0.4.6-3) unstable; urgency=low
 
