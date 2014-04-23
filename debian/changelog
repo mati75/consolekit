@@ -1,4 +1,4 @@
-consolekit (0.4.6-4) unstable; urgency=medium
+consolekit (0.4.6-5) unstable; urgency=medium
 
   [ Steve Langasek ]
   * 03-cleanup_console_tags.patch: call g_dir_close() when we're done, fixing
@@ -11,6 +11,15 @@ consolekit (0.4.6-4) unstable; urgency=medium
   * Bump Standards-Version to 3.9.5 (no changes necessary).
 
  -- Martin Pitt <mpitt@debian.org>  Wed, 23 Apr 2014 16:37:49 +0200
+
+consolekit (0.4.6-4) unstable; urgency=low
+
+  * Change Maintainer to myself as per Michael's invitation
+    (https://lists.debian.org/debian-bsd/2014/02/msg00224.html)
+  * Fix VT switching and credential checks on GNU/kFreeBSD. (Closes: #734070)
+  * Use Linux versions of ck-system-restart and ck-system-stop on GNU/kFreeBSD.
+
+ -- Robert Millan <rmh@debian.org>  Wed, 19 Feb 2014 00:27:27 +0100
 
 consolekit (0.4.6-3) unstable; urgency=low
 
