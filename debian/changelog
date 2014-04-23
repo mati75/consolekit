@@ -4,6 +4,11 @@ consolekit (0.4.6-4) UNRELEASED; urgency=medium
   * 03-cleanup_console_tags.patch: call g_dir_close() when we're done, fixing
     a small memory leak.
 
+  [ Martin Pitt ]
+  * Add 04-long_device_names.patch: Allow for device names longer than 16
+    characters.  Thanks to Aleix Conchillo Flaqué for the patch.
+    (LP: #1130923)
+
  -- Martin Pitt <mpitt@debian.org>  Wed, 23 Apr 2014 16:25:06 +0200
 
 consolekit (0.4.6-3) unstable; urgency=low

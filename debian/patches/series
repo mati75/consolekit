@@ -1,3 +1,4 @@
 # Debian patches for consolekit
 03-cleanup_console_tags.patch
+04-long_device_names.patch
 99-kfreebsd-empty-env.patch
