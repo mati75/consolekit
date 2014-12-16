@@ -2,7 +2,8 @@ NULL =
 
 if ENABLE_PAM_MODULE
 
-INCLUDES = 					\
+AM_CFLAGS = 					\
+	-U_FORTIFY_SOURCE			\
 	$(LIBDBUS_CFLAGS)			\
 	-I$(top_builddir)/libck-connector	\
 	$(NULL)

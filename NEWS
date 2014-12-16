@@ -1,4 +1,112 @@
 ==============
+Version 0.9.2
+==============
+[Please note that this is a development release.]
+
+Development release of ConsoleKit2 targeting the 1.0 release.
+Please report all problems to
+https://github.com/ConsoleKit2/ConsoleKit2/issues
+
+
+Changes to the public DBUS API:
+    - Adds the PowerOff/Reboot and respective Can APIs.
+    - Adds the PolkicyKit interactivity flag to the
+      API calls. Same as logind.
+
+Other minor changes:
+- Default to not building systemd units
+- Add a note about CONFIG_AUDITSYSCALL and PAM
+- Minor autotools changes.
+- Change inhibit locks internally to allow multiple instances
+  of the same application to hold a lock.
+
+==============
+Version 0.9.1
+==============
+[Please note that this is a development release.]
+
+Development release of ConsoleKit2 targeting the 1.0 release.
+Please report all problems to
+https://github.com/ConsoleKit2/ConsoleKit2/issues
+
+Only one commit with this release but since it changes the
+public DBUS API it's better to get it out now before someone
+starts writing for the 0.9.0 APIs.
+
+Hybrid Suspend has been added as a sleep method. The sleep
+API has been reworked to emulate logind so that supporting
+both is easier.
+
+==============
+Version 0.9.0
+==============
+[Please note that this is a development release.]
+
+Development release of ConsoleKit2 targeting the 1.0 release.
+Please report all problems to
+https://github.com/ConsoleKit2/ConsoleKit2/issues
+
+ConsoleKit2 is a fork of ConsoleKit since it is no longer maintained.
+
+Added OpenBSD and DragonFlyBSD backends, pulled in FreeBSD and
+GNU/kFreeBSD provided to the ConsoleKit bugtracker or on distro's
+public repositories. As well as many other patches floating around
+so that distributions no longer have to carry large patchsets.
+Please report any other patches required or currently in use and
+those can be added as well.
+
+The 63 threads issue has been resolved if the Linux kernel has
+support for the notification required.
+
+ConsoleKit2 supports suspending and hibernation for Linux, FreeBSD,
+DragonFlyBSD, and OpenBSD through a DBUS API.
+
+
+ * Add in the logrotate and consolekit xinitrc script and install
+   them to their standard location with configure switches.
+ * Add a new DBUS interfaces for suspend/hibernation of the system
+   as well as the ability to inhibit it and stop/reeboot actions.
+ * Translation support added.
+ * Check the return value of sysconf before passing it to calloc.
+ * Only close fds that were opened.
+ * Fix a resource leak.
+ * ck-log-system-start: always create log directory. Patch by
+   Daniel Drake.
+ * Prevent possible use-after-free condition. Patch by
+   Anders Kaseorg.
+ * Fix crash on logout/login via SunRay. Patch by Halton Huo.
+ * Fix ck-history truncating login names.
+ * Call thread_data_free before g_thread_exit.
+ * Add man pages. Patch by Brian Cameron.
+ * Fix for rejected GetAll properties by GDBus. Patch by
+   Teodor MICU.
+ * Linux: Use /sys/class/tty/tty0/active for VT change
+   notifications (the 63 threads issue)
+ * Set source id to 0 after calling g_source_remove.
+   Patch by Manfred Hampl.
+ * Return early when remote DISPLAY variable set.
+   Patch by Joe Mullally.
+ * Various deprecated functions and other compile warnings
+   were fixed.
+ * Add an --enable-debug=full which always enables debugging.
+ * Add OpenBSD backend. Patches by Robert Nagy and ajacoutot.
+ * Improve FreeBSD backend.
+ * Add DragonFlyBSD backend.
+ * Be able to shutdown or reboot even without polkit or RBAC
+   support. Patch by Romain Perier.
+ * udev-acl install to usr.
+ * Add support for devices with long names.
+   Patch by Aleix Conchillo Flaqué.
+ * Cleanup console tag files on application startup and shutdown.
+ * Fix uninitialized variable.
+ * Use correct type in tools/ck-history.c Patch by Rafal Muzylo.
+ * Add a configure switch for PolicyKit. Patch by Samuli Suominen.
+ * Enables the FreeBSD VT ioctls on GNU/kFreeBSD.
+   Patch by Robert Millan.
+ * Fallback to getpeereid() on FreeBSD and GNU/kFreeBSD.
+   Patch by Robert Millan.
+
+==============
 Version 0.4.6
 ==============
 

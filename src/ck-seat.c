@@ -514,7 +514,9 @@ change_active_session (CkSeat    *seat,
          * must be sent when the database dump is finished it is
          * important that the '-full' signalled is emitted first. */
 
-        g_signal_emit (seat, signals [ACTIVE_SESSION_CHANGED_FULL], 0, old_session, session);
+        if (CK_IS_SESSION (old_session)) {
+                g_signal_emit (seat, signals [ACTIVE_SESSION_CHANGED_FULL], 0, old_session, session);
+        }
         g_signal_emit (seat, signals [ACTIVE_SESSION_CHANGED], 0, ssid);
 
         if (old_session != NULL) {
@@ -910,9 +912,6 @@ ck_seat_constructor (GType                  type,
                      GObjectConstructParam *construct_properties)
 {
         CkSeat      *seat;
-        CkSeatClass *klass;
-
-        klass = CK_SEAT_CLASS (g_type_class_peek (CK_TYPE_SEAT));
 
         seat = CK_SEAT (G_OBJECT_CLASS (ck_seat_parent_class)->constructor (type,
                                                                             n_construct_properties,

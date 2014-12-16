@@ -10,6 +10,9 @@ scriptdir = $(prefix)/lib/ConsoleKit/scripts
 script_SCRIPTS =			\
 	ck-system-stop			\
 	ck-system-restart		\
+	ck-system-suspend		\
+	ck-system-hibernate		\
+	ck-system-hybridsleep		\
 	$(NULL)
 
 EXTRA_DIST =				\

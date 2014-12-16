@@ -24,6 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <libintl.h>
+#include <locale.h>
 
 static int debug;
 
@@ -331,9 +333,6 @@ int main (int argc, char* argv[])
         uid_t uid2 = 0;
         const char* remove_session_id = NULL;
         int rc = 0;
-
-        /* valgrind is more important to us than a slice allocator */
-        g_slice_set_config (G_SLICE_CONFIG_ALWAYS_MALLOC, 1);
 
         while (1) {
                 int option;

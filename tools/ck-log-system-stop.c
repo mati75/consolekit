@@ -29,7 +29,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
-
+#include <libintl.h>
 #include <locale.h>
 
 #include <glib.h>
@@ -98,7 +98,10 @@ retry:
                 goto out;
         }
 
-        fchown (fd, 0, 0);
+        if (fchown (fd, 0, 0) == -1) {
+                g_warning ("Error changing owner of log file (%s)",
+                           g_strerror (errno));
+        }
 
         file = fdopen (fd, "a");
         if (file == NULL) {
@@ -162,6 +165,14 @@ main (int    argc,
       char **argv)
 {
         CkLogEvent event;
+
+        /* Setup for i18n */
+        setlocale(LC_ALL, "");
+ 
+#ifdef ENABLE_NLS
+        bindtextdomain(PACKAGE, LOCALEDIR);
+        textdomain(PACKAGE);
+#endif
 
         memset (&event, 0, sizeof (CkLogEvent));
 

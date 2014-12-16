@@ -26,6 +26,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <poll.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -93,7 +94,7 @@ typedef struct tty_map_node {
         guint major_number;
         guint minor_first;
         guint minor_last;
-        char name[16];
+        char name[32];
         char devfs_type;
 } tty_map_node;
 
@@ -362,21 +363,21 @@ stat2proc (const char    *S,
         S = tmp + 2;                 /* skip ") " */
 
         num = sscanf (S,
-                      "%c "
-                      "%d %d %d %d %d "
-                      "%lu %lu %lu %lu %lu "
+                      "%c " /* state */
+                      "%d %d %d %d %d " /* ppid pgrp session tty tpgid */
+                      "%lu %lu %lu %lu %lu " /* flags min_flt cmin_flt maj_flt cmaj_flt */
                       "%Lu %Lu %Lu %Lu "  /* utime stime cutime cstime */
-                      "%ld %ld "
-                      "%d "
-                      "%ld "
+                      "%ld %ld " /* priority nice*/
+                      "%d " /* nlwp */
+                      "%ld " /* alarm */
                       "%Lu "  /* start_time */
-                      "%lu "
-                      "%ld "
-                      "%lu %"KLF"u %"KLF"u %"KLF"u %"KLF"u %"KLF"u "
+                      "%lu " /* vsize */
+                      "%ld " /* rss */
+                      "%lu %"KLF"u %"KLF"u %"KLF"u %"KLF"u %"KLF"u " /* rss_rlim start_code end_code start_stack kstk_esp kstk_eip */
                       "%*s %*s %*s %*s " /* discard, no RT signals & Linux 2.1 used hex */
-                      "%"KLF"u %*lu %*lu "
-                      "%d %d "
-                      "%lu %lu",
+                      "%"KLF"u %*u %*u " /* wchan */
+                      "%d %d " /* exit_signal processor */
+                      "%lu %lu", /* rtprio sched */
                       &P->state,
                       &P->ppid, &P->pgrp, &P->session, &P->tty, &P->tpgid,
                       &P->flags, &P->min_flt, &P->cmin_flt, &P->maj_flt, &P->cmaj_flt,
@@ -776,3 +777,179 @@ ck_get_active_console_num (int    console_fd,
 
         return ret;
 }
+
+static gboolean
+linux_supports_sleep_state (const gchar *state)
+{
+        gboolean ret = FALSE;
+        gchar *command;
+        GError *error = NULL;
+        gint exit_status;
+
+        /* run script from pm-utils */
+        command = g_strdup_printf ("/usr/bin/pm-is-supported --%s", state);
+        g_debug ("excuting command: %s", command);
+        ret = g_spawn_command_line_sync (command, NULL, NULL, &exit_status, &error);
+        if (!ret) {
+                g_warning ("failed to run script: %s", error->message);
+                g_error_free (error);
+                goto out;
+        }
+        ret = (WIFEXITED(exit_status) && (WEXITSTATUS(exit_status) == EXIT_SUCCESS));
+
+out:
+        g_free (command);
+
+        return ret;
+}
+
+gboolean
+ck_system_can_suspend (void)
+{
+        return linux_supports_sleep_state ("suspend");
+}
+
+gboolean
+ck_system_can_hibernate (void)
+{
+        return linux_supports_sleep_state ("hibernate");
+}
+
+gboolean
+ck_system_can_hybrid_sleep (void)
+{
+        return linux_supports_sleep_state ("suspend-hybrid");
+}
+
+#ifdef HAVE_SYS_VT_SIGNAL
+/* For the moment this is Linux only.
+ * Returns the vt file descriptor or < 0 on failure.
+ * /sys/class/tty/tty0/active on Linux
+ */
+gint
+ck_get_vt_signal_fd (void)
+{
+        gint fd;
+        const char *errmsg = NULL;
+
+        errno = 0;
+        /* Open the magic Linux location */
+        fd = open ("/sys/class/tty/tty0/active", O_RDONLY);
+        if (fd < 0) {
+                errmsg = g_strerror (errno);
+                g_error ("ck_get_vt_signal_fd: Error opening sys file: %s",
+                         errmsg);
+        }
+
+        return fd;
+}
+
+static gboolean
+poll_vt_fd (gint sys_fd)
+{
+        struct pollfd fds[1];
+        const char *errmsg = NULL;
+
+        errno = 0;
+        fds[0].fd = sys_fd;
+        fds[0].events = POLLPRI;
+
+        for(;;) {
+                g_debug ("poll_vt_fd: polling");
+                if (poll(fds, 1, -1) < 0) {
+                        errmsg = g_strerror (errno);
+
+                        /* Error handling */
+                        if (errno == EINTR || errno == EAGAIN) {
+                                g_debug ("poll_vt_fd: Interrupted while waiting for vt event: %s",
+                                          errmsg);
+                                /* try again */
+                        } else {
+                                g_error ("poll_vt_fd: Error polling for vt event: %s",
+                                         errmsg);
+                                return FALSE;
+                        }
+                } else if (fds[0].revents & POLLPRI) {
+                        /* There's something we care about! */
+                        return TRUE;
+                } else {
+                        /* Something we don't care about */
+                }
+        }
+
+        return FALSE;
+}
+
+static gint
+read_from_vt_fd (gint sys_fd)
+{
+        gint ret = -1;
+        char new_vt[32];
+        ssize_t bytes_read = 0;
+
+        new_vt[31] = '\0';
+
+        while (bytes_read == 0) {
+                errno = 0;
+
+                bytes_read = read (sys_fd, &new_vt, 30);
+                if (bytes_read == -1 && (errno == EAGAIN || errno == EINTR)) {
+                        g_debug ("read_from_vt_fd: Interrupted while reading from sys_fd: %s",
+                                 g_strerror (errno));
+
+                        bytes_read = 0;
+                        /* try again */
+                } else if (bytes_read == -1) {
+                        g_error ("read_from_vt_fd: Error while reading from sys_fd: %s",
+                                 g_strerror (errno));
+                        ret = -1;
+                } else {
+                        gchar unused[32];
+                        gint  vty_num;
+
+                        g_debug ("read_from_vt_fd: got %s", new_vt);
+
+                        if(sscanf (new_vt, "%31[a-z-A-Z]%d", unused, &vty_num) == 2) {
+                                g_debug ("read_from_vt_fd: parsed as %s %d", unused, vty_num);
+                                ret = vty_num;
+                        }
+
+                        /* back to the beginning of the fd */
+                        if (lseek(sys_fd, 0,SEEK_SET) < 0)
+                        {
+                                g_debug ("read_from_vt_fd: error seeking to beginning of file %s",
+                                         g_strerror (errno));
+                                ret = -1;
+                        }
+                }
+        }
+
+        return ret;
+}
+
+/*
+ * Returns FALSE if something went wrong with reading/polling the
+ * vt fd for VT changes.
+ */
+gboolean
+ck_wait_for_console_switch (gint sys_fd, gint32 *num)
+{
+        gint new_vt = -1;
+
+        g_debug ("ck_wait_for_console_switch: sys_fd opened");
+
+        /* Poll for changes */
+        if (poll_vt_fd (sys_fd)) {
+                g_debug ("ck_wait_for_console_switch: poll_vt_fd returned");
+                /* Read the changes */
+                new_vt = read_from_vt_fd (sys_fd);
+                if (new_vt >= 0) {
+                        g_debug ("ck_wait_for_console_switch: read successful");
+                        /* success, update */
+                        *num = new_vt;
+                }
+        }
+
+        return new_vt < 0 ? FALSE : TRUE;
+}
+#endif /* HAVE_SYS_VT_SIGNAL */

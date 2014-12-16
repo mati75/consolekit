@@ -68,6 +68,18 @@ event_system_start_free (CkLogSystemStartEvent *event)
 }
 
 static void
+event_system_suspend_free (CkLogSystemSuspendEvent *event)
+{
+        g_assert (event != NULL);
+}
+
+static void
+event_system_hibernate_free (CkLogSystemHibernateEvent *event)
+{
+        g_assert (event != NULL);
+}
+
+static void
 event_seat_session_added_free (CkLogSeatSessionAddedEvent *event)
 {
         g_assert (event != NULL);
@@ -204,6 +216,22 @@ event_system_start_copy (CkLogSystemStartEvent *event,
 }
 
 static void
+event_system_suspend_copy (CkLogSystemSuspendEvent *event,
+                           CkLogSystemSuspendEvent *event_copy)
+{
+        g_assert (event != NULL);
+        g_assert (event_copy != NULL);
+}
+
+static void
+event_system_hibernate_copy (CkLogSystemHibernateEvent *event,
+                             CkLogSystemHibernateEvent *event_copy)
+{
+        g_assert (event != NULL);
+        g_assert (event_copy != NULL);
+}
+
+static void
 event_seat_session_added_copy (CkLogSeatSessionAddedEvent *event,
                                CkLogSeatSessionAddedEvent *event_copy)
 {
@@ -311,6 +339,14 @@ ck_log_event_copy (CkLogEvent *event)
                 event_system_start_copy ((CkLogSystemStartEvent *) event,
                                            (CkLogSystemStartEvent *) event_copy);
                 break;
+        case CK_LOG_EVENT_SYSTEM_SUSPEND:
+                event_system_suspend_copy ((CkLogSystemSuspendEvent *) event,
+                                           (CkLogSystemSuspendEvent *) event_copy);
+                break;
+        case CK_LOG_EVENT_SYSTEM_HIBERNATE:
+                event_system_hibernate_copy ((CkLogSystemHibernateEvent *) event,
+                                             (CkLogSystemHibernateEvent *) event_copy);
+                break;
         case CK_LOG_EVENT_SEAT_SESSION_ADDED:
                 event_seat_session_added_copy ((CkLogSeatSessionAddedEvent *) event,
                                                (CkLogSeatSessionAddedEvent *) event_copy);
@@ -357,6 +393,12 @@ ck_log_event_free (CkLogEvent *event)
                 break;
         case CK_LOG_EVENT_SYSTEM_START:
                 event_system_start_free ((CkLogSystemStartEvent *) event);
+                break;
+        case CK_LOG_EVENT_SYSTEM_SUSPEND:
+                event_system_suspend_free ((CkLogSystemSuspendEvent *) event);
+                break;
+        case CK_LOG_EVENT_SYSTEM_HIBERNATE:
+                event_system_hibernate_free ((CkLogSystemHibernateEvent *) event);
                 break;
         case CK_LOG_EVENT_SEAT_SESSION_ADDED:
                 event_seat_session_added_free ((CkLogSeatSessionAddedEvent *) event);
@@ -453,18 +495,14 @@ static void
 add_log_for_system_stop (GString    *str,
                          CkLogEvent *event)
 {
-        CkLogSystemStopEvent *e;
-
-        e = (CkLogSystemStopEvent *)event;
+        /* TODO: Not implemented */
 }
 
 static void
 add_log_for_system_restart (GString    *str,
                             CkLogEvent *event)
 {
-        CkLogSystemRestartEvent *e;
-
-        e = (CkLogSystemRestartEvent *)event;
+        /* TODO: Not implemented */
 }
 
 
@@ -479,6 +517,20 @@ add_log_for_system_start (GString    *str,
                                 "kernel-release='%s' boot-arguments='%s'",
                                 e->kernel_release ? e->kernel_release : "",
                                 e->boot_arguments ? e->boot_arguments : "");
+}
+
+static void
+add_log_for_system_suspend (GString    *str,
+                            CkLogEvent *event)
+{
+        /* TODO: Not implemented */
+}
+
+static void
+add_log_for_system_hibernate (GString    *str,
+                              CkLogEvent *event)
+{
+        /* TODO: Not implemented */
 }
 
 static void
@@ -632,6 +684,12 @@ ck_log_event_to_string (CkLogEvent  *event,
                 break;
         case CK_LOG_EVENT_SYSTEM_START:
                 add_log_for_system_start (str, event);
+                break;
+        case CK_LOG_EVENT_SYSTEM_SUSPEND:
+                add_log_for_system_suspend (str, event);
+                break;
+        case CK_LOG_EVENT_SYSTEM_HIBERNATE:
+                add_log_for_system_hibernate (str, event);
                 break;
         case CK_LOG_EVENT_SEAT_SESSION_ADDED:
                 add_log_for_seat_session_added (str, event);
@@ -822,7 +880,6 @@ parse_log_for_system_stop (const GString *str,
 {
         gboolean    ret;
         const char *s;
-        CkLogSystemStopEvent *e;
 
         ret = FALSE;
 
@@ -830,8 +887,6 @@ parse_log_for_system_stop (const GString *str,
         if (s == NULL) {
                 goto out;
         }
-
-        e = (CkLogSystemStopEvent *)event;
 
         ret = TRUE;
  out:
@@ -845,7 +900,6 @@ parse_log_for_system_restart (const GString *str,
 {
         gboolean    ret;
         const char *s;
-        CkLogSystemRestartEvent *e;
 
         ret = FALSE;
 
@@ -853,8 +907,6 @@ parse_log_for_system_restart (const GString *str,
         if (s == NULL) {
                 goto out;
         }
-
-        e = (CkLogSystemRestartEvent *)event;
 
         ret = TRUE;
  out:

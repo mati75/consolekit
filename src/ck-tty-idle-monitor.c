@@ -171,6 +171,7 @@ remove_idle_hint_timeout (CkTtyIdleMonitor *tty_idle_monitor)
 {
         if (tty_idle_monitor->priv->timeout_id > 0) {
                 g_source_remove (tty_idle_monitor->priv->timeout_id);
+                tty_idle_monitor->priv->timeout_id = 0;
         }
 }
 
@@ -220,7 +221,6 @@ check_tty_idle (CkTtyIdleMonitor *monitor)
 {
         struct stat sb;
         gboolean    is_idle;
-        gboolean    changed;
         time_t      now;
         time_t      idletime;
         time_t      last_access;
@@ -244,7 +244,7 @@ check_tty_idle (CkTtyIdleMonitor *monitor)
         idletime = now - last_access;
         is_idle = (idletime >= monitor->priv->threshold);
 
-        changed = tty_idle_monitor_set_idle_hint_internal (monitor, is_idle);
+        tty_idle_monitor_set_idle_hint_internal (monitor, is_idle);
 
         monitor->priv->timeout_id = 0;
 

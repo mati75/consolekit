@@ -317,6 +317,32 @@ vt_thread_start (ThreadData *data)
         vt_monitor = data->vt_monitor;
         num = data->num;
 
+#ifdef HAVE_SYS_VT_SIGNAL
+        /* Get our FD */
+        gint sys_fd = ck_get_vt_signal_fd ();
+
+        while (sys_fd >= 0) {
+                res = ck_wait_for_console_switch (sys_fd, &num);
+                if (! res) {
+                        break;
+                } else {
+                        EventData *event;
+
+                        /* add event to queue */
+                        event = g_new0 (EventData, 1);
+                        event->num = num;
+                        g_debug ("Pushing activation event for VT %d onto queue", num);
+
+                        g_async_queue_push (vt_monitor->priv->event_queue, event);
+
+                        /* schedule processing of queue */
+                        schedule_process_queue (vt_monitor);
+                }
+        }
+
+        if (sys_fd >= 0)
+                close (sys_fd);
+#else
         res = ck_wait_for_active_console_num (vt_monitor->priv->vfd, num);
         if (! res) {
                 /* FIXME: what do we do if it fails? */
@@ -333,6 +359,7 @@ vt_thread_start (ThreadData *data)
                 /* schedule processing of queue */
                 schedule_process_queue (vt_monitor);
         }
+#endif
 
         G_LOCK (hash_lock);
         if (vt_monitor->priv->vt_thread_hash != NULL) {
@@ -340,8 +367,8 @@ vt_thread_start (ThreadData *data)
         }
         G_UNLOCK (hash_lock);
 
-        g_thread_exit (NULL);
         thread_data_free (data);
+        g_thread_exit (NULL);
 
         return NULL;
 }
@@ -364,7 +391,11 @@ vt_add_watch_unlocked (CkVtMonitor *vt_monitor,
         id = GINT_TO_POINTER (num);
 
         error = NULL;
+#if GLIB_CHECK_VERSION(2, 32, 0)
+        thread = g_thread_try_new ("vt_thread_start", (GThreadFunc)vt_thread_start, data, &error);
+#else
         thread = g_thread_create_full ((GThreadFunc)vt_thread_start, data, 65536, FALSE, TRUE, G_THREAD_PRIORITY_NORMAL, &error);
+#endif
         if (thread == NULL) {
                 g_debug ("Unable to create thread: %s", error->message);
                 g_error_free (error);
@@ -376,11 +407,8 @@ vt_add_watch_unlocked (CkVtMonitor *vt_monitor,
 static void
 vt_add_watches (CkVtMonitor *vt_monitor)
 {
-        guint  max_consoles;
-        int    i;
-        gint32 current_num;
-
-#if defined (__sun) && !defined (HAVE_SYS_VT_H)
+#if defined (__sun) && !defined (HAVE_SYS_VT_H) || (defined(__OpenBSD__) && (!defined(__i386__) && !defined(__amd64__) && !defined(__powerpc__)))
+        /* On OpenBSD, VT are only available on i386 and amd64 */
         /* Best to do nothing if VT is not supported */
 #elif defined (__sun) && defined (HAVE_SYS_VT_H)
         /*
@@ -397,7 +425,19 @@ vt_add_watches (CkVtMonitor *vt_monitor)
         sigaction (SIGPOLL, &act, NULL);
 
         ioctl (vt_monitor->priv->vfd, I_SETSIG, S_MSG);
+#elif defined (HAVE_SYS_VT_SIGNAL)
+        /* We have a method to poll for vt changes, use it */
+        G_LOCK (hash_lock);
+        gpointer id;
+        id = GINT_TO_POINTER (1);
+        if (g_hash_table_lookup (vt_monitor->priv->vt_thread_hash, id) == NULL)
+                vt_add_watch_unlocked (vt_monitor, 1);
+        G_UNLOCK (hash_lock);
 #else
+        guint  max_consoles;
+        int    i;
+        gint32 current_num;
+
         G_LOCK (hash_lock);
 
         current_num = vt_monitor->priv->active_num;
@@ -495,6 +535,7 @@ ck_vt_monitor_finalize (GObject *object)
 
         if (vt_monitor->priv->process_queue_id > 0) {
                 g_source_remove (vt_monitor->priv->process_queue_id);
+                vt_monitor->priv->process_queue_id = 0;
         }
 
         if (vt_monitor->priv->event_queue != NULL) {

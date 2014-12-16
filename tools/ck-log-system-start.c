@@ -26,11 +26,15 @@
 #include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
+#ifdef __FreeBSD__
+#include <kenv.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/utsname.h>
 #include <string.h>
 
+#include <libintl.h>
 #include <locale.h>
 
 #include <glib.h>
@@ -41,7 +45,9 @@
 
 #define DEFAULT_LOG_FILENAME LOCALSTATEDIR "/log/ConsoleKit/history"
 
+#ifdef __linux__
 #define LINUX_KERNEL_CMDLINE "/proc/cmdline"
+#endif
 
 /* Adapted from auditd auditd-event.c */
 static gboolean
@@ -51,6 +57,8 @@ open_log_file (const char *filename,
 {
         int      flags;
         int      fd;
+        int      res;
+        char    *dirname;
         FILE    *file;
         gboolean ret;
 
@@ -63,6 +71,20 @@ open_log_file (const char *filename,
 #ifdef O_NOFOLLOW
         flags |= O_NOFOLLOW;
 #endif
+
+        dirname = g_path_get_dirname (filename);
+        /* always make sure we have a directory */
+        errno = 0;
+        res = g_mkdir_with_parents (dirname,
+                                    S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+        if (res < 0) {
+                g_warning ("Unable to create directory %s (%s)",
+                           dirname,
+                           g_strerror (errno));
+                g_free (dirname);
+                return FALSE;
+        }
+        g_free (dirname);
 
 retry:
         fd = g_open (filename, flags, 0600);
@@ -100,7 +122,10 @@ retry:
                 goto out;
         }
 
-        fchown (fd, 0, 0);
+        if (fchown (fd, 0, 0) == -1) {
+                g_warning ("Error changing owner of log file (%s)",
+                           g_strerror (errno));
+        }
 
         file = fdopen (fd, "a");
         if (file == NULL) {
@@ -162,6 +187,7 @@ write_log_for_event (CkLogEvent *event)
 static char *
 get_boot_arguments (void)
 {
+#if defined(__linux__)
         char *contents;
         gboolean res;
 
@@ -178,6 +204,29 @@ get_boot_arguments (void)
         }
 
         return contents;
+#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+        char kern_name[1024], root[1024], mopts[1024];
+        char *options;
+
+        options = NULL;
+        if (kenv(KENV_GET, "kernelname", kern_name, sizeof (kern_name)) == -1) {
+                return options;
+        }
+
+        if (kenv(KENV_GET, "vfs.root.mountfrom.options", mopts, sizeof (mopts)) == -1) {
+                g_strlcpy (mopts, "ro", sizeof (mopts));
+        }
+
+        if (kenv(KENV_GET, "vfs.root.mountfrom", root, sizeof (root)) == -1) {
+                g_strlcpy (root, "/", sizeof (root));
+        }
+
+        options = g_strdup_printf ("%s %s root=%s", mopts, kern_name, root);
+
+        return options;
+#else
+        return NULL;
+#endif
 }
 
 int
@@ -187,6 +236,14 @@ main (int    argc,
         CkLogEvent event;
         CkLogSystemStartEvent *e;
         struct utsname uts;
+
+        /* Setup for i18n */
+        setlocale(LC_ALL, "");
+ 
+#ifdef ENABLE_NLS
+        bindtextdomain(PACKAGE, LOCALEDIR);
+        textdomain(PACKAGE);
+#endif
 
         memset (&event, 0, sizeof (CkLogEvent));
 

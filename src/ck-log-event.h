@@ -33,6 +33,8 @@ typedef enum
         CK_LOG_EVENT_SYSTEM_START,
         CK_LOG_EVENT_SYSTEM_STOP,
         CK_LOG_EVENT_SYSTEM_RESTART,
+        CK_LOG_EVENT_SYSTEM_SUSPEND,
+        CK_LOG_EVENT_SYSTEM_HIBERNATE,
         CK_LOG_EVENT_SYSTEM_RUNLEVEL_CHANGED,
         CK_LOG_EVENT_SEAT_ADDED,
         CK_LOG_EVENT_SEAT_REMOVED,
@@ -63,6 +65,16 @@ typedef struct
         char *kernel_release;
         char *boot_arguments;
 } CkLogSystemStartEvent;
+
+typedef struct
+{
+        gpointer dummy;
+} CkLogSystemSuspendEvent;
+
+typedef struct
+{
+        gpointer dummy;
+} CkLogSystemHibernateEvent;
 
 typedef struct
 {
