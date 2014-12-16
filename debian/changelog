@@ -1,3 +1,9 @@
+consolekit (0.9.2-1) UNRELEASED; urgency=medium
+
+  * New upstream release.
+
+ -- Mateusz Łukasik <mati75@debian.org>  Tue, 16 Dec 2014 15:01:20 +0100
+
 consolekit (0.4.6-5) unstable; urgency=medium
 
   [ Steve Langasek ]
