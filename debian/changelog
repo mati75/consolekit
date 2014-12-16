@@ -5,6 +5,7 @@ consolekit (0.9.2-1) UNRELEASED; urgency=medium
   * Add myself to uploaders.
   * Update installed files by libck-connector-dev.
   * Bump Standards-Version to 3.9.6 (no changes needed).
+  * Update homepage.
 
  -- Mateusz Łukasik <mati75@debian.org>  Tue, 16 Dec 2014 15:01:20 +0100
 
