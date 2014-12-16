@@ -408,6 +408,7 @@ job_completed (CkJob     *job,
 static void
 job_data_free (JobData *data)
 {
+        g_object_unref (data->leader);
         g_free (data);
 }
 
@@ -427,7 +428,7 @@ ck_session_leader_collect_parameters (CkSessionLeader        *session_leader,
         ret = FALSE;
 
         data = g_new0 (JobData, 1);
-        data->leader = session_leader;
+        data->leader = g_object_ref (session_leader);
         data->done_cb = done_cb;
         data->user_data = user_data;
         data->context = context;
@@ -568,10 +569,6 @@ ck_session_leader_set_property (GObject            *object,
                                 const GValue       *value,
                                 GParamSpec         *pspec)
 {
-        CkSessionLeader *self;
-
-        self = CK_SESSION_LEADER (object);
-
         switch (prop_id) {
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -585,10 +582,6 @@ ck_session_leader_get_property (GObject    *object,
                                 GValue     *value,
                                 GParamSpec *pspec)
 {
-        CkSessionLeader *self;
-
-        self = CK_SESSION_LEADER (object);
-
         switch (prop_id) {
         default:
                 G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
@@ -602,9 +595,6 @@ ck_session_leader_constructor (GType                  type,
                                GObjectConstructParam *construct_properties)
 {
         CkSessionLeader      *session_leader;
-        CkSessionLeaderClass *klass;
-
-        klass = CK_SESSION_LEADER_CLASS (g_type_class_peek (CK_TYPE_SESSION_LEADER));
 
         session_leader = CK_SESSION_LEADER (G_OBJECT_CLASS (ck_session_leader_parent_class)->constructor (type,
                                                                                                           n_construct_properties,

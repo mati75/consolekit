@@ -26,7 +26,7 @@
 #include <sys/types.h>
 #include <pwd.h>
 #include <string.h>
-
+#include <libintl.h>
 #include <locale.h>
 
 #include <glib.h>
@@ -373,7 +373,17 @@ main (int    argc,
                 { NULL }
         };
 
+        /* Setup for i18n */
+        setlocale(LC_ALL, "");
+ 
+#ifdef ENABLE_NLS
+        bindtextdomain(PACKAGE, LOCALEDIR);
+        textdomain(PACKAGE);
+#endif
+
+#if !GLIB_CHECK_VERSION(2, 36, 0)
         g_type_init ();
+#endif
 
         context = g_option_context_new (NULL);
         g_option_context_add_main_entries (context, entries, NULL);

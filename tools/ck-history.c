@@ -29,6 +29,7 @@
 #include <string.h>
 #include <errno.h>
 
+#include <libintl.h>
 #include <locale.h>
 #include <zlib.h>
 
@@ -60,6 +61,8 @@ typedef enum {
 #define DEFAULT_LOG_FILENAME LOCALSTATEDIR "/log/ConsoleKit/history"
 #define MAX_LINE_LEN 2048
 
+#define USERNAME_MAX "24"
+
 static GList *all_events = NULL;
 
 static CkLogEvent *
@@ -76,7 +79,7 @@ parse_event_line (const char *line)
 }
 
 static gboolean
-process_log_gzstream (gzFile   *fstream,
+process_log_gzstream (gzFile   fstream,
                       GTimeVal *since)
 {
         char     line[MAX_LINE_LEN];
@@ -150,7 +153,7 @@ process_log_file (const char *filename,
         gboolean ret;
 
         if (g_str_has_suffix (filename, ".gz")) {
-                gzFile *f;
+                gzFile f;
                 f = gzopen (filename, "r");
                 if (f == NULL) {
                         int         errnum;
@@ -511,9 +514,10 @@ print_last_report_record (GList      *list,
         char                       *session_type;
         char                       *session_id;
         char                       *seat_id;
-        CkLogSeatSessionAddedEvent *e;
+        CkLogSeatSessionAddedEvent *e = NULL;
         CkLogEvent                 *remove_event;
         RecordStatus                status;
+        time_t                      added_t, removed_t;
 
         if (event->type != CK_LOG_EVENT_SEAT_SESSION_ADDED
             && event->type != CK_LOG_EVENT_SYSTEM_START) {
@@ -533,7 +537,7 @@ print_last_report_record (GList      *list,
                 seat_id = e->seat_id;
         } else {
                 status = RECORD_STATUS_REBOOT;
-                remove_event = find_first_matching_system_stop_event (list->next, e);
+                remove_event = find_first_matching_system_stop_event (list->next, NULL);
 
                 session_type = "";
                 session_id = "";
@@ -546,7 +550,8 @@ print_last_report_record (GList      *list,
         utline = get_utline_for_event (event);
         host = get_host_for_event (event);
 
-        addedtime = g_strndup (ctime (&event->timestamp.tv_sec), 16);
+        added_t = event->timestamp.tv_sec;
+        addedtime = g_strndup (ctime (&added_t), 16);
 
         if (legacy_compat) {
                 g_string_printf (str,
@@ -557,7 +562,7 @@ print_last_report_record (GList      *list,
                                  addedtime);
         } else {
                 g_string_printf (str,
-                                 "%-8.8s %12s %-10.10s %-7.7s %-12.12s %-28.28s %-16.16s",
+                                 "%-"USERNAME_MAX"."USERNAME_MAX"s %12s %-10.10s %-7.7s %-12.12s %-28.28s %-16.16s",
                                  username,
                                  session_type,
                                  session_id,
@@ -602,7 +607,8 @@ print_last_report_record (GList      *list,
                 break;
         case RECORD_STATUS_NORMAL:
                 duration = get_duration (event, remove_event);
-                removedtime = g_strdup_printf ("- %s", ctime (&remove_event->timestamp.tv_sec) + 11);
+                removed_t = remove_event->timestamp.tv_sec;
+                removedtime = g_strdup_printf ("- %s", ctime (&removed_t) + 11);
                 removedtime[7] = 0;
                 break;
         default:
@@ -629,6 +635,7 @@ generate_report_last (int         uid,
         GList      *oldest;
         CkLogEvent *oldest_event;
         GList      *l;
+        time_t      oldest_e;
 
         /* print events in reverse time order */
 
@@ -660,7 +667,8 @@ generate_report_last (int         uid,
         oldest = g_list_first (all_events);
         if (oldest != NULL) {
                 oldest_event = oldest->data;
-                g_print ("\nLog begins %s", ctime (&oldest_event->timestamp.tv_sec));
+                oldest_e = oldest_event->timestamp.tv_sec;
+                g_print ("\nLog begins %s", ctime (&oldest_e));
         }
 }
 
@@ -672,6 +680,7 @@ generate_report_last_compat (int         uid,
         GList      *oldest;
         CkLogEvent *oldest_event;
         GList      *l;
+        time_t      oldest_e;
 
         /* print events in reverse time order */
 
@@ -703,7 +712,8 @@ generate_report_last_compat (int         uid,
         oldest = g_list_first (all_events);
         if (oldest != NULL) {
                 oldest_event = oldest->data;
-                g_print ("\nLog begins %s", ctime (&oldest_event->timestamp.tv_sec));
+                oldest_e = oldest_event->timestamp.tv_sec;
+                g_print ("\nLog begins %s", ctime (&oldest_e));
         }
 }
 
@@ -804,7 +814,7 @@ generate_report_frequent (int         uid,
                 data = user_counts->data;
 
                 username = get_user_name_for_uid (data->uid);
-                g_print ("%-8s %u\n", username, data->count);
+                g_print ("%-"USERNAME_MAX"s %u\n", username, data->count);
                 g_free (data);
                 user_counts = g_list_delete_link (user_counts, user_counts);
                 g_free (username);
@@ -890,17 +900,25 @@ main (int    argc,
         static char        *session_type = NULL;
         static char        *since = NULL;
         static GOptionEntry entries [] = {
-                { "version", 'V', 0, G_OPTION_ARG_NONE, &do_version, N_("Version of this application"), NULL },
-                { "frequent", 0, 0, G_OPTION_ARG_NONE, &report_frequent, N_("Show listing of frequent users"), NULL },
-                { "last", 0, 0, G_OPTION_ARG_NONE, &report_last, N_("Show listing of last logged in users"), NULL },
-                { "last-compat", 0, 0, G_OPTION_ARG_NONE, &report_last_compat, N_("Show 'last' compatible listing of last logged in users"), NULL },
-                { "log", 0, 0, G_OPTION_ARG_NONE, &report_log, N_("Show full event log"), NULL },
-                { "seat", 's', 0, G_OPTION_ARG_STRING, &seat, N_("Show entries for the specified seat"), N_("SEAT") },
-                { "session-type", 't', 0, G_OPTION_ARG_STRING, &session_type, N_("Show entries for the specified session type"), N_("TYPE") },
-                { "user", 'u', 0, G_OPTION_ARG_STRING, &username, N_("Show entries for the specified user"), N_("NAME") },
-                { "since", 0, 0, G_OPTION_ARG_STRING, &since, N_("Show entries since the specified time (ISO 8601 format)"), N_("DATETIME") },
+                { "version",      'V', G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_NONE, &do_version, N_("Version of this application"), NULL },
+                { "frequent",       0, G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_NONE, &report_frequent, N_("Show listing of frequent users"), NULL },
+                { "last",           0, G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_NONE, &report_last, N_("Show listing of last logged in users"), NULL },
+                { "last-compat",    0, G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_NONE, &report_last_compat, N_("Show 'last' compatible listing of last logged in users"), NULL },
+                { "log",            0, G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_NONE, &report_log, N_("Show full event log"), NULL },
+                { "seat",         's', G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_STRING, &seat, N_("Show entries for the specified seat"), N_("SEAT") },
+                { "session-type", 't', G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_STRING, &session_type, N_("Show entries for the specified session type"), N_("TYPE") },
+                { "user",         'u', G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_STRING, &username, N_("Show entries for the specified user"), N_("NAME") },
+                { "since",          0, G_OPTION_FLAG_IN_MAIN, G_OPTION_ARG_STRING, &since, N_("Show entries since the specified time (ISO 8601 format)"), N_("DATETIME") },
                 { NULL }
         };
+
+        /* Setup for i18n */
+        setlocale(LC_ALL, "");
+ 
+#ifdef ENABLE_NLS
+        bindtextdomain(PACKAGE, LOCALEDIR);
+        textdomain(PACKAGE);
+#endif
 
         context = g_option_context_new (NULL);
         g_option_context_add_main_entries (context, entries, NULL);

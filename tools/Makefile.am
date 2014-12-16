@@ -21,15 +21,18 @@ endif
 DIST_SUBDIRS = 		\
 	linux		\
 	freebsd		\
+	openbsd		\
 	solaris		\
 	$(NULL)
 
-INCLUDES =							\
+AM_CFLAGS =							\
 	-I.							\
 	-I$(srcdir)						\
 	-I$(top_srcdir)/src					\
 	-I$(top_srcdir)/libck-connector				\
+	-U_FORTIFY_SOURCE						\
 	$(CONSOLE_KIT_CFLAGS)					\
+	$(XLIB_CFLAGS)							\
 	$(DISABLE_DEPRECATED_CFLAGS)				\
 	-DPREFIX=\""$(prefix)"\" 				\
 	-DBINDIR=\""$(bindir)"\"				\
@@ -38,6 +41,7 @@ INCLUDES =							\
 	-DDATADIR=\""$(datadir)"\"				\
 	-DSYSCONFDIR=\""$(sysconfdir)"\" 			\
 	-DLOCALSTATEDIR=\""$(localstatedir)"\" 			\
+	-DLOCALEDIR=\"$(localedir)\"		\
 	$(HISTORY_CFLAGS)					\
 	$(WARN_CFLAGS)						\
 	$(DEBUG_CFLAGS)						\
@@ -71,6 +75,7 @@ ck_list_sessions_SOURCES =		\
 
 ck_list_sessions_LDADD =		\
 	$(CONSOLE_KIT_LIBS)		\
+	$(XLIB_LIBS)			\
 	$(NULL)
 
 ck_history_SOURCES =			\
@@ -131,6 +136,7 @@ ck_get_x11_server_pid_SOURCES =		\
 
 ck_get_x11_server_pid_LDADD =		\
 	$(TOOLS_LIBS)			\
+	$(XLIB_LIBS)			\
 	$(top_builddir)/src/libck.la	\
 	$(NULL)
 
@@ -144,22 +150,35 @@ ck_get_x11_display_device_LDADD =	\
 	$(NULL)
 
 if ENABLE_UDEV_ACL
-udevdir = $(UDEVDIR)
 udevrulesdir = $(UDEVDIR)/rules.d
 
 dist_udevrules_DATA = 70-udev-acl.rules
-udev_PROGRAMS = udev-acl
+libexec_PROGRAMS += udev-acl
 
 udev_acl_SOURCES = udev-acl.c
 udev_acl_LDADD = $(UDEV_ACL_LIBS)
-udev_acl_CFLAGS = $(UDEV_ACL_CFLAGS)
+udev_acl_CFLAGS =       \
+	$(UDEV_ACL_CFLAGS)  \
+	$(AM_CFLAGS)        \
+	$(NULL)
+
+scriptdir = $(prefix)/lib/ConsoleKit/scripts
+script_SCRIPTS =			\
+	pam-foreground-compat.ck	\
+	$(NULL)
+
 
 install-exec-hook:
 	mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d
-	ln -sf $(UDEVDIR)/udev-acl $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d/udev-acl.ck
+	mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-session.d
+	mkdir -p $(DESTDIR)$(UDEVDIR)
+	ln -sf $(libexecdir)/udev-acl $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d/udev-acl.ck
+	ln -sf $(libexecdir)/udev-acl $(DESTDIR)$(UDEVDIR)/udev-acl
+	ln -sf $(prefix)/lib/ConsoleKit/scripts/pam-foreground-compat.ck $(DESTDIR)$(prefix)/lib/ConsoleKit/run-session.d/pam-foreground-compat.ck
 endif
 
 EXTRA_DIST =				\
+	$(script_SCRIPTS)		\
 	$(NULL)
 
 MAINTAINERCLEANFILES =			\

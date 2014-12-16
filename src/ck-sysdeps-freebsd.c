@@ -27,6 +27,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <errno.h>
+#include <glob.h>
 #include <paths.h>
 #include <ttyent.h>
 #include <kvm.h>
@@ -36,7 +37,12 @@
 #include <sys/sysctl.h>
 #include <sys/user.h>
 #include <sys/ioctl.h>
-
+#ifdef HAVE_SYS_WAIT_H
+#include <sys/wait.h>
+#endif
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
 #include <sys/consio.h>
 
 #define DEV_ENCODE(M,m) ( \
@@ -136,6 +142,67 @@ get_kinfo_proc (pid_t pid,
         return TRUE;
 }
 
+#ifdef __DragonFly__
+/* return 1 if it works, or 0 for failure */
+static gboolean
+stat2proc (pid_t        pid,
+           CkProcessStat *P)
+{
+        struct kinfo_proc p;
+        char              *ttname;
+        int               num;
+        int               tty_maj;
+        int               tty_min;
+
+        if (! get_kinfo_proc (pid, &p)) {
+                return FALSE;
+        }
+
+        num = MAXCOMLEN;
+        if (num >= sizeof P->cmd) {
+                num = sizeof P->cmd - 1;
+        }
+
+        memcpy (P->cmd, p.kp_comm, num);
+
+        P->cmd[num]   = '\0';
+        P->pid        = p.kp_pid;
+        P->ppid       = p.kp_ppid;
+        P->pgrp       = p.kp_pgid;
+        P->session    = p.kp_sid;
+        P->rss        = p.kp_vm_rssize;
+        P->vsize      = p.kp_vm_map_size;
+        P->start_time = p.kp_start.tv_sec;
+        P->wchan      = (unsigned long) p.kp_lwp.kl_wchan;
+        P->state      = p.kp_stat;
+        P->nice       = p.kp_nice;
+        P->flags      = p.kp_flags;
+        P->tpgid      = p.kp_tpgid;
+        P->processor  = p.kp_lwp.kl_cpuid;
+        P->nlwp       = p.kp_nthreads;
+
+        /* we like it Linux-encoded :-) */
+        tty_maj = major (p.kp_tdev);
+        tty_min = minor (p.kp_tdev);
+        P->tty = DEV_ENCODE (tty_maj,tty_min);
+
+        snprintf (P->tty_text, sizeof P->tty_text, "%3d,%-3d", tty_maj, tty_min);
+
+        if (p.kp_tdev != NODEV && (ttname = devname (p.kp_tdev, S_IFCHR)) != NULL) {
+                memcpy (P->tty_text, ttname, sizeof (P->tty_text));
+        }
+
+        if (p.kp_tdev == NODEV) {
+                memcpy (P->tty_text, "   ?   ", sizeof (P->tty_text));
+        }
+
+        if (P->pid != pid) {
+                return FALSE;
+        }
+
+        return TRUE;
+}
+#else /* __DragonFly__ */
 /* return 1 if it works, or 0 for failure */
 static gboolean
 stat2proc (pid_t        pid,
@@ -182,11 +249,11 @@ stat2proc (pid_t        pid,
         snprintf (P->tty_text, sizeof P->tty_text, "%3d,%-3d", tty_maj, tty_min);
 
         if (p.ki_tdev != NODEV && (ttname = devname (p.ki_tdev, S_IFCHR)) != NULL) {
-                memcpy (P->tty_text, ttname, sizeof P->tty_text);
+                memcpy (P->tty_text, ttname, sizeof (P->tty_text));
         }
 
         if (p.ki_tdev == NODEV) {
-                memcpy (P->tty_text, "   ?   ", sizeof P->tty_text);
+                memcpy (P->tty_text, "   ?   ", sizeof (P->tty_text));
         }
 
         if (P->pid != pid) {
@@ -195,6 +262,7 @@ stat2proc (pid_t        pid,
 
         return TRUE;
 }
+#endif /* __DragonFly__ */
 
 gboolean
 ck_process_stat_new_for_unix_pid (pid_t           pid,
@@ -202,7 +270,6 @@ ck_process_stat_new_for_unix_pid (pid_t           pid,
                                   GError        **error)
 {
         gboolean       res;
-        GError        *local_error;
         CkProcessStat *proc;
 
         g_return_val_if_fail (pid > 1, FALSE);
@@ -217,7 +284,6 @@ ck_process_stat_new_for_unix_pid (pid_t           pid,
         if (res) {
                 *stat = proc;
         } else {
-                g_propagate_error (error, local_error);
                 *stat = NULL;
         }
 
@@ -233,24 +299,28 @@ ck_process_stat_free (CkProcessStat *stat)
 GHashTable *
 ck_unix_pid_get_env_hash (pid_t pid)
 {
-        GHashTable       *hash;
+        GHashTable       *hash = NULL;
         char            **penv;
+        char              errbuf[_POSIX2_LINE_MAX];
         kvm_t            *kd;
         struct kinfo_proc p;
         int               i;
 
-        kd = kvm_openfiles (_PATH_DEVNULL, _PATH_DEVNULL, NULL, O_RDONLY, NULL);
+        kd = kvm_openfiles (_PATH_DEVNULL, _PATH_DEVNULL, NULL, O_RDONLY, errbuf);
         if (kd == NULL) {
+                g_warning ("kvm_openfiles failed: %s", errbuf);
                 return NULL;
         }
 
         if (! get_kinfo_proc (pid, &p)) {
-                return NULL;
+                g_warning ("get_kinfo_proc failed: %s", g_strerror (errno));
+                goto fail;
         }
 
         penv = kvm_getenvv (kd, &p, 0);
         if (penv == NULL) {
-                return NULL;
+                g_warning ("kvm_getenvv failed: %s", kvm_geterr (kd));
+                goto fail;
         }
 
         hash = g_hash_table_new_full (g_str_hash,
@@ -261,6 +331,8 @@ ck_unix_pid_get_env_hash (pid_t pid)
         for (i = 0; penv[i] != NULL; i++) {
                 char **vals;
 
+                if (!penv[i][0]) continue;
+
                 vals = g_strsplit (penv[i], "=", 2);
                 if (vals != NULL) {
                         g_hash_table_insert (hash,
@@ -270,6 +342,7 @@ ck_unix_pid_get_env_hash (pid_t pid)
                 }
         }
 
+fail:
         kvm_close (kd);
 
         return hash;
@@ -280,7 +353,7 @@ ck_unix_pid_get_env (pid_t       pid,
                      const char *var)
 {
         GHashTable *hash;
-        char       *val;
+        char       *val = NULL;
 
         /*
          * Would probably be more efficient to just loop through the
@@ -288,6 +361,8 @@ ck_unix_pid_get_env (pid_t       pid,
          * table, but this works for now.
          */
         hash = ck_unix_pid_get_env_hash (pid);
+        if (hash == NULL)
+                return val;
         val  = g_strdup (g_hash_table_lookup (hash, var));
         g_hash_table_destroy (hash);
 
@@ -308,7 +383,11 @@ ck_unix_pid_get_uid (pid_t pid)
         res = get_kinfo_proc (pid, &p);
 
         if (res) {
+#ifdef __DragonFly__
+                uid = p.kp_uid;
+#else
                 uid = p.ki_uid;
+#endif
         }
 
         return uid;
@@ -327,38 +406,38 @@ gboolean
 ck_get_max_num_consoles (guint *num)
 {
         int      max_consoles;
-        int      res;
-        gboolean ret;
-        struct ttyent *t;
+        int      i;
+        glob_t   g;
 
-        ret = FALSE;
         max_consoles = 0;
 
-        res = setttyent ();
-        if (res == 0) {
-                goto done;
-        }
+        g.gl_offs = 0;
+        glob ("/dev/ttyv*", GLOB_DOOFFS | GLOB_NOSORT, NULL, &g);
+        for (i = 0; i < g.gl_pathc && g.gl_pathv[i] != NULL; i++) {
+                struct stat sb;
+                char *cdev;
 
-        while ((t = getttyent ()) != NULL) {
-                if (t->ty_status & TTY_ON && strncmp (t->ty_name, "ttyv", 4) == 0)
+                cdev = g.gl_pathv[i];
+                if (stat (cdev, &sb) > -1 && S_ISCHR (sb.st_mode)) {
                         max_consoles++;
+                } else {
+                        break;
+                }
         }
 
-        /* Increment one more so that all consoles are properly counted
+        globfree (&g);
+
+        /*
+         * Increment one more so that all consoles are properly counted
          * this is arguable a bug in vt_add_watches().
          */
         max_consoles++;
 
-        ret = TRUE;
-
-        endttyent ();
-
-done:
         if (num != NULL) {
                 *num = max_consoles;
         }
 
-        return ret;
+        return TRUE;
 }
 
 gboolean
@@ -375,7 +454,12 @@ ck_get_console_device_for_num (guint num)
         /* The device number is always one less than the VT number. */
         num--;
 
-        device = g_strdup_printf ("/dev/ttyv%u", num);
+        if (num < 10)
+                device = g_strdup_printf ("/dev/ttyv%i", num);
+        else if (num < 32)
+                device = g_strdup_printf ("/dev/ttyv%c", num - 10 + 'a');
+        else
+                device = NULL;
 
         return device;
 }
@@ -385,6 +469,7 @@ ck_get_console_num_from_device (const char *device,
                                 guint      *num)
 {
         guint    n;
+        char     c;
         gboolean ret;
 
         n = 0;
@@ -394,7 +479,11 @@ ck_get_console_num_from_device (const char *device,
                 return FALSE;
         }
 
-        if (sscanf (device, "/dev/ttyv%u", &n) == 1) {
+        if (sscanf (device, "/dev/ttyv%c", &c) == 1) {
+                if (c < 58)
+                        n = c - 48;
+                else
+                        n = c - 'a' + 10;
                 /* The VT number is always one more than the device number. */
                 n++;
                 ret = TRUE;
@@ -414,6 +503,7 @@ ck_get_active_console_num (int    console_fd,
         gboolean ret;
         int      res;
         int      active;
+        char     ttyn;
 
         g_assert (console_fd != -1);
 
@@ -426,7 +516,12 @@ ck_get_active_console_num (int    console_fd,
                 goto out;
         }
 
-        g_debug ("Active VT is: %d (ttyv%d)", active, active - 1);
+        if (active - 1 < 10)
+                ttyn = active - 1 + '0';
+        else
+                ttyn = active - 11 + 'a';
+
+        g_debug ("Active VT is: %d (ttyv%c)", active, ttyn);
         ret = TRUE;
 
  out:
@@ -435,4 +530,71 @@ ck_get_active_console_num (int    console_fd,
         }
 
         return ret;
+}
+
+static gchar *
+get_string_sysctl (GError **err, const gchar *format, ...)
+{
+        va_list args;
+        gchar *name;
+        size_t value_len;
+        gchar *str = NULL;
+
+        g_return_val_if_fail(format != NULL, FALSE);
+
+        va_start (args, format);
+        name = g_strdup_vprintf (format, args);
+        va_end (args);
+
+        if (sysctlbyname (name, NULL, &value_len, NULL, 0) == 0) {
+                str = g_new (char, value_len + 1);
+                if (sysctlbyname (name, str, &value_len, NULL, 0) == 0) {
+                        str[value_len] = 0;
+                } else {
+                        g_free (str);
+                        str = NULL;
+                }
+        }
+
+        if (!str)
+                g_set_error (err, 0, 0, "%s", g_strerror(errno));
+
+        g_free(name);
+        return str;
+}
+
+static gboolean
+freebsd_supports_sleep_state (const gchar *state)
+{
+        gboolean ret = FALSE;
+        gchar *sleep_states;
+
+        sleep_states = get_string_sysctl (NULL, "hw.acpi.supported_sleep_state");
+        if (sleep_states != NULL) {
+                if (strstr (sleep_states, state) != NULL)
+                        ret = TRUE;
+        }
+
+        g_free (sleep_states);
+
+        return ret;
+}
+
+gboolean
+ck_system_can_suspend (void)
+{
+        return freebsd_supports_sleep_state ("S3");
+}
+
+gboolean
+ck_system_can_hibernate (void)
+{
+        return freebsd_supports_sleep_state ("S4");
+}
+
+gboolean
+ck_system_can_hybrid_sleep (void)
+{
+        /* TODO: not implemented */
+        return FALSE;
 }

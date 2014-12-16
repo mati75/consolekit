@@ -36,6 +36,10 @@
 #include <linux/kd.h>
 #endif
 
+#if defined(__OpenBSD__)
+#include <dev/wscons/wsdisplay_usl_io.h>
+#endif
+
 #ifdef HAVE_SYS_VT_H
 #include <sys/vt.h>
 #endif
@@ -70,7 +74,11 @@ ck_get_socket_peer_credentials   (int      socket_fd,
         ret = FALSE;
 
 #ifdef SO_PEERCRED
+#ifndef __OpenBSD__
         struct ucred cr;
+#else
+        struct sockpeercred cr;
+#endif
         socklen_t    cr_len;
 
         cr_len = sizeof (cr);
@@ -100,6 +108,15 @@ ck_get_socket_peer_credentials   (int      socket_fd,
         if (ucred != NULL) {
                 ucred_free (ucred);
         }
+#elif defined(HAVE_GETPEEREID)
+	gid_t dummy;
+
+        if (getpeereid (socket_fd, &uid_read, &dummy) == 0) {
+                ret = TRUE;
+        } else {
+                g_warning ("Failed to getpeereid() credentials: %s\n",
+                           g_strerror (errno));
+        }
 #else /* !SO_PEERCRED && !HAVE_GETPEERUCRED */
         g_warning ("Socket credentials not supported on this OS\n");
 #endif
@@ -127,17 +144,17 @@ ck_get_socket_peer_credentials   (int      socket_fd,
 gboolean
 ck_fd_is_a_console (int fd)
 {
-#ifdef __linux__
+#if defined(__linux__) || defined(__OpenBSD__)
         struct vt_stat vts;
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__DragonFly__)
         int vers;
 #endif
         int  kb_ok;
 
         errno = 0;
-#ifdef __linux__
+#if defined(__linux__) || defined(__OpenBSD__)
         kb_ok = (ioctl (fd, VT_GETSTATE, &vts) == 0);
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__DragonFly__)
         kb_ok = (ioctl (fd, CONS_GETVERS, &vers) == 0);
 #else
         kb_ok = 1;
@@ -151,7 +168,10 @@ open_a_console (char *fnam)
 {
         int fd;
 
+#ifdef __linux__
 again:
+#endif /* __linux__ */
+
         fd = open (fnam, O_RDONLY | O_NOCTTY);
         if (fd < 0 && errno == EACCES)
                 fd = open (fnam, O_WRONLY | O_NOCTTY);
@@ -169,7 +189,7 @@ again:
 		nanosleep (&ts, NULL);
 		goto again;
 	}
-#endif
+#endif /* __linux__ */
 
         if (fd < 0)
                 return -1;
@@ -189,6 +209,15 @@ ck_get_a_console_fd (void)
 
         fd = -1;
 
+#ifdef __FreeBSD__
+        /* On FreeBSD, try /dev/consolectl first as this will survive
+         * /etc/ttys initialization. */
+        fd = open_a_console ("/dev/consolectl");
+        if (fd >= 0) {
+                goto done;
+        }
+#endif
+
 #ifdef __sun
         /* On Solaris, first try Sun VT device. */
         fd = open_a_console ("/dev/vt/active");
@@ -200,6 +229,14 @@ ck_get_a_console_fd (void)
                 goto done;
         }
 #endif
+
+#if defined(__OpenBSD__)
+        fd = open_a_console ("/dev/ttyC0");
+        if (fd >= 0) {
+                goto done;
+        }
+#endif
+
 
 #ifdef _PATH_TTY
         fd = open_a_console (_PATH_TTY);
@@ -243,18 +280,17 @@ gboolean
 ck_is_root_user (void)
 {
 #ifndef G_OS_WIN32
-        uid_t ruid, euid, suid; /* Real, effective and saved user ID's */
-        gid_t rgid, egid, sgid; /* Real, effective and saved group ID's */
+        uid_t ruid;
 
 #ifdef HAVE_GETRESUID
+        uid_t euid, suid; /* Real, effective and saved user ID's */
+        gid_t rgid, egid, sgid; /* Real, effective and saved group ID's */
+
         if (getresuid (&ruid, &euid, &suid) != 0 ||
             getresgid (&rgid, &egid, &sgid) != 0)
 #endif /* HAVE_GETRESUID */
                 {
-                        suid = ruid = getuid ();
-                        sgid = rgid = getgid ();
-                        euid = geteuid ();
-                        egid = getegid ();
+                        ruid = getuid ();
                 }
 
         if (ruid == 0) {

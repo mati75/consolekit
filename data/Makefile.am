@@ -6,6 +6,9 @@ dbusconf_DATA = ConsoleKit.conf
 seatdir = $(sysconfdir)/ConsoleKit/seats.d
 seat_DATA = 00-primary.seat
 
+logdir = $(LOGROTATE_DIR)
+xinitrcdir = $(XINITRC_DIR)
+
 if HAVE_POLKIT
 polkit_policydir = $(datadir)/polkit-1/actions
 dist_polkit_policy_DATA =	\
@@ -69,6 +72,14 @@ edit = sed \
 	-e 's|@localstatedir[@]|$(localstatedir)|g' \
 	-e 's|@CONSOLE_KIT_PID_FILE[@]|$(CONSOLE_KIT_PID_FILE)|g'
 
+
+install-log:
+	$(INSTALL_PROGRAM) consolekit.logrotate $(logdir)
+
+install-xinitrc:
+	$(INSTALL_PROGRAM) 90-consolekit $(xinitrcdir) && \
+	chmod +x $(xinitrcdir)/90-consolekit
+
 EXTRA_DIST =						\
 	ck-log-system-restart				\
 	ck-log-system-start				\
@@ -80,6 +91,7 @@ EXTRA_DIST =						\
 	console-kit-log-system-start.service.in         \
 	console-kit-log-system-stop.service.in          \
 	console-kit-log-system-restart.service.in       \
+	90-consolekit                                   \
 	$(NULL)
 
 MAINTAINERCLEANFILES =			\

@@ -29,6 +29,8 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <libintl.h>
+#include <locale.h>
 
 #include <glib.h>
 #include <glib/gi18n.h>
@@ -148,6 +150,81 @@ delete_pid (void)
         unlink (CONSOLE_KIT_PID_FILE);
 }
 
+#define CONSOLE_TAGS_DIR "/var/run/console"
+
+static void
+delete_console_tags (void)
+{
+        GDir *dir;
+        GError *error = NULL;
+        const gchar *name;
+
+        g_debug ("Cleaning up %s", CONSOLE_TAGS_DIR);
+
+        dir = g_dir_open (CONSOLE_TAGS_DIR, 0, &error);
+        if (dir == NULL) {
+                g_debug ("Couldn't open directory %s: %s", CONSOLE_TAGS_DIR,
+                         error->message);
+                g_error_free (error);
+                return;
+        }
+        while ((name = g_dir_read_name (dir)) != NULL) {
+                gchar *file;
+                file = g_build_filename (CONSOLE_TAGS_DIR, name, NULL);
+
+                g_debug ("Removing tag file: %s", file);
+                if (unlink (file) == -1) {
+                        g_warning ("Couldn't delete tag file: %s", file);
+                }
+                g_free (file);
+        }
+        g_dir_close (dir);
+}
+
+static void
+delete_inhibit_files (void)
+{
+        GDir *dir;
+        GError *error = NULL;
+        const gchar *INHIBIT_DIRECTORY = LOCALSTATEDIR "/run/ConsoleKit/inhibit";
+        const gchar *name;
+
+        g_debug ("Cleaning up %s", INHIBIT_DIRECTORY);
+
+        dir = g_dir_open (INHIBIT_DIRECTORY, 0, &error);
+        if (dir == NULL) {
+                g_debug ("Couldn't open directory %s: %s", INHIBIT_DIRECTORY,
+                         error->message);
+                g_error_free (error);
+                return;
+        }
+        while ((name = g_dir_read_name (dir)) != NULL) {
+                gchar *file;
+
+                /* the inhibit files end in .pipe */
+                if (!g_str_has_suffix (name, ".pipe")) {
+                        continue;
+                }
+
+                file = g_build_filename (INHIBIT_DIRECTORY, name, NULL);
+
+                g_debug ("Removing inhibit file: %s", file);
+                if (unlink (file) == -1) {
+                        g_warning ("Couldn't delete inhibit file: %s", file);
+                }
+                g_free (file);
+        }
+        g_dir_close (dir);
+}
+
+static void
+cleanup (void)
+{
+        delete_console_tags ();
+        delete_inhibit_files ();
+        delete_pid ();
+}
+
 /* copied from nautilus */
 static int debug_log_pipes[2];
 
@@ -171,6 +248,21 @@ sigusr1_handler (int sig)
 {
         while (write (debug_log_pipes[1], "a", 1) != 1)
                 ;
+}
+
+static void
+setup_termination_signals (void)
+{
+        struct sigaction sa;
+
+        sa.sa_handler = SIG_DFL;
+        sigemptyset (&sa.sa_mask);
+        sa.sa_flags = 0;
+
+        sigaction (SIGTERM, &sa, NULL);
+        sigaction (SIGQUIT, &sa, NULL);
+        sigaction (SIGINT, &sa, NULL);
+        sigaction (SIGHUP, &sa, NULL);
 }
 
 static void
@@ -224,11 +316,16 @@ create_pid_file (void)
         g_free (dirname);
 
         /* make a new pid file */
-        if ((pf = open (CONSOLE_KIT_PID_FILE, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644)) > 0) {
+        if ((pf = open (CONSOLE_KIT_PID_FILE, O_WRONLY|O_CREAT|O_TRUNC|O_EXCL, 0644)) >= 0) {
                 snprintf (pid, sizeof (pid), "%lu\n", (long unsigned) getpid ());
                 written = write (pf, pid, strlen (pid));
+                if (written != strlen(pid)) {
+                        g_warning ("unable to write pid file %s: %s",
+                                   CONSOLE_KIT_PID_FILE,
+                                   g_strerror (errno));
+                }
+                atexit (cleanup);
                 close (pf);
-                g_atexit (delete_pid);
         } else {
                 g_warning ("Unable to write pid file %s: %s",
                            CONSOLE_KIT_PID_FILE,
@@ -258,22 +355,31 @@ main (int    argc,
                 { NULL }
         };
 
+        /* Setup for i18n */
+        setlocale(LC_ALL, "");
+ 
+#ifdef ENABLE_NLS
+        bindtextdomain(PACKAGE, LOCALEDIR);
+        textdomain(PACKAGE);
+#endif
+
         ret = 1;
 
+#if !GLIB_CHECK_VERSION(2, 32, 0)
         if (! g_thread_supported ()) {
                 g_thread_init (NULL);
         }
+#endif
+
         dbus_g_thread_init ();
+
+#if !GLIB_CHECK_VERSION(2, 36, 0)
         g_type_init ();
+#endif
 
         if (! ck_is_root_user ()) {
-                g_warning ("Must be run as root");
+                g_warning (_("You must be root to run this program"));
                 exit (1);
-        }
-
-        if (debug) {
-                g_setenv ("G_DEBUG", "fatal_criticals", FALSE);
-                g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL);
         }
 
         context = g_option_context_new (_("Console kit daemon"));
@@ -287,11 +393,23 @@ main (int    argc,
                 goto out;
         }
 
+#ifdef CONSOLEKIT_DEBUGGING
+        /* compiling with --enable-debug=full turns debugging on */
+        debug = TRUE;
+#endif
+
+        if (debug) {
+                g_setenv ("G_DEBUG", "fatal_criticals", FALSE);
+                g_log_set_always_fatal (G_LOG_LEVEL_CRITICAL);
+        }
+
         if (! no_daemon && daemon (0, 0)) {
                 g_error ("Could not daemonize: %s", g_strerror (errno));
         }
 
         setup_debug_log (debug);
+
+        setup_termination_signals ();
 
         g_debug ("initializing console-kit-daemon %s", VERSION);
 
@@ -316,6 +434,9 @@ main (int    argc,
                 g_warning ("Could not acquire name; bailing out");
                 goto out;
         }
+
+        delete_console_tags ();
+        delete_inhibit_files ();
 
         create_pid_file ();
 

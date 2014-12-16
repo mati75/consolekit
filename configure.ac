@@ -1,13 +1,23 @@
 
-AC_PREREQ([2.68])
-AC_INIT([ConsoleKit],
-        [0.4.6],
-        [https://bugs.freedesktop.org/enter_bug.cgi?product=ConsoleKit],
-        [ConsoleKit])
+AC_COPYRIGHT([Copyright 2014 The ConsoleKit2 Team])
 
+AC_PREREQ([2.50])
+AC_INIT([ConsoleKit2],
+        [0.9.2],
+        [https://github.com/ConsoleKit2/ConsoleKit2/issues],
+        [ConsoleKit2])
+VERSION_MAJOR=0
+VERSION_MINOR=9
+VERSION_REVISION=2
+
+COPYRIGHT_YEARS="2014"
+
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_AUX_DIR([autotools])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/ck-manager.c])
 
-AM_INIT_AUTOMAKE([1.9 no-dist-gzip dist-xz tar-ustar])
+AM_INIT_AUTOMAKE([1.9 dist-bzip2 tar-ustar no-dist-gzip])
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AM_MAINTAINER_MODE
 
@@ -20,33 +30,49 @@ AM_PROG_CC_C_O
 AC_HEADER_STDC
 AC_DISABLE_STATIC
 LT_INIT
-
+AC_CHECK_HEADER_STDBOOL
 AC_HEADER_STDC
+AC_FUNC_FORK
+AC_FUNC_MALLOC
+AC_HEADER_MAJOR
+AC_PATH_X
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_TYPE_SSIZE_T
 
 AC_SUBST(VERSION)
 
 # Save flags to aclocal
 ACLOCAL="$ACLOCAL $ACLOCAL_FLAGS"
 
-GETTEXT_PACKAGE=ConsoleKit
+AM_GNU_GETTEXT_VERSION([0.15])
+GETTEXT_PACKAGE=ConsoleKit2
 AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Name of default gettext domain])
-
-AM_GLIB_GNU_GETTEXT
+AM_GNU_GETTEXT([external])
+AM_NLS
 
 # Dependencies
 
 DBUS_REQUIRED_VERSION=0.82
-GLIB_REQUIRED_VERSION=2.14
+GLIB_REQUIRED_VERSION=2.30
 X11_REQUIRED_VERSION=1.0.0
 POLKIT_REQUIRED_VERSION=0.92
 
-AC_CHECK_HEADERS(unistd.h)
-AC_CHECK_HEADERS(paths.h)
-AC_CHECK_HEADERS(sys/vt.h)
-AC_CHECK_HEADERS(sys/consio.h)
+AC_CHECK_HEADERS([unistd.h paths.h sys/vt.h sys/consio.h fcntl.h limits.h \
+                  sys/ioctl.h sys/param.h sys/socket.h syslog.h kvm.h \
+                  sys/sysctl.h sys/user.h poll.h libintl.h locale.h \
+                  sys/wait.h sys/resource.h])
 
-AC_CHECK_FUNCS(getpeerucred getpeereid)
+AC_CHECK_FUNCS([getpeerucred getpeereid memset setenv strchr strdup \
+                strerror strrchr strspn strstr strtol strtoul uname \
+                setlocale])
+
+AC_CHECK_MEMBERS([struct stat.st_rdev])
+
+AC_CHECK_FILE(/sys/class/tty/tty0/active,
+              [AC_DEFINE([HAVE_SYS_VT_SIGNAL], [1], [System has a means of signaling VT changes])],
+              [])
 
 AC_TYPE_UID_T
 
@@ -56,14 +82,23 @@ PKG_CHECK_MODULES(CONSOLE_KIT,
   gthread-2.0 >= $GLIB_REQUIRED_VERSION
 )
 
-PKG_CHECK_MODULES(POLKIT,
-  polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION,
-  have_polkit=yes,
-  have_polkit=no)
-if test "x$have_polkit" = "xyes" ; then
-       AC_DEFINE(HAVE_POLKIT, [], [Define if we have polkit])
-fi
-AM_CONDITIONAL(HAVE_POLKIT, test x$have_polkit = xyes)
+PKG_CHECK_MODULES([XLIB], [x11])
+
+have_polkit=no
+AC_ARG_ENABLE([polkit],
+  AS_HELP_STRING([--enable-polkit], [Enable PolicyKit support @<:@default=auto@:>@]),
+  [enable_polkit=$enableval],
+  [enable_polkit=auto])
+AS_IF([test "x$enable_polkit" != "xno"], [
+  PKG_CHECK_MODULES([POLKIT], [polkit-gobject-1 >= $POLKIT_REQUIRED_VERSION], [have_polkit=yes], [have_polkit=no])
+  if test "x$enable_polkit"  = "xyes" -a "x$have_polkit" = "xno"; then
+    AC_MSG_ERROR([PolicyKit support explicitly requested but dependencies not found])
+  fi
+])
+AS_IF([test "x$have_polkit" = "xyes"], [
+  AC_DEFINE([HAVE_POLKIT], [], [Define if we have polkit])
+])
+AM_CONDITIONAL([HAVE_POLKIT], [test "x$have_polkit" = "xyes"])
 AC_SUBST(HAVE_POLKIT)
 
 PKG_CHECK_MODULES(LIBDBUS,
@@ -83,9 +118,18 @@ AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal)
 EXTRA_COMPILE_WARNINGS(yes)
 
 # Solaris requires libresolv for daemon()
-case "$host" in
-	*-*-solaris*)
+case "$host_os" in
+	solaris*)
 		AC_CHECK_LIB(resolv, daemon, [CONSOLE_KIT_LIBS="$CONSOLE_KIT_LIBS -lresolv"])
+	;;
+	kfreebsd*-gnu)
+		have_getpeereid=no
+		AC_CHECK_LIB(bsd, getpeereid, have_getpeereid=yes)
+		if test "x$have_getpeereid" = "xyes"; then
+			CONSOLE_KIT_LIBS="${CONSOLE_KIT_LIBS} -lbsd"
+			TOOLS_LIBS="${TOOLS_LIBS} -lbsd"
+			AC_DEFINE(HAVE_GETPEEREID, [], [Define if we have getpeereid])
+		fi
 	;;
 esac
 
@@ -141,10 +185,18 @@ dnl ---------------------------------------------------------------------------
 CK_BACKEND=""
 KVM_LIBS=""
 case "$host" in
-        *-*-freebsd* | *-*-kfreebsd*-gnu)
+        *-*-openbsd*)
+        CK_BACKEND="openbsd"
+        AC_CHECK_LIB(kvm, kvm_openfiles, have_kvm=yes,
+                AC_MSG_ERROR([Unable to find libkvm which is needed on OpenBSD]))
+        if test "x$have_kvm" = "xyes"; then
+                KVM_LIBS="-lkvm"
+        fi
+        ;;
+        *-*-freebsd* | *-*-kfreebsd*-gnu | *-*-dragonfly*)
         CK_BACKEND="freebsd"
         AC_CHECK_LIB(kvm, kvm_openfiles, have_kvm=yes,
-                AC_MSG_ERROR([Unable to find libkvm which is needed on FreeBSD]))
+                AC_MSG_ERROR([Unable to find libkvm which is needed on FreeBSD/DragonflyBSD]))
         if test "x$have_kvm" = "xyes"; then
                 KVM_LIBS="-lkvm"
         fi
@@ -167,6 +219,7 @@ AC_SUBST(KVM_LIBS)
 
 AM_CONDITIONAL(CK_COMPILE_LINUX, test x$CK_BACKEND = xlinux, [Compiling for Linux])
 AM_CONDITIONAL(CK_COMPILE_FREEBSD, test x$CK_BACKEND = xfreebsd, [Compiling for FreeBSD])
+AM_CONDITIONAL(CK_COMPILE_OPENBSD, test x$CK_BACKEND = xopenbsd, [Compiling for OpenBSD])
 AM_CONDITIONAL(CK_COMPILE_SOLARIS, test x$CK_BACKEND = xsolaris, [Compiling for Solaris])
 AM_CONDITIONAL(CK_COMPILE_GNU, test x$CK_BACKEND = xgnu, [Compiling for GNU])
 AC_SUBST(CK_BACKEND)
@@ -235,6 +288,32 @@ fi
 AC_SUBST(PAM_MODULE_DIR)
 
 dnl ---------------------------------------------------------------------------
+dnl - Install directory for syslog rotation file
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_WITH(logrotate-dir,
+	[AS_HELP_STRING([--with-logrotate-dir=<dir>],[directory to install syslog rotation file])])
+if ! test -z "$with_logrotate_dir"; then
+	LOGROTATE_DIR="$with_logrotate_dir"
+else
+	LOGROTATE_DIR="/etc/logrotate.d"
+fi
+AC_SUBST(LOGROTATE_DIR)
+
+dnl ---------------------------------------------------------------------------
+dnl - Install directory for xinitrc file
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_WITH(xinitrc-dir,
+	[AS_HELP_STRING([--with-xinitrc-dir=<dir>],[directory to install Xsession.d script for ck-launch-session])])
+if ! test -z "$with_xinitrc_dir"; then
+	XINITRC_DIR="$with_xinitrc_dir"
+else
+	XINITRC_DIR="/etc/X11/xinit/xinitrc.d"
+fi
+AC_SUBST(XINITRC_DIR)
+
+dnl ---------------------------------------------------------------------------
 dnl - DocBook Documentation
 dnl ---------------------------------------------------------------------------
 
@@ -263,8 +342,8 @@ fi
 AM_CONDITIONAL(DOCBOOK_DOCS_ENABLED, test x$enable_docbook_docs = xyes)
 AC_MSG_RESULT(yes)
 
-AC_ARG_VAR([XMLTO],[Define/override the `xmlto' location.])
-AC_ARG_VAR([XMLTO_FLAGS],[Define/override `xmlto' options, like `--skip-validation'.])
+AC_ARG_VAR([XMLTO],[Define/override the xmlto location.])
+AC_ARG_VAR([XMLTO_FLAGS],[Define/override xmlto options, like --skip-validation.])
 
 dnl ---------------------------------------------------------------------------
 dnl Check for xsltproc
@@ -357,8 +436,10 @@ if test "$enable_debug" = "yes"; then
 else
 	if test "x$enable_debug" = "xno"; then
 		DEBUG_CFLAGS="-DG_DISABLE_ASSERT -DG_DISABLE_CHECKS"
-  	else
-    		DEBUG_CFLAGS=""
+	elif test "$enable_debug" = "full"; then
+		DEBUG_CFLAGS="-DG_ENABLE_DEBUG -DCONSOLEKIT_DEBUGGING"
+	else
+		DEBUG_CFLAGS=
   	fi
 fi
 AC_SUBST(DEBUG_CFLAGS)
@@ -376,9 +457,27 @@ AC_SUBST(LDFLAGS)
 
 AC_ARG_WITH([systemdsystemunitdir],
         AS_HELP_STRING([--with-systemdsystemunitdir=DIR], [Directory for systemd service files]),
-        [], [with_systemdsystemunitdir=$($PKG_CONFIG --variable=systemdsystemunitdir systemd)])
+        [], [with_systemdsystemunitdir=no])
 AS_IF([test "x$with_systemdsystemunitdir" != "xno"], [ AC_SUBST([systemdsystemunitdir], [$with_systemdsystemunitdir])])
 AM_CONDITIONAL(HAVE_SYSTEMD, [test -n "$with_systemdsystemunitdir" -a "x$with_systemdsystemunitdir" != "xno"])
+
+# Misc version info
+VERSION_MESSAGE="${VERSION}"
+COPYRIGHT_MESSAGE="Copyright © ${COPYRIGHT_YEARS} the ConsoleKit2 team"
+AC_DEFINE_UNQUOTED(VERSION_MESSAGE, "${VERSION_MESSAGE}", [Simple version string])
+AC_DEFINE_UNQUOTED(COPYRIGHT_MESSAGE, "${COPYRIGHT_MESSAGE}", [Copyright string])
+AC_DEFINE_UNQUOTED(COPYRIGHT_YEARS, "${COPYRIGHT_YEARS}", [The copyright years])
+AC_DEFINE_UNQUOTED(PACKAGE_VERSION_MAJOR,${VERSION_MAJOR}, [version major number])
+AC_DEFINE_UNQUOTED(PACKAGE_VERSION_MINOR,${VERSION_MINOR}, [version minor number])
+AC_DEFINE_UNQUOTED(PACKAGE_VERSION_REVISION,${VERSION_REVISION}, [version revision number])
+AC_DEFINE_UNQUOTED(PACKAGE, "ConsoleKit2", [The name of this package])
+AC_SUBST(COPYRIGHT_MESSAGE)
+AC_SUBST(VERSION_MESSAGE)
+AC_SUBST(VERSION_MAJOR)
+AC_SUBST(VERSION_MINOR)
+AC_SUBST(VERSION_REVISION)
+AC_SUBST(COPYRIGHT_YEARS)
+AC_SUBST(PACKAGE)
 
 # Files
 
@@ -388,6 +487,7 @@ src/Makefile
 tools/Makefile
 tools/linux/Makefile
 tools/freebsd/Makefile
+tools/openbsd/Makefile
 tools/solaris/Makefile
 data/Makefile
 doc/Makefile
@@ -396,9 +496,8 @@ doc/dbus/Makefile
 libck-connector/Makefile
 libck-connector/ck-connector.pc
 pam-ck-connector/Makefile
+po/Makefile.in
 ])
-
-AC_CONFIG_HEADERS([config.h])
 
 AC_OUTPUT
 
@@ -417,6 +516,7 @@ echo "
 	source code location:	  ${srcdir}
 	compiler:		  ${CC}
 	cflags:		          ${CFLAGS}
+	debug cflags:	          ${DEBUG_CFLAGS}
         Base libs:                ${CONSOLE_KIT_LIBS}
         Tools libs:               ${TOOLS_LIBS}
         Maintainer mode:          ${USE_MAINTAINER_MODE}
@@ -427,6 +527,8 @@ echo "
         Build PAM module:         ${msg_pam_module}
         Build udev-acl:           ${enable_udev_acl}
         Build docs:               ${enable_docbook_docs}
+        Log rotate dir:           ${LOGROTATE_DIR}
+        xinitrc dir:              ${XINITRC_DIR}
 
         PolicyKit support         ${have_polkit}
         RBAC (Solaris) support:   ${msg_rbac_shutdown}

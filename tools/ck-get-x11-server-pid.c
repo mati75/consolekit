@@ -28,6 +28,8 @@
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <libintl.h>
+#include <locale.h>
 
 #include <X11/Xlib.h>
 #include <glib.h>
@@ -47,6 +49,11 @@ display_init (int *argc, char ***argv)
                 exit (1);
         }
 
+        if (display_name[0] != ':' && g_strrstr(display_name, ":") != NULL) {
+                g_warning ("DISPLAY is not a UNIX domain socket, can't get PID");
+                exit (1);
+        }
+
         xdisplay = XOpenDisplay (display_name);
         if (xdisplay == NULL) {
                 g_warning ("cannot open display: %s", display_name ? display_name : "");
@@ -63,6 +70,14 @@ main (int    argc,
         int      fd;
         int      ret;
         Display *xdisplay;
+
+        /* Setup for i18n */
+        setlocale(LC_ALL, "");
+ 
+#ifdef ENABLE_NLS
+        bindtextdomain(PACKAGE, LOCALEDIR);
+        textdomain(PACKAGE);
+#endif
 
         ret = 1;
 
