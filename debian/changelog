@@ -3,6 +3,7 @@ consolekit (0.9.2-1) UNRELEASED; urgency=medium
   * New upstream release.
   * Remove all patches, are included upstream.
   * Add myself to uploaders.
+  * Update installed files by libck-connector-dev.
 
  -- Mateusz Łukasik <mati75@debian.org>  Tue, 16 Dec 2014 15:01:20 +0100
 
