@@ -18,7 +18,7 @@ Build-Depends: debhelper (>= 9),
  zlib1g-dev,
  libbsd-dev (>= 0.3.0~) [kfreebsd-any],
  dh-autoreconf
-Standards-Version: 3.9.5
+Standards-Version: 3.9.6
 Vcs-Git: git://git.debian.org/git/pkg-utopia/consolekit.git
 Vcs-Browser: http://git.debian.org/?p=pkg-utopia/consolekit.git;a=summary
 Homepage: http://www.freedesktop.org/wiki/Software/ConsoleKit
