@@ -14,6 +14,10 @@ if CK_COMPILE_FREEBSD
 SUBDIRS += freebsd
 endif
 
+if CK_COMPILE_OPENBSD
+SUBDIRS += openbsd
+endif
+
 if CK_COMPILE_SOLARIS
 SUBDIRS += solaris
 endif
@@ -41,6 +45,7 @@ AM_CFLAGS =							\
 	-DDATADIR=\""$(datadir)"\"				\
 	-DSYSCONFDIR=\""$(sysconfdir)"\" 			\
 	-DLOCALSTATEDIR=\""$(localstatedir)"\" 			\
+	-DRUNDIR=\""$(RUNDIR)"\" 			\
 	-DLOCALEDIR=\"$(localedir)\"		\
 	$(HISTORY_CFLAGS)					\
 	$(WARN_CFLAGS)						\
@@ -162,23 +167,14 @@ udev_acl_CFLAGS =       \
 	$(AM_CFLAGS)        \
 	$(NULL)
 
-scriptdir = $(prefix)/lib/ConsoleKit/scripts
-script_SCRIPTS =			\
-	pam-foreground-compat.ck	\
-	$(NULL)
-
-
 install-exec-hook:
 	mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d
-	mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-session.d
 	mkdir -p $(DESTDIR)$(UDEVDIR)
 	ln -sf $(libexecdir)/udev-acl $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d/udev-acl.ck
 	ln -sf $(libexecdir)/udev-acl $(DESTDIR)$(UDEVDIR)/udev-acl
-	ln -sf $(prefix)/lib/ConsoleKit/scripts/pam-foreground-compat.ck $(DESTDIR)$(prefix)/lib/ConsoleKit/run-session.d/pam-foreground-compat.ck
 endif
 
 EXTRA_DIST =				\
-	$(script_SCRIPTS)		\
 	$(NULL)
 
 MAINTAINERCLEANFILES =			\

@@ -1,16 +1,16 @@
 
-AC_COPYRIGHT([Copyright 2014 The ConsoleKit2 Team])
+AC_COPYRIGHT([Copyright 2014-2015 The ConsoleKit2 Team])
 
 AC_PREREQ([2.50])
 AC_INIT([ConsoleKit2],
-        [0.9.2],
+        [0.9.3],
         [https://github.com/ConsoleKit2/ConsoleKit2/issues],
         [ConsoleKit2])
 VERSION_MAJOR=0
 VERSION_MINOR=9
-VERSION_REVISION=2
+VERSION_REVISION=3
 
-COPYRIGHT_YEARS="2014"
+COPYRIGHT_YEARS="2014 2015"
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([autotools])
@@ -30,7 +30,6 @@ AM_PROG_CC_C_O
 AC_HEADER_STDC
 AC_DISABLE_STATIC
 LT_INIT
-AC_CHECK_HEADER_STDBOOL
 AC_HEADER_STDC
 AC_FUNC_FORK
 AC_FUNC_MALLOC
@@ -55,7 +54,7 @@ AM_NLS
 # Dependencies
 
 DBUS_REQUIRED_VERSION=0.82
-GLIB_REQUIRED_VERSION=2.30
+GLIB_REQUIRED_VERSION=2.40
 X11_REQUIRED_VERSION=1.0.0
 POLKIT_REQUIRED_VERSION=0.92
 
@@ -77,9 +76,10 @@ AC_CHECK_FILE(/sys/class/tty/tty0/active,
 AC_TYPE_UID_T
 
 PKG_CHECK_MODULES(CONSOLE_KIT,
-  dbus-glib-1 >= $DBUS_REQUIRED_VERSION
+  dbus-1 >= $DBUS_REQUIRED_VERSION
   gobject-2.0 >= $GLIB_REQUIRED_VERSION
   gthread-2.0 >= $GLIB_REQUIRED_VERSION
+  gio-unix-2.0 >= $GLIB_REQUIRED_VERSION
 )
 
 PKG_CHECK_MODULES([XLIB], [x11])
@@ -163,6 +163,21 @@ fi
 Z_LIBS="${Z_LIBS} -lz"
 AC_SUBST(Z_LIBS)
 
+
+dnl ---------------------------------------------------------------------------
+dnl - Path to rundir e.g. /var/run
+dnl ---------------------------------------------------------------------------
+
+AC_ARG_WITH(rundir,
+	[AS_HELP_STRING([--with-rundir=<dir>],[run directory location, e.g. /var/run])])
+if ! test -z "$with_rundir" ; then
+        RUNDIR="$with_rundir"
+else
+        RUNDIR="$localstatedir/run"
+fi
+AC_SUBST(RUNDIR)
+
+
 dnl ---------------------------------------------------------------------------
 dnl - PID file
 dnl ---------------------------------------------------------------------------
@@ -173,7 +188,7 @@ AC_ARG_WITH(pid-file,
 if ! test -z "$with_pid_file"; then
    CONSOLE_KIT_PID_FILE=$with_pid_file
 else
-   CONSOLE_KIT_PID_FILE=${localstatedir}/run/ConsoleKit/pid
+   CONSOLE_KIT_PID_FILE=${RUNDIR}/ConsoleKit/pid
 fi
 
 AC_SUBST(CONSOLE_KIT_PID_FILE)
@@ -229,6 +244,7 @@ dnl Check for PAM
 dnl ---------------------------------------------------------------------------
 
 have_pam=no
+have_linuxpam=no
 AC_CHECK_LIB(pam, pam_getenv, have_pam=yes)
 AM_CONDITIONAL(HAVE_PAM, test x$have_pam = xyes)
 if test "x$have_pam" = "xyes"; then
@@ -253,6 +269,10 @@ if test "x$enable_pam_module" = "xyes"; then
 	msg_pam_module=yes
 fi
 AM_CONDITIONAL(ENABLE_PAM_MODULE, test "x$enable_pam_module" = "xyes")
+
+#Check if we can build an optional test program
+AC_CHECK_LIB(pam_misc, misc_conv, have_linuxpam=yes)
+AM_CONDITIONAL(HAVE_LINUXPAM, test "x$have_linuxpam" = "xyes")
 
 dnl ------------------------------------------------------------------------------
 dnl udev-acl - apply ACLs for users with local forground sessions
@@ -287,18 +307,6 @@ else
 fi
 AC_SUBST(PAM_MODULE_DIR)
 
-dnl ---------------------------------------------------------------------------
-dnl - Install directory for syslog rotation file
-dnl ---------------------------------------------------------------------------
-
-AC_ARG_WITH(logrotate-dir,
-	[AS_HELP_STRING([--with-logrotate-dir=<dir>],[directory to install syslog rotation file])])
-if ! test -z "$with_logrotate_dir"; then
-	LOGROTATE_DIR="$with_logrotate_dir"
-else
-	LOGROTATE_DIR="/etc/logrotate.d"
-fi
-AC_SUBST(LOGROTATE_DIR)
 
 dnl ---------------------------------------------------------------------------
 dnl - Install directory for xinitrc file
@@ -309,7 +317,7 @@ AC_ARG_WITH(xinitrc-dir,
 if ! test -z "$with_xinitrc_dir"; then
 	XINITRC_DIR="$with_xinitrc_dir"
 else
-	XINITRC_DIR="/etc/X11/xinit/xinitrc.d"
+	XINITRC_DIR="$sysconfdir/X11/xinit/xinitrc.d"
 fi
 AC_SUBST(XINITRC_DIR)
 
@@ -484,6 +492,7 @@ AC_SUBST(PACKAGE)
 AC_CONFIG_FILES([
 Makefile
 src/Makefile
+tools/70-udev-acl.rules
 tools/Makefile
 tools/linux/Makefile
 tools/freebsd/Makefile
@@ -491,6 +500,7 @@ tools/openbsd/Makefile
 tools/solaris/Makefile
 data/Makefile
 doc/Makefile
+doc/console-kit-daemon.1m
 doc/dbus/ConsoleKit.xml
 doc/dbus/Makefile
 libck-connector/Makefile
@@ -512,6 +522,7 @@ echo "
         sbindir:                  ${sbindir}
         sysconfdir:               ${sysconfdir}
         localstatedir:            ${localstatedir}
+        rundir:                   ${RUNDIR}
         datadir:                  ${datadir}
 	source code location:	  ${srcdir}
 	compiler:		  ${CC}
@@ -527,7 +538,6 @@ echo "
         Build PAM module:         ${msg_pam_module}
         Build udev-acl:           ${enable_udev_acl}
         Build docs:               ${enable_docbook_docs}
-        Log rotate dir:           ${LOGROTATE_DIR}
         xinitrc dir:              ${XINITRC_DIR}
 
         PolicyKit support         ${have_polkit}

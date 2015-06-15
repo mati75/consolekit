@@ -1,0 +1,261 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR The ConsoleKit2 Team
+# This file is distributed under the same license as the PACKAGE package.
+#
+# Translators:
+# Pablo Roberto Francisco Lezaeta Reyes <prflr88@gmail.com>, 2015
+msgid ""
+msgstr ""
+"Project-Id-Version: ConsoleKit2\n"
+"Report-Msgid-Bugs-To: https://github.com/ConsoleKit2/ConsoleKit2/issues\n"
+"POT-Creation-Date: 2015-06-10 18:40+0300\n"
+"PO-Revision-Date: 2015-06-08 09:01+0000\n"
+"Last-Translator: Eric Koegel <eric.koegel@gmail.com>\n"
+"Language-Team: Spanish (Latin America) (http://www.transifex.com/projects/p/"
+"consolekit2/language/es_419/)\n"
+"Language: es_419\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: src/ck-seat.c:250
+msgid "Another session was activated while waiting"
+msgstr "Se inició otra sesión mientras se estaba en espera"
+
+#: src/ck-seat.c:275
+msgid "There is no Seat to activate"
+msgstr "No hay puesto de trabajo activo"
+
+#: src/ck-seat.c:281
+msgid "Activation is not supported for this kind of seat"
+msgstr "La activación no está disponible para este tipo de puesto de trabajo"
+
+#: src/ck-seat.c:286
+msgid "Unknown session id"
+msgstr "El Id de sesión desconocido"
+
+#: src/ck-seat.c:297 src/ck-seat.c:330 src/ck-vt-monitor.c:129
+msgid "Unable to activate session"
+msgstr "No se pudo activar la sesión"
+
+#: src/ck-seat.c:322
+msgid "Session already active"
+msgstr "La sesión ya está activa"
+
+#: src/ck-seat.c:685
+msgid "Session is not attached to this seat"
+msgstr "La sesión no está adjunta a este puesto de trabajo"
+
+#: src/ck-seat.c:970
+msgid "Seat has no sessions"
+msgstr "El puesto de trabajo no tiene sesiones"
+
+#: src/main.c:226
+msgid "Enable debugging code"
+msgstr "Habilitar código de depuración"
+
+#: src/main.c:227
+msgid "Don't become a daemon"
+msgstr "No convertirse en un demonio"
+
+#: src/main.c:228
+msgid "Exit after a time - for debugging"
+msgstr "Salir después de un tiempo - para depurar"
+
+#: src/main.c:253 tools/ck-collect-session-info.c:440
+msgid "You must be root to run this program"
+msgstr "Debe ser superusuario para ejecutar este programa"
+
+#: src/main.c:257
+msgid "Console kit daemon"
+msgstr "Kit de demonio de consola"
+
+#: src/ck-vt-monitor.c:110
+msgid "Session is already active"
+msgstr "La sesión está activa"
+
+#: src/ck-vt-monitor.c:118 src/ck-vt-monitor.c:151
+msgid "No consoles available"
+msgstr "No hay consolas disponibles"
+
+#: src/ck-manager.c:830
+#, c-format
+msgid "Not Authorized: %s"
+msgstr "No está autorizado: %s"
+
+#: src/ck-manager.c:837
+msgid "Authorization is required"
+msgstr "Se requiere atorización"
+
+#: src/ck-manager.c:840
+msgid "Not Authorized"
+msgstr "No está autorizado"
+
+#: src/ck-manager.c:1269
+#, c-format
+msgid "Unable to %s system: %s"
+msgstr "No se puede %s al sistema: %s"
+
+#: src/ck-manager.c:1322 src/ck-manager.c:1429 src/ck-manager.c:1684
+#: src/ck-manager.c:1816 src/ck-manager.c:1948
+msgid "Attempting to perform a system action while one is in progress"
+msgstr ""
+
+#: src/ck-manager.c:1334
+msgid "failed to allocate memory to perform restart"
+msgstr ""
+
+#: src/ck-manager.c:1381 src/ck-manager.c:1481 src/ck-manager.c:1538
+#: src/ck-manager.c:1617 src/ck-manager.c:1744 src/ck-manager.c:1876
+#: src/ck-manager.c:2008
+msgid "Operation is being inhibited"
+msgstr ""
+
+#: src/ck-manager.c:1441
+msgid "failed to allocate memory to perform shutdown"
+msgstr ""
+
+#: src/ck-manager.c:1696
+msgid "failed to allocate memory to perform suspend"
+msgstr ""
+
+#: src/ck-manager.c:1828
+msgid "failed to allocate memory to perform hibernate"
+msgstr ""
+
+#: src/ck-manager.c:1960
+msgid "failed to allocate memory to perform hybrid sleep"
+msgstr ""
+
+#: src/ck-manager.c:2091
+msgid "Inhibit manager failed to initialize"
+msgstr ""
+
+#: src/ck-manager.c:2105
+msgid "Invalid input when creating inhibit lock"
+msgstr ""
+
+#: src/ck-manager.c:2108
+msgid "Unable to create inhibit lock, insufficient memory"
+msgstr ""
+
+#: src/ck-manager.c:2111
+msgid "Error creating the inhibit lock"
+msgstr ""
+
+#: src/ck-manager.c:2788 src/ck-manager.c:2867 src/ck-manager.c:2915
+msgid "Unable to get information about the calling process"
+msgstr "No se puede buscar información acerca de las llamadas a proceso"
+
+#: src/ck-manager.c:2802 src/ck-manager.c:3115 src/ck-session.c:384
+#, c-format
+msgid "Unable to lookup information about calling process '%d'"
+msgstr "No se puede buscar información acerca de las llamadas al proceso «%d»"
+
+#: src/ck-manager.c:2813 src/ck-manager.c:2820 src/ck-manager.c:3064
+msgid "Unable to find session for cookie"
+msgstr "No se pudo encontrar la sesión para la galleta"
+
+#: src/ck-manager.c:2875
+#, c-format
+msgid "Unable to lookup session information for process '%d'"
+msgstr "No se puede buscar información de la sesión para el proceso «%d»"
+
+#: src/ck-manager.c:3072
+msgid "User ID does not match the owner of cookie"
+msgstr "El Id del usuario no concuerda con el propietario de la galleta"
+
+#: src/ck-manager.c:3082
+msgid "Process ID does not match the owner of cookie"
+msgstr "El id del proceso no concuerda con el propietario de la cookie"
+
+#: src/ck-manager.c:3276
+msgid "User has no sessions"
+msgstr "El usuario está sin sesión"
+
+#: src/ck-manager.c:3312
+msgid "User has no seats"
+msgstr "El usuario no tiene un puesto de trabajo"
+
+#: src/ck-manager.c:3338
+msgid "There are no sessions"
+msgstr ""
+
+#: src/ck-session.c:390
+msgid "Only session owner may set idle hint state"
+msgstr ""
+"Solo el propietario de la sesión puede establecer el estado de de inactividad"
+
+#: src/ck-session.c:462
+msgid ""
+"Activate signal not handeled. Session not attached to seat, or the seat "
+"doesn't support activation changes"
+msgstr ""
+"No se pudo manejar la señal de activación. La sesión no se adjuntará al "
+"puesto de trabajo o el puesto no soporta cambios de activación"
+
+#: tools/ck-history.c:903 tools/list-sessions.c:350
+msgid "Version of this application"
+msgstr "La versión de esta aplicación"
+
+#: tools/ck-history.c:904
+msgid "Show listing of frequent users"
+msgstr "Lista los usuario frecuentes"
+
+#: tools/ck-history.c:905
+msgid "Show listing of last logged in users"
+msgstr "Muestra la lista de los últimos usuarios conectados"
+
+#: tools/ck-history.c:906
+msgid "Show 'last' compatible listing of last logged in users"
+msgstr ""
+"Muestra la «última» lista compatible de los últimos usuarios conectados"
+
+#: tools/ck-history.c:907
+msgid "Show full event log"
+msgstr "Muestra todo el registro de eventos"
+
+#: tools/ck-history.c:908
+msgid "Show entries for the specified seat"
+msgstr "Muestra las entradas específicas por el puesto de trabajo"
+
+#: tools/ck-history.c:908
+msgid "SEAT"
+msgstr "PUESTO DE TRABAJO"
+
+#: tools/ck-history.c:909
+msgid "Show entries for the specified session type"
+msgstr "Mostrar las entradas específicas para el tipo de sesión"
+
+#: tools/ck-history.c:909
+msgid "TYPE"
+msgstr "TIPO"
+
+#: tools/ck-history.c:910
+msgid "Show entries for the specified user"
+msgstr "Muestra las entradas específicas para el usuario"
+
+#: tools/ck-history.c:910
+msgid "NAME"
+msgstr "NOMBRE"
+
+#: tools/ck-history.c:911
+msgid "Show entries since the specified time (ISO 8601 format)"
+msgstr "Muestra las entradas específicas para la fecha (en formato ISO 8601)"
+
+#: tools/ck-history.c:911
+msgid "DATETIME"
+msgstr "FECHA Y HORA"
+
+#: tools/ck-get-x11-display-device.c:162
+msgid "display name"
+msgstr "Mostrar nombre"
+
+#: tools/ck-collect-session-info.c:425
+msgid "User ID"
+msgstr "Id de usuario"
+
+#: tools/ck-collect-session-info.c:426
+msgid "Process ID"
+msgstr "Id de proceso"

@@ -75,6 +75,7 @@
         <variablelist role="params"><varlistentry><term><parameter>ssid</parameter>:</term><listitem><simpara>Session ID</simpara></listitem></varlistentry></variablelist></refsect2>
     <refsect2><title><anchor role="function" id="Session.GetSeatId"/>GetSeatId ()</title><indexterm><primary>GetSeatId</primary><secondary>Session</secondary></indexterm><programlisting>GetSeatId (out'o'sid)</programlisting><para>Returns the ID for the Seat the Session is
         attached to.</para>
+        <para>May fail with CK_SESSION_ERROR_FAILED if the session isn't attached to a seat</para>
         <variablelist role="params"><varlistentry><term><parameter>sid</parameter>:</term><listitem><simpara>Seat ID</simpara></listitem></varlistentry></variablelist><para>
 See also:
 <link linkend="Seat">org.freedesktop.ConsoleKit.Seat</link></para></refsect2>
@@ -147,6 +148,7 @@ See also:
           cases, if successful, this will cause the session to
           become visible and become active on the seat that it
           is attached to.</para>
+          <para>May fail with: CK_SESSION_ERROR_ALREADY_ACTIVE, CK_SESSION_ERROR_NOT_SUPPORTED, CK_SESSION_ERROR_GENERAL</para>
         <para>
 See also:
 <link linkend="Seat.ActivateSession"><function>Seat.ActivateSession()</function></link></para></refsect2>
