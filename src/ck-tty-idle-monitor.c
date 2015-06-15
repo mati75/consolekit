@@ -169,6 +169,7 @@ ck_tty_idle_monitor_get_property (GObject    *object,
 static void
 remove_idle_hint_timeout (CkTtyIdleMonitor *tty_idle_monitor)
 {
+        g_debug ("remove_idle_hint_timeout: checking timeout_id %d", tty_idle_monitor->priv->timeout_id);
         if (tty_idle_monitor->priv->timeout_id > 0) {
                 g_source_remove (tty_idle_monitor->priv->timeout_id);
                 tty_idle_monitor->priv->timeout_id = 0;
@@ -195,6 +196,11 @@ monitor_add_watch (CkTtyIdleMonitor *monitor)
         if (monitor->priv->file_monitor == NULL) {
                 monitor->priv->file_monitor = ck_file_monitor_new ();
         }
+
+        if (monitor->priv->file_notify_id != 0) {
+                g_debug ("monitor_add_watch: creating a new file_notify_id when one already exists");
+        }
+
         monitor->priv->file_notify_id = ck_file_monitor_add_notify (monitor->priv->file_monitor,
                                                                     monitor->priv->device,
                                                                     CK_FILE_MONITOR_EVENT_ACCESS,
@@ -225,6 +231,9 @@ check_tty_idle (CkTtyIdleMonitor *monitor)
         time_t      idletime;
         time_t      last_access;
 
+        g_debug ("check_tty_idle: setting timeout_id %d to 0", monitor->priv->timeout_id);
+        monitor->priv->timeout_id = 0;
+
         if (monitor->priv->device == NULL) {
                 return FALSE;
         }
@@ -245,8 +254,6 @@ check_tty_idle (CkTtyIdleMonitor *monitor)
         is_idle = (idletime >= monitor->priv->threshold);
 
         tty_idle_monitor_set_idle_hint_internal (monitor, is_idle);
-
-        monitor->priv->timeout_id = 0;
 
         if (is_idle) {
                 if (! monitor_add_watch (monitor)) {
@@ -275,6 +282,7 @@ static void
 schedule_tty_check (CkTtyIdleMonitor *monitor,
                     guint             seconds)
 {
+        g_debug ("schedule_tty_check: timeout_id %d", monitor->priv->timeout_id);
         if (monitor->priv->timeout_id == 0) {
 #if GLIB_CHECK_VERSION(2,14,0)
                 monitor->priv->timeout_id = g_timeout_add_seconds (seconds,
@@ -285,6 +293,7 @@ schedule_tty_check (CkTtyIdleMonitor *monitor,
                                                            (GSourceFunc)check_tty_idle,
                                                            monitor);
 #endif
+                g_debug ("schedule_tty_check: timeout_id %d", monitor->priv->timeout_id);
         }
 }
 
