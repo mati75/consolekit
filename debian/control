@@ -1,7 +1,7 @@
 Source: consolekit
 Section: admin
 Priority: optional
-Maintainer: Robert Millan <rmh@debian.org>
+Maintainer: Mateusz Łukasik <mati75@debian.org>
 Build-Depends: debhelper (>= 9),
  autotools-dev,
  pkg-config,
@@ -18,9 +18,9 @@ Build-Depends: debhelper (>= 9),
  libbsd-dev (>= 0.3.0~) [kfreebsd-any],
  dh-autoreconf
 Standards-Version: 3.9.6
-Vcs-Git: git://git.debian.org/git/pkg-utopia/consolekit.git
-Vcs-Browser: http://git.debian.org/?p=pkg-utopia/consolekit.git;a=summary
-Homepage: http://www.freedesktop.org/wiki/Software/ConsoleKit
+Vcs-Git: https://github.com/mati75/consolekit.git
+Vcs-Browser: https://github.com/mati75/consolekit
+Homepage: https://github.com/ConsoleKit2/ConsoleKit2
 
 Package: consolekit
 Section: admin
