@@ -27,6 +27,7 @@ in's'who,
 in's'why,
 in's'mode,
 out'h'fd)
+<link linkend="Manager.ListInhibitors">ListInhibitors</link>(out'a(ssssuu)'inhibitors)
 <link linkend="Manager.OpenSession">OpenSession</link>(out's'cookie)
 <link linkend="Manager.OpenSessionWithParameters">OpenSessionWithParameters</link>(in'a(sv)'parameters,
 out's'cookie)
@@ -238,6 +239,12 @@ out'h'fd)</programlisting>
     return fd;
           </programlisting></informalexample></para>
         <variablelist role="params"><varlistentry><term><parameter>what</parameter>:</term><listitem><simpara>What is a colon-separated list of lock types. The list of lock types are: shutdown, sleep, idle, handle-power-key, handle-suspend-key, handle-hibernate-key. Example: "shutdown:idle"</simpara></listitem></varlistentry><varlistentry><term><parameter>who</parameter>:</term><listitem><simpara>Who is a human-readable, descriptive string of who is taking the lock. Example: "Xfburn"</simpara></listitem></varlistentry><varlistentry><term><parameter>why</parameter>:</term><listitem><simpara>Why is a human-readable, descriptive string of why the program is taking the lock. Example: "Burning a DVD, interrupting now will ruin the DVD."</simpara></listitem></varlistentry><varlistentry><term><parameter>mode</parameter>:</term><listitem><simpara>Mode is either "block" or "delay" which determines if the inhibit lock is mandatory or should just delay the operation to a certain maximum time.</simpara></listitem></varlistentry><varlistentry><term><parameter>fd</parameter>:</term><listitem><simpara>Returns a file descriptor that encapsulates the lock, or -1 on failure. As soon as the file descriptor is closed (and all its duplicates) the lock is automatically released. If the client dies while the lock is taken it is automatically closed and the lock is released.</simpara></listitem></varlistentry></variablelist></refsect2>
+    <refsect2><title><anchor role="function" id="Manager.ListInhibitors"/>ListInhibitors ()</title><indexterm><primary>ListInhibitors</primary><secondary>Manager</secondary></indexterm><programlisting>ListInhibitors (out'a(ssssuu)'inhibitors)</programlisting>
+          <para>This method emulates the logind implementation.</para>
+          <para>Returns the current list of inhibitors, an array of strings representing the what, who, why, mode, and two unsigned int32 representing the user ID and process ID.</para>
+          <para>May fail with: CK_MANAGER_ERROR_GENERAL or CK_MANAGER_ERROR_NOTHING_INHIBITED.</para>
+          <para>Since 0.9.5</para>
+        <variablelist role="params"><varlistentry><term><parameter>inhibitors</parameter>:</term><listitem><simpara/></listitem></varlistentry></variablelist></refsect2>
     <refsect2><title><anchor role="function" id="Manager.OpenSession"/>OpenSession ()</title><indexterm><primary>OpenSession</primary><secondary>Manager</secondary></indexterm><programlisting>OpenSession (out's'cookie)</programlisting>
           <para>This method requests that a new <link linkend="Session">Session</link>
           be created for the calling process.  The properties of this new Session are set automatically

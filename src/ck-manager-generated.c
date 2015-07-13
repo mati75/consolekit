@@ -842,6 +842,50 @@ static const _ExtendedGDBusMethodInfo _console_kit_manager_method_info_inhibit =
   TRUE
 };
 
+static const _ExtendedGDBusArgInfo _console_kit_manager_method_info_list_inhibitors_OUT_ARG_inhibitors =
+{
+  {
+    -1,
+    (gchar *) "inhibitors",
+    (gchar *) "a(ssssuu)",
+    NULL
+  },
+  FALSE
+};
+
+static const _ExtendedGDBusArgInfo * const _console_kit_manager_method_info_list_inhibitors_OUT_ARG_pointers[] =
+{
+  &_console_kit_manager_method_info_list_inhibitors_OUT_ARG_inhibitors,
+  NULL
+};
+
+static const GDBusAnnotationInfo _console_kit_manager_method_list_inhibitors_annotation_info_0 =
+{
+  -1,
+  (gchar *) "org.freedesktop.DBus.GLib.Async",
+  (gchar *) "",
+  NULL
+};
+
+static const GDBusAnnotationInfo * const _console_kit_manager_method_list_inhibitors_annotation_info_pointers[] =
+{
+  &_console_kit_manager_method_list_inhibitors_annotation_info_0,
+  NULL
+};
+
+static const _ExtendedGDBusMethodInfo _console_kit_manager_method_info_list_inhibitors =
+{
+  {
+    -1,
+    (gchar *) "ListInhibitors",
+    NULL,
+    (GDBusArgInfo **) &_console_kit_manager_method_info_list_inhibitors_OUT_ARG_pointers,
+    (GDBusAnnotationInfo **) &_console_kit_manager_method_list_inhibitors_annotation_info_pointers
+  },
+  "handle-list-inhibitors",
+  FALSE
+};
+
 static const _ExtendedGDBusArgInfo _console_kit_manager_method_info_open_session_OUT_ARG_cookie =
 {
   {
@@ -1442,6 +1486,7 @@ static const _ExtendedGDBusMethodInfo * const _console_kit_manager_method_info_p
   &_console_kit_manager_method_info_hybrid_sleep,
   &_console_kit_manager_method_info_can_hybrid_sleep,
   &_console_kit_manager_method_info_inhibit,
+  &_console_kit_manager_method_info_list_inhibitors,
   &_console_kit_manager_method_info_open_session,
   &_console_kit_manager_method_info_open_session_with_parameters,
   &_console_kit_manager_method_info_close_session,
@@ -1693,6 +1738,7 @@ console_kit_manager_override_properties (GObjectClass *klass, guint property_id_
  * @handle_power_off: Handler for the #ConsoleKitManager::handle-power-off signal.
  * @handle_reboot: Handler for the #ConsoleKitManager::handle-reboot signal.
  * @handle_suspend: Handler for the #ConsoleKitManager::handle-suspend signal.
+ * @handle_list_inhibitors: Handler for the #ConsoleKitManager::handle-list-inhibitors signal.
  *
  * Virtual table for the D-Bus interface <link linkend="gdbus-interface-org-freedesktop-ConsoleKit-Manager.top_of_page">org.freedesktop.ConsoleKit.Manager</link>.
  */
@@ -2065,6 +2111,30 @@ console_kit_manager_default_init (ConsoleKitManagerIface *iface)
     G_TYPE_BOOLEAN,
     6,
     G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_UNIX_FD_LIST, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+
+  /**
+   * ConsoleKitManager::handle-list-inhibitors:
+   * @object: A #ConsoleKitManager.
+   * @invocation: A #GDBusMethodInvocation.
+   *
+   * Signal emitted when a remote caller is invoking the <link linkend="gdbus-method-org-freedesktop-ConsoleKit-Manager.ListInhibitors">ListInhibitors()</link> D-Bus method.
+   *
+   * If a signal handler returns %TRUE, it means the signal handler will handle the invocation (e.g. take a reference to @invocation and eventually call console_kit_manager_complete_list_inhibitors() or e.g. g_dbus_method_invocation_return_error() on it) and no order signal handlers will run. If no signal handler handles the invocation, the %G_DBUS_ERROR_UNKNOWN_METHOD error is returned.
+   *
+   * Returns: %TRUE if the invocation was handled, %FALSE to let other signal handlers run.
+   *
+   * Since: 0.9.5
+   */
+  g_signal_new ("handle-list-inhibitors",
+    G_TYPE_FROM_INTERFACE (iface),
+    G_SIGNAL_RUN_LAST,
+    G_STRUCT_OFFSET (ConsoleKitManagerIface, handle_list_inhibitors),
+    g_signal_accumulator_true_handled,
+    NULL,
+    g_cclosure_marshal_generic,
+    G_TYPE_BOOLEAN,
+    1,
+    G_TYPE_DBUS_METHOD_INVOCATION);
 
   /**
    * ConsoleKitManager::handle-open-session:
@@ -4069,6 +4139,110 @@ _out:
 }
 
 /**
+ * console_kit_manager_call_list_inhibitors:
+ * @proxy: A #ConsoleKitManagerProxy.
+ * @cancellable: (allow-none): A #GCancellable or %NULL.
+ * @callback: A #GAsyncReadyCallback to call when the request is satisfied or %NULL.
+ * @user_data: User data to pass to @callback.
+ *
+ * Asynchronously invokes the <link linkend="gdbus-method-org-freedesktop-ConsoleKit-Manager.ListInhibitors">ListInhibitors()</link> D-Bus method on @proxy.
+ * When the operation is finished, @callback will be invoked in the <link linkend="g-main-context-push-thread-default">thread-default main loop</link> of the thread you are calling this method from.
+ * You can then call console_kit_manager_call_list_inhibitors_finish() to get the result of the operation.
+ *
+ * See console_kit_manager_call_list_inhibitors_sync() for the synchronous, blocking version of this method.
+ *
+ * Since: 0.9.5
+ */
+void
+console_kit_manager_call_list_inhibitors (
+    ConsoleKitManager *proxy,
+    GCancellable *cancellable,
+    GAsyncReadyCallback callback,
+    gpointer user_data)
+{
+  g_dbus_proxy_call (G_DBUS_PROXY (proxy),
+    "ListInhibitors",
+    g_variant_new ("()"),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    cancellable,
+    callback,
+    user_data);
+}
+
+/**
+ * console_kit_manager_call_list_inhibitors_finish:
+ * @proxy: A #ConsoleKitManagerProxy.
+ * @out_inhibitors: (out): Return location for return parameter or %NULL to ignore.
+ * @res: The #GAsyncResult obtained from the #GAsyncReadyCallback passed to console_kit_manager_call_list_inhibitors().
+ * @error: Return location for error or %NULL.
+ *
+ * Finishes an operation started with console_kit_manager_call_list_inhibitors().
+ *
+ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
+ *
+ * Since: 0.9.5
+ */
+gboolean
+console_kit_manager_call_list_inhibitors_finish (
+    ConsoleKitManager *proxy,
+    GVariant **out_inhibitors,
+    GAsyncResult *res,
+    GError **error)
+{
+  GVariant *_ret;
+  _ret = g_dbus_proxy_call_finish (G_DBUS_PROXY (proxy), res, error);
+  if (_ret == NULL)
+    goto _out;
+  g_variant_get (_ret,
+                 "(@a(ssssuu))",
+                 out_inhibitors);
+  g_variant_unref (_ret);
+_out:
+  return _ret != NULL;
+}
+
+/**
+ * console_kit_manager_call_list_inhibitors_sync:
+ * @proxy: A #ConsoleKitManagerProxy.
+ * @out_inhibitors: (out): Return location for return parameter or %NULL to ignore.
+ * @cancellable: (allow-none): A #GCancellable or %NULL.
+ * @error: Return location for error or %NULL.
+ *
+ * Synchronously invokes the <link linkend="gdbus-method-org-freedesktop-ConsoleKit-Manager.ListInhibitors">ListInhibitors()</link> D-Bus method on @proxy. The calling thread is blocked until a reply is received.
+ *
+ * See console_kit_manager_call_list_inhibitors() for the asynchronous version of this method.
+ *
+ * Returns: (skip): %TRUE if the call succeded, %FALSE if @error is set.
+ *
+ * Since: 0.9.5
+ */
+gboolean
+console_kit_manager_call_list_inhibitors_sync (
+    ConsoleKitManager *proxy,
+    GVariant **out_inhibitors,
+    GCancellable *cancellable,
+    GError **error)
+{
+  GVariant *_ret;
+  _ret = g_dbus_proxy_call_sync (G_DBUS_PROXY (proxy),
+    "ListInhibitors",
+    g_variant_new ("()"),
+    G_DBUS_CALL_FLAGS_NONE,
+    -1,
+    cancellable,
+    error);
+  if (_ret == NULL)
+    goto _out;
+  g_variant_get (_ret,
+                 "(@a(ssssuu))",
+                 out_inhibitors);
+  g_variant_unref (_ret);
+_out:
+  return _ret != NULL;
+}
+
+/**
  * console_kit_manager_call_open_session:
  * @proxy: A #ConsoleKitManagerProxy.
  * @cancellable: (allow-none): A #GCancellable or %NULL.
@@ -5597,6 +5771,29 @@ console_kit_manager_complete_inhibit (
     g_variant_new ("(@h)",
                    fd),
     fd_list);
+}
+
+/**
+ * console_kit_manager_complete_list_inhibitors:
+ * @object: A #ConsoleKitManager.
+ * @invocation: (transfer full): A #GDBusMethodInvocation.
+ * @inhibitors: Parameter to return.
+ *
+ * Helper function used in service implementations to finish handling invocations of the <link linkend="gdbus-method-org-freedesktop-ConsoleKit-Manager.ListInhibitors">ListInhibitors()</link> D-Bus method. If you instead want to finish handling an invocation by returning an error, use g_dbus_method_invocation_return_error() or similar.
+ *
+ * This method will free @invocation, you cannot use it afterwards.
+ *
+ * Since: 0.9.5
+ */
+void
+console_kit_manager_complete_list_inhibitors (
+    ConsoleKitManager *object,
+    GDBusMethodInvocation *invocation,
+    GVariant *inhibitors)
+{
+  g_dbus_method_invocation_return_value (invocation,
+    g_variant_new ("(@a(ssssuu))",
+                   inhibitors));
 }
 
 /**
