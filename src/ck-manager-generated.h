@@ -173,6 +173,10 @@ struct _ConsoleKitManagerIface
     GDBusMethodInvocation *invocation,
     gboolean arg_policykit_interactivity);
 
+  gboolean (*handle_list_inhibitors) (
+    ConsoleKitManager *object,
+    GDBusMethodInvocation *invocation);
+
 };
 
 GType console_kit_manager_get_type (void) G_GNUC_CONST;
@@ -250,6 +254,11 @@ void console_kit_manager_complete_inhibit (
     GDBusMethodInvocation *invocation,
     GUnixFDList *fd_list,
     GVariant *fd);
+
+void console_kit_manager_complete_list_inhibitors (
+    ConsoleKitManager *object,
+    GDBusMethodInvocation *invocation,
+    GVariant *inhibitors);
 
 void console_kit_manager_complete_open_session (
     ConsoleKitManager *object,
@@ -612,6 +621,24 @@ gboolean console_kit_manager_call_inhibit_sync (
     GUnixFDList  *fd_list,
     GVariant **out_fd,
     GUnixFDList **out_fd_list,
+    GCancellable *cancellable,
+    GError **error);
+
+void console_kit_manager_call_list_inhibitors (
+    ConsoleKitManager *proxy,
+    GCancellable *cancellable,
+    GAsyncReadyCallback callback,
+    gpointer user_data);
+
+gboolean console_kit_manager_call_list_inhibitors_finish (
+    ConsoleKitManager *proxy,
+    GVariant **out_inhibitors,
+    GAsyncResult *res,
+    GError **error);
+
+gboolean console_kit_manager_call_list_inhibitors_sync (
+    ConsoleKitManager *proxy,
+    GVariant **out_inhibitors,
     GCancellable *cancellable,
     GError **error);
 

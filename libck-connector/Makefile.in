@@ -91,7 +91,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-noinst_PROGRAMS = test-connector$(EXEEXT) $(am__EXEEXT_1)
+@BUILD_TESTS_TRUE@noinst_PROGRAMS = test-connector$(EXEEXT) \
+@BUILD_TESTS_TRUE@	$(am__EXEEXT_1)
 subdir = libck-connector
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/gettext.m4 \
@@ -156,10 +157,12 @@ libck_connector_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(LDFLAGS) -o $@
 am__EXEEXT_1 =
 PROGRAMS = $(noinst_PROGRAMS)
-am_test_connector_OBJECTS = test-connector.$(OBJEXT) $(am__objects_1)
+am__test_connector_SOURCES_DIST = test-connector.c
+@BUILD_TESTS_TRUE@am_test_connector_OBJECTS =  \
+@BUILD_TESTS_TRUE@	test-connector.$(OBJEXT) $(am__objects_1)
 test_connector_OBJECTS = $(am_test_connector_OBJECTS)
-test_connector_DEPENDENCIES = libck-connector.la $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+@BUILD_TESTS_TRUE@test_connector_DEPENDENCIES = libck-connector.la \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -195,7 +198,8 @@ am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
 SOURCES = $(libck_connector_la_SOURCES) $(test_connector_SOURCES)
-DIST_SOURCES = $(libck_connector_la_SOURCES) $(test_connector_SOURCES)
+DIST_SOURCES = $(libck_connector_la_SOURCES) \
+	$(am__test_connector_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -422,14 +426,14 @@ libck_connector_la_SOURCES = \
 	ck-connector.h			\
 	$(NULL)
 
-test_connector_SOURCES = \
-	test-connector.c 		\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_connector_SOURCES = \
+@BUILD_TESTS_TRUE@	test-connector.c 		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_connector_LDADD = \
-	libck-connector.la	\
-	$(LIBDBUS_LIBS)			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_connector_LDADD = \
+@BUILD_TESTS_TRUE@	libck-connector.la	\
+@BUILD_TESTS_TRUE@	$(LIBDBUS_LIBS)			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
 
 # soname management for libck-connector

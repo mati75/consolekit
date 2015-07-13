@@ -95,6 +95,8 @@ struct CkManagerPrivate
         GDBusConnection *connection;
         CkEventLogger   *logger;
 
+        guint            name_owner_id;
+
         guint32          session_serial;
         guint32          seat_serial;
 
@@ -129,9 +131,8 @@ static void     ck_manager_init        (CkManager              *manager);
 static void     ck_manager_iface_init  (ConsoleKitManagerIface *iface);
 static void     ck_manager_finalize    (GObject                *object);
 
-static void     remove_sessions_for_connection (GDBusConnection *connection,
-                                                const gchar     *service_name,
-                                                gpointer         user_data);
+static void     remove_sessions_for_connection (CkManager   *manager,
+                                                const gchar *service_name);
 static void     create_seats                   (CkManager *manager);
 
 static gpointer manager_object = NULL;
@@ -295,6 +296,7 @@ static const GDBusErrorEntry ck_manager_error_entries[] =
         { CK_MANAGER_ERROR_OOM,                     DBUS_MANAGER_INTERFACE ".Error.OutOfMemory" },
         { CK_MANAGER_ERROR_NO_SEATS,                DBUS_MANAGER_INTERFACE ".Error.NoSeats" },
         { CK_MANAGER_ERROR_NO_SESSIONS,             DBUS_MANAGER_INTERFACE ".Error.NoSessions" },
+        { CK_MANAGER_ERROR_NOTHING_INHIBITED,       DBUS_MANAGER_INTERFACE ".Error.NothingInhibited" },
 };
 
 GQuark
@@ -331,6 +333,7 @@ ck_manager_error_get_type (void)
           ENUM_ENTRY (CK_MANAGER_ERROR_OOM,                     "OutOfMemory"),
           ENUM_ENTRY (CK_MANAGER_ERROR_NO_SEATS,                "NoSeats"),
           ENUM_ENTRY (CK_MANAGER_ERROR_NO_SESSIONS,             "NoSessions"),
+          ENUM_ENTRY (CK_MANAGER_ERROR_NOTHING_INHIBITED,       "NothingInhibited"),
           { 0, 0, 0 }
         };
       g_assert (CK_MANAGER_NUM_ERRORS == G_N_ELEMENTS (values) - 1);
@@ -2080,12 +2083,27 @@ dbus_inhibit (ConsoleKitManager     *ckmanager,
         CkManagerPrivate *priv;
         gint              fd = -1;
         GUnixFDList      *out_fd_list = NULL;
+        const gchar      *sender;
+        uid_t             uid = 0;
+        pid_t             pid = 0;
+        gint              res;
 
         TRACE ();
 
         g_return_val_if_fail (CK_IS_MANAGER (ckmanager), FALSE);
 
         priv = CK_MANAGER_GET_PRIVATE (CK_MANAGER (ckmanager));
+
+        sender   = g_dbus_method_invocation_get_sender (context);
+        res      = get_caller_info (CK_MANAGER (ckmanager),
+                                    sender,
+                                    &uid,
+                                    &pid);
+
+        if (!res) {
+                throw_error (context, CK_MANAGER_ERROR_GENERAL, _("Error creating the inhibit lock"));
+                return TRUE;
+        }
 
         if (priv->inhibit_manager == NULL) {
                 throw_error (context, CK_MANAGER_ERROR_GENERAL, _("Inhibit manager failed to initialize"));
@@ -2096,7 +2114,9 @@ dbus_inhibit (ConsoleKitManager     *ckmanager,
                                              who,
                                              what,
                                              why,
-                                             mode);
+                                             mode,
+                                             uid,
+                                             pid);
 
         /* if we didn't get an inhibit lock, translate and throw the error */
         if (fd < 0) {
@@ -2117,6 +2137,68 @@ dbus_inhibit (ConsoleKitManager     *ckmanager,
 
         console_kit_manager_complete_inhibit (ckmanager, context, out_fd_list, g_variant_new_handle (0));
         g_clear_object (&out_fd_list);
+        return TRUE;
+}
+
+/**
+ * dbus_list_inhibitors:
+ * @ckmanager: the @ConsoleKitManager object
+ * @context: The GDBus context.
+ * Example:
+  dbus-send --system --dest=org.freedesktop.ConsoleKit \
+  --type=method_call --print-reply --reply-timeout=2000 \
+  /org/freedesktop/ConsoleKit/Manager \
+  org.freedesktop.ConsoleKit.Manager.ListInhibitors
+ *
+ * Returnes TRUE.
+ **/
+static gboolean
+dbus_list_inhibitors (ConsoleKitManager     *ckmanager,
+                      GDBusMethodInvocation *context)
+{
+        CkManagerPrivate *priv;
+        GVariantBuilder   inhibitor_builder;
+        GVariant         *inhibitor;
+        GList            *l, *inhibit_list;
+
+        TRACE ();
+
+        g_return_val_if_fail (CK_IS_MANAGER (ckmanager), FALSE);
+
+        priv = CK_MANAGER_GET_PRIVATE (CK_MANAGER (ckmanager));
+
+        if (priv->inhibit_manager == NULL) {
+                throw_error (context, CK_MANAGER_ERROR_GENERAL, _("Inhibit manager failed to initialize"));
+                return TRUE;
+        }
+
+        inhibit_list = ck_inhibit_manager_get_inhibit_list (priv->inhibit_manager);
+
+        if (inhibit_list == NULL) {
+                throw_error (context, CK_MANAGER_ERROR_NOTHING_INHIBITED, _("There is nothing currently inhibited"));
+                return TRUE;
+        }
+
+        g_variant_builder_init (&inhibitor_builder, G_VARIANT_TYPE_ARRAY);
+
+        for (l = inhibit_list; l != NULL; l = g_list_next (l)) {
+                g_debug ("what %s", ck_inhibit_get_what (CK_INHIBIT (l->data)));
+                g_debug ("who %s", ck_inhibit_get_who (CK_INHIBIT (l->data)));
+                g_debug ("why %s", ck_inhibit_get_why (CK_INHIBIT (l->data)));
+                g_debug ("mode %s", ck_inhibit_get_mode  (CK_INHIBIT (l->data)));
+
+                inhibitor = g_variant_new("(ssssuu)",
+                                          ck_inhibit_get_what (CK_INHIBIT (l->data)),
+                                          ck_inhibit_get_who (CK_INHIBIT (l->data)),
+                                          ck_inhibit_get_why (CK_INHIBIT (l->data)),
+                                          ck_inhibit_get_mode (CK_INHIBIT (l->data)),
+                                          ck_inhibit_get_uid (CK_INHIBIT (l->data)),
+                                          ck_inhibit_get_pid (CK_INHIBIT (l->data)));
+
+                g_variant_builder_add_value (&inhibitor_builder, inhibitor);
+        }
+
+        console_kit_manager_complete_list_inhibitors(ckmanager, context, g_variant_builder_end (&inhibitor_builder));
         return TRUE;
 }
 
@@ -2469,56 +2551,6 @@ dbus_get_system_idle_since_hint (ConsoleKitManager     *ckmanager,
 }
 
 static void
-on_name_owner_notify (GObject    *object,
-                      GParamSpec *pspec,
-                      gpointer    user_data)
-{
-        GDBusProxy *proxy = G_DBUS_PROXY (object);
-        CkManager  *manager = CK_MANAGER (user_data);
-        gchar      *name_owner;
-
-        TRACE ();
-
-        name_owner = g_dbus_proxy_get_name_owner (proxy);
-
-        if (!name_owner) {
-                g_debug ("lost a session on bus");
-                /* We lost the name on the bus, remove it */
-                remove_sessions_for_connection (g_dbus_proxy_get_connection (proxy),
-                                                g_dbus_proxy_get_object_path (proxy),
-                                                manager);
-                /* no longer need this proxy */
-                g_object_unref (proxy);
-        } else {
-                g_free (name_owner);
-        }
-}
-
-static void
-session_dbus_proxy_new_cb (GObject      *source,
-                           GAsyncResult *result,
-                           gpointer      user_data)
-{
-        GDBusProxy *proxy;
-        CkManager  *manager;
-
-        TRACE ();
-
-        proxy = g_dbus_proxy_new_for_bus_finish (result, NULL);
-        if (!proxy)
-                return;
-
-        manager = CK_MANAGER (user_data);
-
-        g_debug ("connecting signal for %s", g_dbus_proxy_get_object_path (proxy));
-
-        g_signal_connect (proxy,
-                          "notify::g-name-owner",
-                          G_CALLBACK (on_name_owner_notify),
-                          manager);
-}
-
-static void
 open_session_for_leader (CkManager             *manager,
                          CkSessionLeader       *leader,
                          const GVariant        *parameters,
@@ -2562,17 +2594,6 @@ open_session_for_leader (CkManager             *manager,
         /* set the is_local flag for the session */
         g_debug ("setting session %s is_local %s", ssid, is_local ? "TRUE" : "FALSE");
         ck_session_set_is_local (session, is_local, NULL);
-
-        /* Watch the session so we can track when it's removed from the bus */
-        g_dbus_proxy_new_for_bus (G_BUS_TYPE_SYSTEM,
-                                  G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
-                                  NULL,
-                                  DBUS_NAME,
-                                  ssid,
-                                  DBUS_SESSION_INTERFACE,
-                                  NULL,
-                                  session_dbus_proxy_new_cb,
-                                  manager);
 
         manager_update_system_idle_hint (manager);
         g_signal_connect (CONSOLE_KIT_SESSION (session), "idle-hint-changed",
@@ -3170,16 +3191,10 @@ remove_leader_for_connection (const char       *cookie,
 }
 
 static void
-remove_sessions_for_connection (GDBusConnection *connection,
-                                const gchar     *service_name,
-                                gpointer         user_data)
+remove_sessions_for_connection (CkManager   *manager,
+                                const gchar *service_name)
 {
-        CkManager  *manager;
         RemoveLeaderData data;
-
-        manager = CK_MANAGER (user_data);
-
-        g_return_if_fail (CK_IS_MANAGER (manager));
 
         data.service_name = service_name;
         data.manager = manager;
@@ -3203,6 +3218,31 @@ polkit_authority_get_cb (GObject *source_object,
         manager->priv->pol_ctx = polkit_authority_get_finish (res, NULL);
 }
 #endif
+
+
+static void
+on_name_owner_notify (GDBusConnection *connection,
+                      const gchar     *sender_name,
+                      const gchar     *object_path,
+                      const gchar     *interface_name,
+                      const gchar     *signal_name,
+                      GVariant        *parameters,
+                      gpointer         user_data)
+{
+        CkManager *manager = CK_MANAGER (user_data);
+        gchar     *service_name, *old_service_name, *new_service_name;
+
+        TRACE ();
+
+        g_variant_get (parameters, "(sss)", &service_name, &old_service_name, &new_service_name);
+
+        if (strlen (new_service_name) == 0) {
+                remove_sessions_for_connection (manager, old_service_name);
+        }
+
+        g_debug ("NameOwnerChanged: service_name='%s', old_service_name='%s' new_service_name='%s'",
+                 service_name, old_service_name, new_service_name);
+}
 
 static gboolean
 register_manager (CkManager *manager, GDBusConnection *connection)
@@ -3243,6 +3283,17 @@ register_manager (CkManager *manager, GDBusConnection *connection)
                 g_clear_error (&error);
                 return FALSE;
         }
+
+        manager->priv->name_owner_id = g_dbus_connection_signal_subscribe (manager->priv->connection,
+                                                                           "org.freedesktop.DBus",
+                                                                           "org.freedesktop.DBus",
+                                                                           "NameOwnerChanged",
+                                                                           "/org/freedesktop/DBus",
+                                                                           NULL,
+                                                                           G_DBUS_SIGNAL_FLAGS_NONE,
+                                                                           on_name_owner_notify,
+                                                                           manager,
+                                                                           NULL);
 
         /* create the seats after we've registered on the manager on the bus */
         create_seats (manager);
@@ -3525,6 +3576,12 @@ ck_manager_finalize (GObject *object)
         g_hash_table_destroy (manager->priv->seats);
         g_hash_table_destroy (manager->priv->sessions);
         g_hash_table_destroy (manager->priv->leaders);
+
+        if (manager->priv->name_owner_id > 0 && manager->priv->connection) {
+                g_dbus_connection_signal_unsubscribe (manager->priv->connection, manager->priv->name_owner_id);
+                manager->priv->name_owner_id = 0;
+        }
+
         if (manager->priv->bus_proxy != NULL) {
                 g_object_unref (manager->priv->bus_proxy);
         }
@@ -3578,6 +3635,7 @@ ck_manager_iface_init (ConsoleKitManagerIface *iface)
         iface->handle_hibernate                    = dbus_hibernate;
         iface->handle_hybrid_sleep                 = dbus_hybrid_sleep;
         iface->handle_inhibit                      = dbus_inhibit;
+        iface->handle_list_inhibitors              = dbus_list_inhibitors;
         iface->handle_power_off                    = dbus_power_off;
         iface->handle_reboot                       = dbus_reboot;
         iface->handle_restart                      = dbus_restart;

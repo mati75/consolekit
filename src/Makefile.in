@@ -111,11 +111,23 @@ host_triplet = @host@
 @CK_COMPILE_GNU_TRUE@	$(NULL)
 
 sbin_PROGRAMS = console-kit-daemon$(EXEEXT) $(am__EXEEXT_1)
-noinst_PROGRAMS = test-event-logger$(EXEEXT) \
-	test-tty-idle-monitor$(EXEEXT) test-vt-monitor$(EXEEXT) \
-	test-inhibit$(EXEEXT) test-session$(EXEEXT) test-seat$(EXEEXT) \
-	test-manager$(EXEEXT) ck-collect-session-info$(EXEEXT) \
-	test-session-leader$(EXEEXT) $(am__EXEEXT_1)
+@BUILD_TESTS_TRUE@noinst_PROGRAMS = test-event-logger$(EXEEXT) \
+@BUILD_TESTS_TRUE@	test-tty-idle-monitor$(EXEEXT) \
+@BUILD_TESTS_TRUE@	test-vt-monitor$(EXEEXT) \
+@BUILD_TESTS_TRUE@	test-inhibit$(EXEEXT) test-session$(EXEEXT) \
+@BUILD_TESTS_TRUE@	test-seat$(EXEEXT) test-manager$(EXEEXT) \
+@BUILD_TESTS_TRUE@	ck-collect-session-info$(EXEEXT) \
+@BUILD_TESTS_TRUE@	test-session-leader$(EXEEXT) $(am__EXEEXT_1)
+@BUILD_TESTS_TRUE@am__append_6 = \
+@BUILD_TESTS_TRUE@	test-open-session	\
+@BUILD_TESTS_TRUE@	test-open-session-with-parameters	\
+@BUILD_TESTS_TRUE@	test-session	\
+@BUILD_TESTS_TRUE@	test-seat		\
+@BUILD_TESTS_TRUE@	test-session-leader	\
+@BUILD_TESTS_TRUE@	test-manager	\
+@BUILD_TESTS_TRUE@	ck-collect-session-info	\
+@BUILD_TESTS_TRUE@	$(NULL)
+
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/gettext.m4 \
@@ -166,18 +178,23 @@ libck_la_OBJECTS = $(am_libck_la_OBJECTS)
 am__EXEEXT_1 =
 am__installdirs = "$(DESTDIR)$(sbindir)" "$(DESTDIR)$(dbusifdir)"
 PROGRAMS = $(noinst_PROGRAMS) $(sbin_PROGRAMS)
+am__ck_collect_session_info_SOURCES_DIST = ck-manager-generated.h \
+	ck-manager-generated.c ck-seat-generated.h ck-seat-generated.c \
+	ck-session-generated.h ck-session-generated.c ck-marshal.c \
+	ck-marshal.h mock-ck-collect-session-info.c
 am__objects_7 =  \
 	ck_collect_session_info-ck-manager-generated.$(OBJEXT) \
 	ck_collect_session_info-ck-seat-generated.$(OBJEXT) \
 	ck_collect_session_info-ck-session-generated.$(OBJEXT) \
 	ck_collect_session_info-ck-marshal.$(OBJEXT) $(am__objects_1)
-am_ck_collect_session_info_OBJECTS = $(am__objects_7) \
-	ck_collect_session_info-mock-ck-collect-session-info.$(OBJEXT) \
-	$(am__objects_1)
+@BUILD_TESTS_TRUE@am_ck_collect_session_info_OBJECTS =  \
+@BUILD_TESTS_TRUE@	$(am__objects_7) \
+@BUILD_TESTS_TRUE@	ck_collect_session_info-mock-ck-collect-session-info.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	$(am__objects_1)
 ck_collect_session_info_OBJECTS =  \
 	$(am_ck_collect_session_info_OBJECTS)
-ck_collect_session_info_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+@BUILD_TESTS_TRUE@ck_collect_session_info_DEPENDENCIES =  \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 ck_collect_session_info_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(ck_collect_session_info_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -210,70 +227,104 @@ console_kit_daemon_OBJECTS = $(am_console_kit_daemon_OBJECTS)
 console_kit_daemon_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) libck.la \
 	libck-event-log.la $(am__DEPENDENCIES_1)
-am_test_event_logger_OBJECTS = ck-event-logger.$(OBJEXT) \
-	test-event-logger.$(OBJEXT) $(am__objects_1)
+am__test_event_logger_SOURCES_DIST = ck-event-logger.h \
+	ck-event-logger.c test-event-logger.c
+@BUILD_TESTS_TRUE@am_test_event_logger_OBJECTS =  \
+@BUILD_TESTS_TRUE@	ck-event-logger.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	test-event-logger.$(OBJEXT) $(am__objects_1)
 test_event_logger_OBJECTS = $(am_test_event_logger_OBJECTS)
-test_event_logger_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) libck-event-log.la \
-	$(am__DEPENDENCIES_1)
-am_test_inhibit_OBJECTS = test_inhibit-ck-marshal.$(OBJEXT) \
-	test_inhibit-ck-inhibit.$(OBJEXT) \
-	test_inhibit-ck-inhibit-manager.$(OBJEXT) \
-	test_inhibit-test-inhibit.$(OBJEXT) $(am__objects_1)
+@BUILD_TESTS_TRUE@test_event_logger_DEPENDENCIES =  \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) libck-event-log.la \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1)
+am__test_inhibit_SOURCES_DIST = ck-marshal.h ck-marshal.c ck-inhibit.c \
+	ck-inhibit.h ck-inhibit-manager.c ck-inhibit-manager.h \
+	test-inhibit.c
+@BUILD_TESTS_TRUE@am_test_inhibit_OBJECTS =  \
+@BUILD_TESTS_TRUE@	test_inhibit-ck-marshal.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	test_inhibit-ck-inhibit.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	test_inhibit-ck-inhibit-manager.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	test_inhibit-test-inhibit.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	$(am__objects_1)
 test_inhibit_OBJECTS = $(am_test_inhibit_OBJECTS)
-test_inhibit_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) libck.la $(am__DEPENDENCIES_1)
+@BUILD_TESTS_TRUE@test_inhibit_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) libck.la \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1)
 test_inhibit_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(test_inhibit_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__test_manager_SOURCES_DIST = ck-manager-generated.h \
+	ck-manager-generated.c ck-seat-generated.h ck-seat-generated.c \
+	ck-session-generated.h ck-session-generated.c ck-marshal.c \
+	ck-marshal.h test-manager.c
 am__objects_10 = test_manager-ck-manager-generated.$(OBJEXT) \
 	test_manager-ck-seat-generated.$(OBJEXT) \
 	test_manager-ck-session-generated.$(OBJEXT) \
 	test_manager-ck-marshal.$(OBJEXT) $(am__objects_1)
-am_test_manager_OBJECTS = $(am__objects_10) \
-	test_manager-test-manager.$(OBJEXT) $(am__objects_1)
+@BUILD_TESTS_TRUE@am_test_manager_OBJECTS = $(am__objects_10) \
+@BUILD_TESTS_TRUE@	test_manager-test-manager.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	$(am__objects_1)
 test_manager_OBJECTS = $(am_test_manager_OBJECTS)
-test_manager_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) libck.la $(am__DEPENDENCIES_1)
+@BUILD_TESTS_TRUE@test_manager_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) libck.la \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1)
 test_manager_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(test_manager_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__test_seat_SOURCES_DIST = ck-manager-generated.h \
+	ck-manager-generated.c ck-seat-generated.h ck-seat-generated.c \
+	ck-session-generated.h ck-session-generated.c ck-marshal.c \
+	ck-marshal.h test-seat.c
 am__objects_11 = test_seat-ck-manager-generated.$(OBJEXT) \
 	test_seat-ck-seat-generated.$(OBJEXT) \
 	test_seat-ck-session-generated.$(OBJEXT) \
 	test_seat-ck-marshal.$(OBJEXT) $(am__objects_1)
-am_test_seat_OBJECTS = $(am__objects_11) test_seat-test-seat.$(OBJEXT) \
-	$(am__objects_1)
+@BUILD_TESTS_TRUE@am_test_seat_OBJECTS = $(am__objects_11) \
+@BUILD_TESTS_TRUE@	test_seat-test-seat.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	$(am__objects_1)
 test_seat_OBJECTS = $(am_test_seat_OBJECTS)
-test_seat_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	libck.la $(am__DEPENDENCIES_1)
+@BUILD_TESTS_TRUE@test_seat_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) libck.la \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1)
 test_seat_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(test_seat_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__test_session_SOURCES_DIST = ck-manager-generated.h \
+	ck-manager-generated.c ck-seat-generated.h ck-seat-generated.c \
+	ck-session-generated.h ck-session-generated.c ck-marshal.c \
+	ck-marshal.h test-session.c
 am__objects_12 = test_session-ck-manager-generated.$(OBJEXT) \
 	test_session-ck-seat-generated.$(OBJEXT) \
 	test_session-ck-session-generated.$(OBJEXT) \
 	test_session-ck-marshal.$(OBJEXT) $(am__objects_1)
-am_test_session_OBJECTS = $(am__objects_12) \
-	test_session-test-session.$(OBJEXT) $(am__objects_1)
+@BUILD_TESTS_TRUE@am_test_session_OBJECTS = $(am__objects_12) \
+@BUILD_TESTS_TRUE@	test_session-test-session.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	$(am__objects_1)
 test_session_OBJECTS = $(am_test_session_OBJECTS)
-test_session_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) libck.la $(am__DEPENDENCIES_1)
+@BUILD_TESTS_TRUE@test_session_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) libck.la \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1)
 test_session_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(test_session_CFLAGS) \
 	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__test_session_leader_SOURCES_DIST = ck-manager-generated.h \
+	ck-manager-generated.c ck-seat-generated.h ck-seat-generated.c \
+	ck-session-generated.h ck-session-generated.c ck-marshal.c \
+	ck-marshal.h ck-job.h ck-job.c ck-session-leader.c \
+	ck-session-leader.h test-session-leader.c
 am__objects_13 = test_session_leader-ck-manager-generated.$(OBJEXT) \
 	test_session_leader-ck-seat-generated.$(OBJEXT) \
 	test_session_leader-ck-session-generated.$(OBJEXT) \
 	test_session_leader-ck-marshal.$(OBJEXT) $(am__objects_1)
-am_test_session_leader_OBJECTS = $(am__objects_13) \
-	test_session_leader-ck-job.$(OBJEXT) \
-	test_session_leader-ck-session-leader.$(OBJEXT) \
-	test_session_leader-test-session-leader.$(OBJEXT) \
-	$(am__objects_1)
+@BUILD_TESTS_TRUE@am_test_session_leader_OBJECTS = $(am__objects_13) \
+@BUILD_TESTS_TRUE@	test_session_leader-ck-job.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	test_session_leader-ck-session-leader.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	test_session_leader-test-session-leader.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	$(am__objects_1)
 test_session_leader_OBJECTS = $(am_test_session_leader_OBJECTS)
-test_session_leader_DEPENDENCIES = $(am__DEPENDENCIES_1) libck.la \
-	$(am__DEPENDENCIES_1)
+@BUILD_TESTS_TRUE@test_session_leader_DEPENDENCIES =  \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) libck.la \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1)
 test_session_leader_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(test_session_leader_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) \
@@ -282,17 +333,24 @@ am__test_tty_idle_monitor_SOURCES_DIST = ck-tty-idle-monitor.h \
 	ck-tty-idle-monitor.c ck-file-monitor.h \
 	ck-file-monitor-dummy.c ck-file-monitor-inotify.c \
 	test-tty-idle-monitor.c
-am_test_tty_idle_monitor_OBJECTS = ck-tty-idle-monitor.$(OBJEXT) \
-	$(am__objects_9) test-tty-idle-monitor.$(OBJEXT) \
-	$(am__objects_1)
+@BUILD_TESTS_TRUE@am_test_tty_idle_monitor_OBJECTS =  \
+@BUILD_TESTS_TRUE@	ck-tty-idle-monitor.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	$(am__objects_9) \
+@BUILD_TESTS_TRUE@	test-tty-idle-monitor.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	$(am__objects_1)
 test_tty_idle_monitor_OBJECTS = $(am_test_tty_idle_monitor_OBJECTS)
-test_tty_idle_monitor_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) libck.la $(am__DEPENDENCIES_1)
-am_test_vt_monitor_OBJECTS = ck-vt-monitor.$(OBJEXT) \
-	test-vt-monitor.$(OBJEXT) $(am__objects_1)
+@BUILD_TESTS_TRUE@test_tty_idle_monitor_DEPENDENCIES =  \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+@BUILD_TESTS_TRUE@	libck.la $(am__DEPENDENCIES_1)
+am__test_vt_monitor_SOURCES_DIST = ck-vt-monitor.h ck-vt-monitor.c \
+	test-vt-monitor.c
+@BUILD_TESTS_TRUE@am_test_vt_monitor_OBJECTS =  \
+@BUILD_TESTS_TRUE@	ck-vt-monitor.$(OBJEXT) \
+@BUILD_TESTS_TRUE@	test-vt-monitor.$(OBJEXT) $(am__objects_1)
 test_vt_monitor_OBJECTS = $(am_test_vt_monitor_OBJECTS)
-test_vt_monitor_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) libck.la $(am__DEPENDENCIES_1)
+@BUILD_TESTS_TRUE@test_vt_monitor_DEPENDENCIES =  \
+@BUILD_TESTS_TRUE@	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+@BUILD_TESTS_TRUE@	libck.la $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -337,14 +395,16 @@ SOURCES = $(libck_event_log_la_SOURCES) $(libck_la_SOURCES) \
 	$(test_tty_idle_monitor_SOURCES) $(test_vt_monitor_SOURCES)
 DIST_SOURCES = $(libck_event_log_la_SOURCES) \
 	$(am__libck_la_SOURCES_DIST) $(EXTRA_libck_la_SOURCES) \
-	$(ck_collect_session_info_SOURCES) \
+	$(am__ck_collect_session_info_SOURCES_DIST) \
 	$(am__console_kit_daemon_SOURCES_DIST) \
 	$(EXTRA_console_kit_daemon_SOURCES) \
-	$(test_event_logger_SOURCES) $(test_inhibit_SOURCES) \
-	$(test_manager_SOURCES) $(test_seat_SOURCES) \
-	$(test_session_SOURCES) $(test_session_leader_SOURCES) \
+	$(am__test_event_logger_SOURCES_DIST) \
+	$(am__test_inhibit_SOURCES_DIST) \
+	$(am__test_manager_SOURCES_DIST) $(am__test_seat_SOURCES_DIST) \
+	$(am__test_session_SOURCES_DIST) \
+	$(am__test_session_leader_SOURCES_DIST) \
 	$(am__test_tty_idle_monitor_SOURCES_DIST) \
-	$(test_vt_monitor_SOURCES)
+	$(am__test_vt_monitor_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -711,164 +771,153 @@ console_kit_daemon_LDADD = \
 	libck-event-log.la	\
 	$(NULL)
 
-test_event_logger_SOURCES = \
-	ck-event-logger.h		\
-	ck-event-logger.c		\
-	test-event-logger.c 		\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_event_logger_SOURCES = \
+@BUILD_TESTS_TRUE@	ck-event-logger.h		\
+@BUILD_TESTS_TRUE@	ck-event-logger.c		\
+@BUILD_TESTS_TRUE@	test-event-logger.c 		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_event_logger_LDADD = \
-	$(CONSOLE_KIT_LIBS)		\
-	$(POLKIT_LIBS)			\
-	$(RBAC_LIBS)			\
-	libck-event-log.la		\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_event_logger_LDADD = \
+@BUILD_TESTS_TRUE@	$(CONSOLE_KIT_LIBS)		\
+@BUILD_TESTS_TRUE@	$(POLKIT_LIBS)			\
+@BUILD_TESTS_TRUE@	$(RBAC_LIBS)			\
+@BUILD_TESTS_TRUE@	libck-event-log.la		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_vt_monitor_SOURCES = \
-	ck-vt-monitor.h			\
-	ck-vt-monitor.c			\
-	test-vt-monitor.c 		\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_vt_monitor_SOURCES = \
+@BUILD_TESTS_TRUE@	ck-vt-monitor.h			\
+@BUILD_TESTS_TRUE@	ck-vt-monitor.c			\
+@BUILD_TESTS_TRUE@	test-vt-monitor.c 		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_vt_monitor_LDADD = \
-	$(CONSOLE_KIT_LIBS)		\
-	$(POLKIT_LIBS)			\
-	libck.la			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_vt_monitor_LDADD = \
+@BUILD_TESTS_TRUE@	$(CONSOLE_KIT_LIBS)		\
+@BUILD_TESTS_TRUE@	$(POLKIT_LIBS)			\
+@BUILD_TESTS_TRUE@	libck.la			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_tty_idle_monitor_SOURCES = \
-	ck-tty-idle-monitor.h		\
-	ck-tty-idle-monitor.c		\
-	ck-file-monitor.h		\
-	$(FILE_MONITOR_BACKEND)		\
-	test-tty-idle-monitor.c 	\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_tty_idle_monitor_SOURCES = \
+@BUILD_TESTS_TRUE@	ck-tty-idle-monitor.h		\
+@BUILD_TESTS_TRUE@	ck-tty-idle-monitor.c		\
+@BUILD_TESTS_TRUE@	ck-file-monitor.h		\
+@BUILD_TESTS_TRUE@	$(FILE_MONITOR_BACKEND)		\
+@BUILD_TESTS_TRUE@	test-tty-idle-monitor.c 	\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_tty_idle_monitor_LDADD = \
-	$(CONSOLE_KIT_LIBS)		\
-	$(POLKIT_LIBS)			\
-	libck.la			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_tty_idle_monitor_LDADD = \
+@BUILD_TESTS_TRUE@	$(CONSOLE_KIT_LIBS)		\
+@BUILD_TESTS_TRUE@	$(POLKIT_LIBS)			\
+@BUILD_TESTS_TRUE@	libck.la			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_inhibit_CFLAGS = \
-	$(AM_CFLAGS)	\
-	-URUNDIR	\
-	-DRUNDIR=\"/tmp\" 			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_inhibit_CFLAGS = \
+@BUILD_TESTS_TRUE@	$(AM_CFLAGS)	\
+@BUILD_TESTS_TRUE@	-URUNDIR	\
+@BUILD_TESTS_TRUE@	-DRUNDIR=\"/tmp\" 			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_inhibit_SOURCES = \
-	ck-marshal.h		\
-	ck-marshal.c		\
-	ck-inhibit.c		\
-	ck-inhibit.h		\
-	ck-inhibit-manager.c	\
-	ck-inhibit-manager.h	\
-	test-inhibit.c		\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_inhibit_SOURCES = \
+@BUILD_TESTS_TRUE@	ck-marshal.h		\
+@BUILD_TESTS_TRUE@	ck-marshal.c		\
+@BUILD_TESTS_TRUE@	ck-inhibit.c		\
+@BUILD_TESTS_TRUE@	ck-inhibit.h		\
+@BUILD_TESTS_TRUE@	ck-inhibit-manager.c	\
+@BUILD_TESTS_TRUE@	ck-inhibit-manager.h	\
+@BUILD_TESTS_TRUE@	test-inhibit.c		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_inhibit_LDADD = \
-	$(CONSOLE_KIT_LIBS)		\
-	$(POLKIT_LIBS)			\
-	libck.la			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_inhibit_LDADD = \
+@BUILD_TESTS_TRUE@	$(CONSOLE_KIT_LIBS)		\
+@BUILD_TESTS_TRUE@	$(POLKIT_LIBS)			\
+@BUILD_TESTS_TRUE@	libck.la			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_session_CFLAGS = \
-	$(AM_CFLAGS)	\
-	-URUNDIR	\
-	-DRUNDIR=\"/tmp\" 			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_session_CFLAGS = \
+@BUILD_TESTS_TRUE@	$(AM_CFLAGS)	\
+@BUILD_TESTS_TRUE@	-URUNDIR	\
+@BUILD_TESTS_TRUE@	-DRUNDIR=\"/tmp\" 			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_session_SOURCES = \
-	$(BUILT_SOURCES)	\
-	test-session.c		\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_session_SOURCES = \
+@BUILD_TESTS_TRUE@	$(BUILT_SOURCES)	\
+@BUILD_TESTS_TRUE@	test-session.c		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_session_LDADD = \
-	$(CONSOLE_KIT_LIBS)		\
-	$(POLKIT_LIBS)			\
-	libck.la			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_session_LDADD = \
+@BUILD_TESTS_TRUE@	$(CONSOLE_KIT_LIBS)		\
+@BUILD_TESTS_TRUE@	$(POLKIT_LIBS)			\
+@BUILD_TESTS_TRUE@	libck.la			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_seat_CFLAGS = \
-	$(AM_CFLAGS)	\
-	-URUNDIR	\
-	-DRUNDIR=\"/tmp\" 			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_seat_CFLAGS = \
+@BUILD_TESTS_TRUE@	$(AM_CFLAGS)	\
+@BUILD_TESTS_TRUE@	-URUNDIR	\
+@BUILD_TESTS_TRUE@	-DRUNDIR=\"/tmp\" 			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_seat_SOURCES = \
-	$(BUILT_SOURCES)	\
-	test-seat.c		\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_seat_SOURCES = \
+@BUILD_TESTS_TRUE@	$(BUILT_SOURCES)	\
+@BUILD_TESTS_TRUE@	test-seat.c		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_seat_LDADD = \
-	$(CONSOLE_KIT_LIBS)		\
-	$(POLKIT_LIBS)			\
-	libck.la			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_seat_LDADD = \
+@BUILD_TESTS_TRUE@	$(CONSOLE_KIT_LIBS)		\
+@BUILD_TESTS_TRUE@	$(POLKIT_LIBS)			\
+@BUILD_TESTS_TRUE@	libck.la			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_manager_CFLAGS = \
-	$(AM_CFLAGS)	\
-	-URUNDIR	\
-	-DRUNDIR=\"/tmp\" 			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_manager_CFLAGS = \
+@BUILD_TESTS_TRUE@	$(AM_CFLAGS)	\
+@BUILD_TESTS_TRUE@	-URUNDIR	\
+@BUILD_TESTS_TRUE@	-DRUNDIR=\"/tmp\" 			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_manager_SOURCES = \
-	$(BUILT_SOURCES)	\
-	test-manager.c		\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_manager_SOURCES = \
+@BUILD_TESTS_TRUE@	$(BUILT_SOURCES)	\
+@BUILD_TESTS_TRUE@	test-manager.c		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_manager_LDADD = \
-	$(CONSOLE_KIT_LIBS)		\
-	$(POLKIT_LIBS)			\
-	libck.la			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_manager_LDADD = \
+@BUILD_TESTS_TRUE@	$(CONSOLE_KIT_LIBS)		\
+@BUILD_TESTS_TRUE@	$(POLKIT_LIBS)			\
+@BUILD_TESTS_TRUE@	libck.la			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-ck_collect_session_info_CFLAGS = \
-	$(AM_CFLAGS)	\
-	$(NULL)
+@BUILD_TESTS_TRUE@ck_collect_session_info_CFLAGS = \
+@BUILD_TESTS_TRUE@	$(AM_CFLAGS)	\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-ck_collect_session_info_SOURCES = \
-	$(BUILT_SOURCES)	\
-	mock-ck-collect-session-info.c		\
-	$(NULL)
+@BUILD_TESTS_TRUE@ck_collect_session_info_SOURCES = \
+@BUILD_TESTS_TRUE@	$(BUILT_SOURCES)	\
+@BUILD_TESTS_TRUE@	mock-ck-collect-session-info.c		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-ck_collect_session_info_LDADD = \
-	$(CONSOLE_KIT_LIBS)		\
-	$(NULL)
+@BUILD_TESTS_TRUE@ck_collect_session_info_LDADD = \
+@BUILD_TESTS_TRUE@	$(CONSOLE_KIT_LIBS)		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_session_leader_CFLAGS = \
-	$(AM_CFLAGS)	\
-	-ULIBEXECDIR	\
-	-DLIBEXECDIR=\".\" 			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_session_leader_CFLAGS = \
+@BUILD_TESTS_TRUE@	$(AM_CFLAGS)	\
+@BUILD_TESTS_TRUE@	-ULIBEXECDIR	\
+@BUILD_TESTS_TRUE@	-DLIBEXECDIR=\".\" 			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_session_leader_SOURCES = \
-	$(BUILT_SOURCES)	\
-	ck-job.h		\
-	ck-job.c		\
-	ck-session-leader.c		\
-	ck-session-leader.h		\
-	test-session-leader.c		\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_session_leader_SOURCES = \
+@BUILD_TESTS_TRUE@	$(BUILT_SOURCES)	\
+@BUILD_TESTS_TRUE@	ck-job.h		\
+@BUILD_TESTS_TRUE@	ck-job.c		\
+@BUILD_TESTS_TRUE@	ck-session-leader.c		\
+@BUILD_TESTS_TRUE@	ck-session-leader.h		\
+@BUILD_TESTS_TRUE@	test-session-leader.c		\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-test_session_leader_LDADD = \
-	$(CONSOLE_KIT_LIBS)		\
-	libck.la			\
-	$(NULL)
+@BUILD_TESTS_TRUE@test_session_leader_LDADD = \
+@BUILD_TESTS_TRUE@	$(CONSOLE_KIT_LIBS)		\
+@BUILD_TESTS_TRUE@	libck.la			\
+@BUILD_TESTS_TRUE@	$(NULL)
 
-EXTRA_DIST = \
-	ck-marshal.list		\
-	$(dbusif_DATA)		\
-	valgrind.sh		\
-	test-open-session	\
-	test-open-session-with-parameters	\
-	test-session	\
-	test-seat		\
-	test-session-leader	\
-	test-manager	\
-	ck-collect-session-info	\
-	$(NULL)
-
+EXTRA_DIST = ck-marshal.list $(dbusif_DATA) valgrind.sh $(NULL) \
+	$(am__append_6)
 CLEANFILES = $(BUILT_SOURCES)
 MAINTAINERCLEANFILES = \
 	*~				\
