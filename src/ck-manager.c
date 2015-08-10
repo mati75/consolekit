@@ -54,6 +54,7 @@
 #include "ck-inhibit-manager.h"
 #include "ck-inhibit.h"
 #include "ck-sysdeps.h"
+#include "ck-process-group.h"
 
 #define CK_MANAGER_GET_PRIVATE(o) (G_TYPE_INSTANCE_GET_PRIVATE ((o), CK_TYPE_MANAGER, CkManagerPrivate))
 
@@ -789,11 +790,28 @@ static char *
 get_cookie_for_pid (CkManager *manager,
                     guint      pid)
 {
-        char *cookie;
+        char            *cookie = NULL;
+        gchar           *ssid = NULL;
+        CkProcessGroup  *pgroup;
+        CkSession       *session;
 
-        /* FIXME: need a better way to get the cookie */
+        pgroup = ck_process_group_get ();
 
-        cookie = ck_unix_pid_get_env (pid, "XDG_SESSION_COOKIE");
+        ssid = ck_process_group_get_ssid (pgroup, pid);
+
+        if (ssid != NULL) {
+                g_debug ("looking for session for ssid %s", ssid);
+                session = g_hash_table_lookup (manager->priv->sessions, ssid);
+                if (session != NULL) {
+                        g_object_get (session, "cookie", &cookie, NULL);
+                }
+
+                g_free (ssid);
+        }
+
+        if (cookie == NULL) {
+                cookie = ck_unix_pid_get_env (pid, "XDG_SESSION_COOKIE");
+        }
 
         return cookie;
 }
@@ -942,6 +960,31 @@ logind_ready_cb (PolkitAuthority *authority,
         g_object_unref (ret);
 }
 
+static void
+get_polkit_permissions_for_callback (CkManager   *manager,
+                                     const char  *action,
+                                     GDBusMethodInvocation *context,
+                                     GAsyncReadyCallback callback)
+{
+        const char    *sender;
+        PolkitSubject *subject;
+
+        g_debug ("get permissions for action %s", action);
+
+        sender = g_dbus_method_invocation_get_sender (context);
+        subject = polkit_system_bus_name_new (sender);
+
+        polkit_authority_check_authorization (manager->priv->pol_ctx,
+                                              subject,
+                                              action,
+                                              NULL,
+                                              0,
+                                              NULL,
+                                              callback,
+                                              context);
+        g_object_unref (subject);
+}
+
 /* We use this to avoid breaking API compability with ConsoleKit1 for
  * CanStop and CanRestart, but this method emulates how logind
  * presents it's API */
@@ -950,23 +993,10 @@ get_polkit_logind_permissions (CkManager   *manager,
                                const char  *action,
                                GDBusMethodInvocation *context)
 {
-        const char    *sender;
-        PolkitSubject *subject;
-
-        g_debug ("get permissions for action %s", action);
-
-        sender = g_dbus_method_invocation_get_sender (context);
-        subject = polkit_system_bus_name_new (sender);
-
-        polkit_authority_check_authorization (manager->priv->pol_ctx,
-                                              subject,
-                                              action,
-                                              NULL,
-                                              0,
-                                              NULL,
-                                              (GAsyncReadyCallback) logind_ready_cb,
-                                              context);
-        g_object_unref (subject);
+        get_polkit_permissions_for_callback (manager,
+                                             action,
+                                             context,
+                                             (GAsyncReadyCallback) logind_ready_cb);
 }
 
 static void
@@ -974,83 +1004,12 @@ get_polkit_permissions (CkManager   *manager,
                         const char  *action,
                         GDBusMethodInvocation *context)
 {
-        const char    *sender;
-        PolkitSubject *subject;
-
-        g_debug ("get permissions for action %s", action);
-
-        sender = g_dbus_method_invocation_get_sender (context);
-        subject = polkit_system_bus_name_new (sender);
-
-        polkit_authority_check_authorization (manager->priv->pol_ctx,
-                                              subject,
-                                              action,
-                                              NULL,
-                                              0,
-                                              NULL,
-                                              (GAsyncReadyCallback) ready_cb,
-                                              context);
-        g_object_unref (subject);
+        get_polkit_permissions_for_callback (manager,
+                                             action,
+                                             context,
+                                             (GAsyncReadyCallback) ready_cb);
 }
 #endif
-
-/* adapted from PolicyKit */
-static gboolean
-get_caller_info (CkManager   *manager,
-                 const char  *sender,
-                 uid_t       *calling_uid,
-                 pid_t       *calling_pid)
-{
-        gboolean  res   = FALSE;
-        GVariant *value = NULL;
-        GError   *error = NULL;
-
-        if (sender == NULL) {
-                g_debug ("sender == NULL");
-                goto out;
-        }
-
-        if (manager->priv->bus_proxy == NULL) {
-                g_debug ("manager->priv->bus_proxy == NULL");
-                goto out;
-        }
-
-        value = g_dbus_proxy_call_sync (manager->priv->bus_proxy, "GetConnectionUnixUser",
-                                        g_variant_new ("(s)", sender),
-                                        G_DBUS_CALL_FLAGS_NONE,
-                                        2000,
-                                        NULL,
-                                        &error);
-
-        if (value == NULL) {
-                g_warning ("GetConnectionUnixUser() failed: %s", error->message);
-                g_error_free (error);
-                goto out;
-        }
-        g_variant_get (value, "(u)", calling_uid);
-
-        value = g_dbus_proxy_call_sync (manager->priv->bus_proxy, "GetConnectionUnixProcessID",
-                                        g_variant_new ("(s)", sender),
-                                        G_DBUS_CALL_FLAGS_NONE,
-                                        2000,
-                                        NULL,
-                                        &error);
-
-        if (value == NULL) {
-                g_warning ("GetConnectionUnixProcessID() failed: %s", error->message);
-                g_error_free (error);
-                goto out;
-        }
-        g_variant_get (value, "(u)", calling_pid);
-
-        res = TRUE;
-
-        g_debug ("uid = %d", *calling_uid);
-        g_debug ("pid = %d", *calling_pid);
-
-out:
-        return res;
-}
 
 static char *
 get_user_name (uid_t uid)
@@ -1091,8 +1050,9 @@ session_is_real_user (CkSession *session,
 
         username = get_user_name (uid);
 
-        /* filter out GDM user */
-        if (username != NULL && strcmp (username, "gdm") == 0) {
+        /* filter out GDM/SDDM user */
+        if (g_strcmp0 (username, "gdm")  == 0 ||
+            g_strcmp0 (username, "sddm") == 0) {
                 ret = FALSE;
                 goto out;
         }
@@ -1158,7 +1118,7 @@ check_rbac_permissions (CkManager             *manager,
 
         username = NULL;
         sender   = g_dbus_method_invocation_get_sender (context);
-        res      = get_caller_info (manager,
+        res      = get_caller_info (manager->priv->bus_proxy,
                                     sender,
                                     &uid,
                                     &pid);
@@ -1340,7 +1300,7 @@ do_restart (CkManager             *manager,
 
         data->manager = manager;
         data->context = context;
-        data->command = PREFIX "/lib/ConsoleKit/scripts/ck-system-restart";
+        data->command = LIBDIR "/ConsoleKit/scripts/ck-system-restart";
         data->event_type = CK_LOG_EVENT_SYSTEM_RESTART;
         data->description = "Restart";
         data->signal = PREPARE_FOR_SHUTDOWN;
@@ -1447,7 +1407,7 @@ do_stop (CkManager             *manager,
 
         data->manager = manager;
         data->context = context;
-        data->command = PREFIX "/lib/ConsoleKit/scripts/ck-system-stop";
+        data->command = LIBDIR "/ConsoleKit/scripts/ck-system-stop";
         data->event_type = CK_LOG_EVENT_SYSTEM_STOP;
         data->description = "Stop";
         data->signal = PREPARE_FOR_SHUTDOWN;
@@ -1702,7 +1662,7 @@ do_suspend (CkManager             *manager,
 
         data->manager = manager;
         data->context = context;
-        data->command = PREFIX "/lib/ConsoleKit/scripts/ck-system-suspend";
+        data->command = LIBDIR "/ConsoleKit/scripts/ck-system-suspend";
         data->event_type = CK_LOG_EVENT_SYSTEM_SUSPEND;
         data->description = "Suspend";
         data->signal = PREPARE_FOR_SLEEP;
@@ -1834,7 +1794,7 @@ do_hibernate (CkManager             *manager,
 
         data->manager = manager;
         data->context = context;
-        data->command = PREFIX "/lib/ConsoleKit/scripts/ck-system-hibernate";
+        data->command = LIBDIR "/ConsoleKit/scripts/ck-system-hibernate";
         data->event_type = CK_LOG_EVENT_SYSTEM_HIBERNATE;
         data->description = "Hibernate";
         data->signal = PREPARE_FOR_SLEEP;
@@ -1966,7 +1926,7 @@ do_hybrid_sleep (CkManager             *manager,
 
         data->manager = manager;
         data->context = context;
-        data->command = PREFIX "/lib/ConsoleKit/scripts/ck-system-hybridsleep";
+        data->command = LIBDIR "/ConsoleKit/scripts/ck-system-hybridsleep";
         data->event_type = CK_LOG_EVENT_SYSTEM_HIBERNATE;
         data->description = "Hybrid Sleep";
         data->signal = PREPARE_FOR_SLEEP;
@@ -2095,7 +2055,7 @@ dbus_inhibit (ConsoleKitManager     *ckmanager,
         priv = CK_MANAGER_GET_PRIVATE (CK_MANAGER (ckmanager));
 
         sender   = g_dbus_method_invocation_get_sender (context);
-        res      = get_caller_info (CK_MANAGER (ckmanager),
+        res      = get_caller_info (priv->bus_proxy,
                                     sender,
                                     &uid,
                                     &pid);
@@ -2557,10 +2517,11 @@ open_session_for_leader (CkManager             *manager,
                          gboolean               is_local,
                          GDBusMethodInvocation *context)
 {
-        CkSession   *session;
-        CkSeat      *seat;
-        const char  *ssid;
-        const char  *cookie;
+        CkProcessGroup *pgroup;
+        CkSession      *session;
+        CkSeat         *seat;
+        const char     *ssid;
+        const char     *cookie;
 
         ssid = ck_session_leader_peek_session_id (leader);
         cookie = ck_session_leader_peek_cookie (leader);
@@ -2574,6 +2535,13 @@ open_session_for_leader (CkManager             *manager,
                 throw_error (context, CK_MANAGER_ERROR_GENERAL, "Unable to create new session");
                 return;
         }
+
+        /* If supported, add the session leader to a process group so we
+         * can track it with something better than an environment variable */
+        pgroup = ck_process_group_get ();
+        ck_process_group_create (pgroup,
+                                 ck_session_leader_get_pid (leader),
+                                 ssid);
 
         g_hash_table_insert (manager->priv->sessions,
                              g_strdup (ssid),
@@ -2730,7 +2698,7 @@ create_session_for_sender (CkManager             *manager,
 
         g_debug ("CkManager: create session for sender: %s", sender);
 
-        res = get_caller_info (manager,
+        res = get_caller_info (manager->priv->bus_proxy,
                                sender,
                                &uid,
                                &pid);
@@ -2799,7 +2767,7 @@ dbus_get_session_for_cookie (ConsoleKitManager     *ckmanager,
 
         sender = g_dbus_method_invocation_get_sender (context);
 
-        res = get_caller_info (manager,
+        res = get_caller_info (manager->priv->bus_proxy,
                                sender,
                                &calling_uid,
                                &calling_pid);
@@ -2872,7 +2840,7 @@ dbus_get_session_for_unix_process (ConsoleKitManager     *ckmanager,
         pid_t          calling_pid = 0;
         char          *cookie;
 
-        if (pid <= 1) {
+        if (pid <= 1 || pid >= UINT_MAX) {
                 throw_error (context, CK_MANAGER_ERROR_INVALID_INPUT, _("pid must be > 1"));
                 return TRUE;
         }
@@ -2884,7 +2852,7 @@ dbus_get_session_for_unix_process (ConsoleKitManager     *ckmanager,
         TRACE ();
         g_debug ("pid: %u", pid);
 
-        res = get_caller_info (manager,
+        res = get_caller_info (manager->priv->bus_proxy,
                                sender,
                                &calling_uid,
                                &calling_pid);
@@ -2932,7 +2900,7 @@ dbus_get_current_session (ConsoleKitManager     *ckmanager,
 
         g_debug ("CkManager: get current session");
 
-        res = get_caller_info (manager,
+        res = get_caller_info (manager->priv->bus_proxy,
                                sender,
                                &calling_uid,
                                &calling_pid);
@@ -3132,7 +3100,7 @@ dbus_close_session (ConsoleKitManager     *ckmanager,
         manager = CK_MANAGER (ckmanager);
 
         sender = g_dbus_method_invocation_get_sender (context);
-        res = get_caller_info (manager,
+        res = get_caller_info (manager->priv->bus_proxy,
                                sender,
                                &calling_uid,
                                &calling_pid);
@@ -3475,6 +3443,17 @@ create_seats (CkManager *manager)
 }
 
 static void
+cancel_timeout_and_call_system_action (CkManagerPrivate *priv)
+{
+        /* The inhibit lock for this action was removed.
+         * Stop the timeout and call the system action now.
+         */
+        g_source_remove (priv->system_action_idle_id);
+        priv->system_action_idle_id = 0;
+        system_action_idle_cb (priv->system_action_data);
+}
+
+static void
 on_inhibit_manager_changed_event (CkInhibitManager *manager, gint inhibit_mode, gint event, gboolean enabled, gpointer user_data)
 {
         CkManagerPrivate *priv;
@@ -3493,17 +3472,6 @@ on_inhibit_manager_changed_event (CkInhibitManager *manager, gint inhibit_mode, 
                 return;
         }
 
-        /* this system action must be for a sleep or shutdown operation */
-        if (priv->system_action_data->signal != PREPARE_FOR_SLEEP &&
-            priv->system_action_data->signal != PREPARE_FOR_SHUTDOWN) {
-                return;
-        }
-
-        /* the inhibit change must be for sleep or shutdown */
-        if (event != CK_INHIBIT_EVENT_SUSPEND && event != CK_INHIBIT_EVENT_SHUTDOWN) {
-                return;
-        }
-
         /* must be a delay inhibitor */
         if (inhibit_mode != CK_INHIBIT_MODE_DELAY) {
                 return;
@@ -3514,12 +3482,17 @@ on_inhibit_manager_changed_event (CkInhibitManager *manager, gint inhibit_mode, 
                 return;
         }
 
-        /* The inhibit lock for this action was removed.
-         * Stop the timeout and call the system action now.
-         */
-        g_source_remove (priv->system_action_idle_id);
-        priv->system_action_idle_id = 0;
-        system_action_idle_cb (priv->system_action_data);
+        /* Did we stop inhibiting sleep? */
+        if (priv->system_action_data->signal == PREPARE_FOR_SLEEP &&
+            event == CK_INHIBIT_EVENT_SUSPEND) {
+                    cancel_timeout_and_call_system_action (priv);
+        }
+
+        /* Did we stop inhibiting shutdown? */
+        if (priv->system_action_data->signal == PREPARE_FOR_SHUTDOWN &&
+            event == CK_INHIBIT_EVENT_SHUTDOWN) {
+                    cancel_timeout_and_call_system_action (priv);
+        }
 }
 
 static void
