@@ -3,12 +3,12 @@ AC_COPYRIGHT([Copyright 2014-2015 The ConsoleKit2 Team])
 
 AC_PREREQ([2.50])
 AC_INIT([ConsoleKit2],
-        [0.9.5],
+        [1.0.0],
         [https://github.com/ConsoleKit2/ConsoleKit2/issues],
         [ConsoleKit2])
-VERSION_MAJOR=0
-VERSION_MINOR=9
-VERSION_REVISION=5
+VERSION_MAJOR=1
+VERSION_MINOR=0
+VERSION_REVISION=0
 
 COPYRIGHT_YEARS="2014 2015"
 
@@ -44,7 +44,7 @@ AC_SUBST(VERSION)
 # Save flags to aclocal
 ACLOCAL="$ACLOCAL $ACLOCAL_FLAGS"
 
-AM_GNU_GETTEXT_VERSION([0.15])
+AM_GNU_GETTEXT_VERSION([0.19])
 GETTEXT_PACKAGE=ConsoleKit2
 AC_SUBST(GETTEXT_PACKAGE)
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE, "$GETTEXT_PACKAGE", [Name of default gettext domain])
@@ -273,6 +273,25 @@ AM_CONDITIONAL(ENABLE_PAM_MODULE, test "x$enable_pam_module" = "xyes")
 #Check if we can build an optional test program
 AC_CHECK_LIB(pam_misc, misc_conv, have_linuxpam=yes)
 AM_CONDITIONAL(HAVE_LINUXPAM, test "x$have_linuxpam" = "xyes")
+
+
+# cgroups - Using the kernel to track processes instead of the cookie
+have_cgmanager=no
+AC_ARG_ENABLE([cgroups],
+  AS_HELP_STRING([--enable-cgroups], [Enable cgroup support @<:@default=auto@:>@]),
+  [enable_cgroups=$enableval],
+  [enable_cgroups=auto])
+AS_IF([test "x$enable_cgroups" != "xno"], [
+  PKG_CHECK_MODULES([CGMANAGER], [libcgmanager libnih >= 1.0.2 libnih-dbus >= 1.0.0], [have_cgmanager=yes], [have_cgmanager=no])
+  if test "x$enable_cgroups"  = "xyes" -a "x$have_cgmanager" = "xno"; then
+    AC_MSG_ERROR([cgroup support explicitly requested but dependencies not found])
+  fi
+])
+AS_IF([test "x$have_cgmanager" = "xyes"], [
+  AC_DEFINE([HAVE_CGMANAGER], [], [Define if we have cgmanager])
+])
+AM_CONDITIONAL([HAVE_CGMANAGER], [test "x$have_cgmanager" = "xyes"])
+AC_SUBST(HAVE_CGMANAGER)
 
 dnl ------------------------------------------------------------------------------
 dnl udev-acl - apply ACLs for users with local forground sessions
@@ -553,6 +572,7 @@ echo "
         PAM module dir:           ${PAM_MODULE_DIR}
         Build PAM module:         ${msg_pam_module}
         Build udev-acl:           ${enable_udev_acl}
+        cgroup support:           ${have_cgmanager}
         Build docs:               ${enable_docbook_docs}
         xinitrc dir:              ${XINITRC_DIR}
 

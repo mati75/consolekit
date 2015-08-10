@@ -98,18 +98,22 @@ host_triplet = @host@
 @CK_COMPILE_SOLARIS_TRUE@	ck-sysdeps-solaris.c	\
 @CK_COMPILE_SOLARIS_TRUE@	$(NULL)
 
-@CK_COMPILE_FREEBSD_TRUE@am__append_3 = \
+@CK_COMPILE_SOLARIS_TRUE@am__append_3 = -lscf
+@CK_COMPILE_FREEBSD_TRUE@am__append_4 = \
 @CK_COMPILE_FREEBSD_TRUE@	ck-sysdeps-freebsd.c	\
 @CK_COMPILE_FREEBSD_TRUE@	$(NULL)
 
-@CK_COMPILE_OPENBSD_TRUE@am__append_4 = \
+@CK_COMPILE_FREEBSD_TRUE@am__append_5 = $(KVM_LIBS)
+@CK_COMPILE_OPENBSD_TRUE@am__append_6 = \
 @CK_COMPILE_OPENBSD_TRUE@	ck-sysdeps-openbsd.c	\
 @CK_COMPILE_OPENBSD_TRUE@	$(NULL)
 
-@CK_COMPILE_GNU_TRUE@am__append_5 = \
+@CK_COMPILE_OPENBSD_TRUE@am__append_7 = $(KVM_LIBS)
+@CK_COMPILE_GNU_TRUE@am__append_8 = \
 @CK_COMPILE_GNU_TRUE@	ck-sysdeps-gnu.c	\
 @CK_COMPILE_GNU_TRUE@	$(NULL)
 
+@CK_COMPILE_GNU_TRUE@am__append_9 = -lps
 sbin_PROGRAMS = console-kit-daemon$(EXEEXT) $(am__EXEEXT_1)
 @BUILD_TESTS_TRUE@noinst_PROGRAMS = test-event-logger$(EXEEXT) \
 @BUILD_TESTS_TRUE@	test-tty-idle-monitor$(EXEEXT) \
@@ -118,7 +122,7 @@ sbin_PROGRAMS = console-kit-daemon$(EXEEXT) $(am__EXEEXT_1)
 @BUILD_TESTS_TRUE@	test-seat$(EXEEXT) test-manager$(EXEEXT) \
 @BUILD_TESTS_TRUE@	ck-collect-session-info$(EXEEXT) \
 @BUILD_TESTS_TRUE@	test-session-leader$(EXEEXT) $(am__EXEEXT_1)
-@BUILD_TESTS_TRUE@am__append_6 = \
+@BUILD_TESTS_TRUE@am__append_10 = \
 @BUILD_TESTS_TRUE@	test-open-session	\
 @BUILD_TESTS_TRUE@	test-open-session-with-parameters	\
 @BUILD_TESTS_TRUE@	test-session	\
@@ -131,13 +135,14 @@ sbin_PROGRAMS = console-kit-daemon$(EXEEXT) $(am__EXEEXT_1)
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/gettext.m4 \
-	$(top_srcdir)/m4/iconv.m4 $(top_srcdir)/m4/lib-ld.m4 \
-	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/m4/nls.m4 \
-	$(top_srcdir)/m4/po.m4 $(top_srcdir)/m4/progtest.m4 \
-	$(top_srcdir)/acinclude.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/iconv.m4 $(top_srcdir)/m4/intlmacosx.m4 \
+	$(top_srcdir)/m4/lib-ld.m4 $(top_srcdir)/m4/lib-link.m4 \
+	$(top_srcdir)/m4/lib-prefix.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/po.m4 \
+	$(top_srcdir)/m4/progtest.m4 $(top_srcdir)/acinclude.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
@@ -155,9 +160,11 @@ am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 am__DEPENDENCIES_1 =
-@CK_COMPILE_FREEBSD_FALSE@@CK_COMPILE_OPENBSD_TRUE@libck_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-@CK_COMPILE_FREEBSD_TRUE@libck_la_DEPENDENCIES =  \
-@CK_COMPILE_FREEBSD_TRUE@	$(am__DEPENDENCIES_1)
+@CK_COMPILE_FREEBSD_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+@CK_COMPILE_OPENBSD_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+libck_la_DEPENDENCIES = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
+	$(am__DEPENDENCIES_1)
 am__libck_la_SOURCES_DIST = ck-sysdeps.h ck-sysdeps-unix.c \
 	ck-sysdeps-linux.c ck-sysdeps-solaris.c ck-sysdeps-freebsd.c \
 	ck-sysdeps-openbsd.c ck-sysdeps-gnu.c
@@ -206,10 +213,11 @@ am__console_kit_daemon_SOURCES_DIST = main.c ck-manager.h ck-manager.c \
 	ck-session.h ck-session.c ck-log.h ck-log.c ck-run-programs.c \
 	ck-run-programs.h ck-event-logger.c ck-event-logger.h \
 	ck-inhibit.c ck-inhibit.h ck-inhibit-manager.c \
-	ck-inhibit-manager.h ck-manager-generated.h \
-	ck-manager-generated.c ck-seat-generated.h ck-seat-generated.c \
-	ck-session-generated.h ck-session-generated.c ck-marshal.c \
-	ck-marshal.h ck-file-monitor-dummy.c ck-file-monitor-inotify.c
+	ck-inhibit-manager.h ck-process-group.h ck-process-group.c \
+	ck-manager-generated.h ck-manager-generated.c \
+	ck-seat-generated.h ck-seat-generated.c ck-session-generated.h \
+	ck-session-generated.c ck-marshal.c ck-marshal.h \
+	ck-file-monitor-dummy.c ck-file-monitor-inotify.c
 am__objects_8 = ck-manager-generated.$(OBJEXT) \
 	ck-seat-generated.$(OBJEXT) ck-session-generated.$(OBJEXT) \
 	ck-marshal.$(OBJEXT) $(am__objects_1)
@@ -222,11 +230,13 @@ am_console_kit_daemon_OBJECTS = main.$(OBJEXT) ck-manager.$(OBJEXT) \
 	ck-session.$(OBJEXT) ck-log.$(OBJEXT) \
 	ck-run-programs.$(OBJEXT) ck-event-logger.$(OBJEXT) \
 	ck-inhibit.$(OBJEXT) ck-inhibit-manager.$(OBJEXT) \
-	$(am__objects_8) $(am__objects_1) $(am__objects_9)
+	ck-process-group.$(OBJEXT) $(am__objects_8) $(am__objects_1) \
+	$(am__objects_9)
 console_kit_daemon_OBJECTS = $(am_console_kit_daemon_OBJECTS)
 console_kit_daemon_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) libck.la \
-	libck-event-log.la $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) libck.la libck-event-log.la \
+	$(am__DEPENDENCIES_1)
 am__test_event_logger_SOURCES_DIST = ck-event-logger.h \
 	ck-event-logger.c test-event-logger.c
 @BUILD_TESTS_TRUE@am_test_event_logger_OBJECTS =  \
@@ -513,6 +523,8 @@ AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
+CGMANAGER_CFLAGS = @CGMANAGER_CFLAGS@
+CGMANAGER_LIBS = @CGMANAGER_LIBS@
 CK_BACKEND = @CK_BACKEND@
 CONSOLE_KIT_CFLAGS = @CONSOLE_KIT_CFLAGS@
 CONSOLE_KIT_LIBS = @CONSOLE_KIT_LIBS@
@@ -535,11 +547,13 @@ ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 FGREP = @FGREP@
+GETTEXT_MACRO_VERSION = @GETTEXT_MACRO_VERSION@
 GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB_GENMARSHAL = @GLIB_GENMARSHAL@
 GMSGFMT = @GMSGFMT@
 GMSGFMT_015 = @GMSGFMT_015@
 GREP = @GREP@
+HAVE_CGMANAGER = @HAVE_CGMANAGER@
 HAVE_PAM = @HAVE_PAM@
 HAVE_POLKIT = @HAVE_POLKIT@
 HISTORY_CFLAGS = @HISTORY_CFLAGS@
@@ -617,6 +631,7 @@ VERSION_REVISION = @VERSION_REVISION@
 WARN_CFLAGS = @WARN_CFLAGS@
 XGETTEXT = @XGETTEXT@
 XGETTEXT_015 = @XGETTEXT_015@
+XGETTEXT_EXTRA_OPTIONS = @XGETTEXT_EXTRA_OPTIONS@
 XINITRC_DIR = @XINITRC_DIR@
 XLIB_CFLAGS = @XLIB_CFLAGS@
 XLIB_LIBS = @XLIB_LIBS@
@@ -689,6 +704,7 @@ AM_CFLAGS = \
 	-U_FORTIFY_SOURCE				\
 	$(CONSOLE_KIT_CFLAGS)					\
 	$(POLKIT_CFLAGS)					\
+	$(CGMANAGER_CFLAGS)					\
 	$(DISABLE_DEPRECATED_CFLAGS)				\
 	-DPREFIX=\""$(prefix)"\" 				\
 	-DBINDIR=\""$(bindir)"\"				\
@@ -716,12 +732,10 @@ libck_event_log_la_SOURCES = \
 	$(NULL)
 
 libck_la_SOURCES = ck-sysdeps.h ck-sysdeps-unix.c $(NULL) \
-	$(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4) $(am__append_5)
-@CK_COMPILE_FREEBSD_TRUE@libck_la_LIBADD = $(KVM_LIBS)
-@CK_COMPILE_GNU_TRUE@libck_la_LIBADD = -lps
-@CK_COMPILE_OPENBSD_TRUE@libck_la_LIBADD = $(KVM_LIBS)
-@CK_COMPILE_SOLARIS_TRUE@libck_la_LIBADD = -lscf
+	$(am__append_1) $(am__append_2) $(am__append_4) \
+	$(am__append_6) $(am__append_8)
+libck_la_LIBADD = $(CONSOLE_KIT_LIBS) $(am__append_3) $(am__append_5) \
+	$(am__append_7) $(am__append_9)
 EXTRA_libck_la_SOURCES = \
 	ck-sysdeps-linux.c		\
 	ck-sysdeps-solaris.c		\
@@ -754,8 +768,8 @@ console_kit_daemon_SOURCES = main.c ck-manager.h ck-manager.c \
 	ck-session.h ck-session.c ck-log.h ck-log.c ck-run-programs.c \
 	ck-run-programs.h ck-event-logger.c ck-event-logger.h \
 	ck-inhibit.c ck-inhibit.h ck-inhibit-manager.c \
-	ck-inhibit-manager.h $(BUILT_SOURCES) $(NULL) \
-	$(FILE_MONITOR_BACKEND)
+	ck-inhibit-manager.h ck-process-group.h ck-process-group.c \
+	$(BUILT_SOURCES) $(NULL) $(FILE_MONITOR_BACKEND)
 @ENABLE_INOTIFY_FALSE@FILE_MONITOR_BACKEND = ck-file-monitor-dummy.c
 @ENABLE_INOTIFY_TRUE@FILE_MONITOR_BACKEND = ck-file-monitor-inotify.c
 EXTRA_console_kit_daemon_SOURCES = \
@@ -767,6 +781,7 @@ console_kit_daemon_LDADD = \
 	$(CONSOLE_KIT_LIBS)	\
 	$(POLKIT_LIBS)		\
 	$(RBAC_LIBS)		\
+	$(CGMANAGER_LIBS)	\
 	libck.la		\
 	libck-event-log.la	\
 	$(NULL)
@@ -917,7 +932,7 @@ console_kit_daemon_LDADD = \
 @BUILD_TESTS_TRUE@	$(NULL)
 
 EXTRA_DIST = ck-marshal.list $(dbusif_DATA) valgrind.sh $(NULL) \
-	$(am__append_6)
+	$(am__append_10)
 CLEANFILES = $(BUILT_SOURCES)
 MAINTAINERCLEANFILES = \
 	*~				\
@@ -1090,6 +1105,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-manager-generated.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-marshal.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-process-group.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-run-programs.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-seat-generated.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ck-seat.Po@am__quote@
@@ -1944,9 +1960,9 @@ ck-marshal.h: ck-marshal.list
 
 install-data-local:
 	-mkdir -p $(DESTDIR)$(sysconfdir)/ConsoleKit/run-session.d
-	-mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-session.d
+	-mkdir -p $(DESTDIR)$(libdir)/ConsoleKit/run-session.d
 	-mkdir -p $(DESTDIR)$(sysconfdir)/ConsoleKit/run-seat.d
-	-mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d
+	-mkdir -p $(DESTDIR)$(libdir)/ConsoleKit/run-seat.d
 	-mkdir -p $(DESTDIR)$(RUNDIR)/ConsoleKit
 	-mkdir -p $(DESTDIR)$(localstatedir)/log/ConsoleKit
 

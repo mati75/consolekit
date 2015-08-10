@@ -12,6 +12,7 @@ AM_CFLAGS =							\
 	-U_FORTIFY_SOURCE				\
 	$(CONSOLE_KIT_CFLAGS)					\
 	$(POLKIT_CFLAGS)					\
+	$(CGMANAGER_CFLAGS)					\
 	$(DISABLE_DEPRECATED_CFLAGS)				\
 	-DPREFIX=\""$(prefix)"\" 				\
 	-DBINDIR=\""$(bindir)"\"				\
@@ -43,6 +44,8 @@ libck_la_SOURCES =		\
 	ck-sysdeps-unix.c	\
 	$(NULL)
 
+libck_la_LIBADD = $(CONSOLE_KIT_LIBS)
+
 if CK_COMPILE_LINUX
 libck_la_SOURCES +=		\
 	ck-sysdeps-linux.c	\
@@ -52,25 +55,25 @@ if CK_COMPILE_SOLARIS
 libck_la_SOURCES +=		\
 	ck-sysdeps-solaris.c	\
 	$(NULL)
-libck_la_LIBADD = -lscf
+libck_la_LIBADD += -lscf
 endif
 if CK_COMPILE_FREEBSD
 libck_la_SOURCES +=		\
 	ck-sysdeps-freebsd.c	\
 	$(NULL)
-libck_la_LIBADD = $(KVM_LIBS)
+libck_la_LIBADD += $(KVM_LIBS)
 endif
 if CK_COMPILE_OPENBSD
 libck_la_SOURCES +=		\
 	ck-sysdeps-openbsd.c	\
 	$(NULL)
-libck_la_LIBADD = $(KVM_LIBS)
+libck_la_LIBADD += $(KVM_LIBS)
 endif
 if CK_COMPILE_GNU
 libck_la_SOURCES +=		\
 	ck-sysdeps-gnu.c	\
 	$(NULL)
-libck_la_LIBADD = -lps
+libck_la_LIBADD += -lps
 endif
 
 EXTRA_libck_la_SOURCES =		\
@@ -157,6 +160,8 @@ console_kit_daemon_SOURCES =	\
 	ck-inhibit.h		\
 	ck-inhibit-manager.c	\
 	ck-inhibit-manager.h	\
+	ck-process-group.h	\
+	ck-process-group.c	\
 	$(BUILT_SOURCES)	\
 	$(NULL)
 
@@ -177,6 +182,7 @@ console_kit_daemon_LDADD =	\
 	$(CONSOLE_KIT_LIBS)	\
 	$(POLKIT_LIBS)		\
 	$(RBAC_LIBS)		\
+	$(CGMANAGER_LIBS)	\
 	libck.la		\
 	libck-event-log.la	\
 	$(NULL)
@@ -369,8 +375,8 @@ MAINTAINERCLEANFILES =			\
 
 install-data-local:
 	-mkdir -p $(DESTDIR)$(sysconfdir)/ConsoleKit/run-session.d
-	-mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-session.d
+	-mkdir -p $(DESTDIR)$(libdir)/ConsoleKit/run-session.d
 	-mkdir -p $(DESTDIR)$(sysconfdir)/ConsoleKit/run-seat.d
-	-mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d
+	-mkdir -p $(DESTDIR)$(libdir)/ConsoleKit/run-seat.d
 	-mkdir -p $(DESTDIR)$(RUNDIR)/ConsoleKit
 	-mkdir -p $(DESTDIR)$(localstatedir)/log/ConsoleKit
