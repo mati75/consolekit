@@ -18,7 +18,7 @@ override_dh_auto_configure:
 
 override_dh_auto_install:
 	dh_auto_install
-	install -m 755 debian/pam-foreground-compat.ck debian/tmp/usr/lib/ConsoleKit/run-session.d/
+	install -m 755 debian/pam-foreground-compat.ck debian/tmp/usr/lib/$(DEB_HOST_MULTIARCH)/ConsoleKit/run-session.d/
 	install -D -m 644 debian/libpam-ck-connector.pam-auth-update debian/tmp/usr/share/pam-configs/consolekit
 
 override_dh_install:
