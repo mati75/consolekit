@@ -36,8 +36,12 @@
 #include <linux/kd.h>
 #endif
 
-#if defined(__OpenBSD__)
+#if defined(__NetBSD__) || defined(__OpenBSD__)
 #include <dev/wscons/wsdisplay_usl_io.h>
+#endif
+
+#if defined(__NetBSD__)
+#include <sys/un.h>
 #endif
 
 #ifdef HAVE_SYS_VT_H
@@ -108,6 +112,22 @@ ck_get_socket_peer_credentials   (int      socket_fd,
         if (ucred != NULL) {
                 ucred_free (ucred);
         }
+#elif defined(LOCAL_PEEREID)
+        struct unpcbid cr;
+        socklen_t      cr_len;
+
+        cr_len = sizeof (cr);
+
+        if (getsockopt (socket_fd, 0, LOCAL_PEEREID, &cr, &cr_len) == 0 && cr_len == sizeof (cr)) {
+                pid_read = cr.unp_pid;
+                uid_read = cr.unp_euid;
+                ret = TRUE;
+        } else {
+                g_warning ("Failed to getsockopt() credentials, returned len %d/%d: %s\n",
+                           cr_len,
+                           (int) sizeof (cr),
+                           g_strerror (errno));
+        }
 #elif defined(HAVE_GETPEEREID)
 	gid_t dummy;
 
@@ -132,65 +152,6 @@ ck_get_socket_peer_credentials   (int      socket_fd,
         return ret;
 }
 
-/* adapted from PolicyKit */
-gboolean
-get_caller_info (GDBusProxy  *bus_proxy,
-                 const char  *sender,
-                 uid_t       *calling_uid,
-                 pid_t       *calling_pid)
-{
-        gboolean  res   = FALSE;
-        GVariant *value = NULL;
-        GError   *error = NULL;
-
-        if (sender == NULL) {
-                g_debug ("sender == NULL");
-                goto out;
-        }
-
-        if (bus_proxy == NULL) {
-                g_debug ("bus_proxy == NULL");
-                goto out;
-        }
-
-        value = g_dbus_proxy_call_sync (bus_proxy, "GetConnectionUnixUser",
-                                        g_variant_new ("(s)", sender),
-                                        G_DBUS_CALL_FLAGS_NONE,
-                                        2000,
-                                        NULL,
-                                        &error);
-
-        if (value == NULL) {
-                g_warning ("GetConnectionUnixUser() failed: %s", error->message);
-                g_error_free (error);
-                goto out;
-        }
-        g_variant_get (value, "(u)", calling_uid);
-        g_variant_unref (value);
-
-        value = g_dbus_proxy_call_sync (bus_proxy, "GetConnectionUnixProcessID",
-                                        g_variant_new ("(s)", sender),
-                                        G_DBUS_CALL_FLAGS_NONE,
-                                        2000,
-                                        NULL,
-                                        &error);
-
-        if (value == NULL) {
-                g_warning ("GetConnectionUnixProcessID() failed: %s", error->message);
-                g_error_free (error);
-                goto out;
-        }
-        g_variant_get (value, "(u)", calling_pid);
-        g_variant_unref (value);
-
-        res = TRUE;
-
-        g_debug ("uid = %d", *calling_uid);
-        g_debug ("pid = %d", *calling_pid);
-
-out:
-        return res;
-}
 
 /*
  * getfd.c
@@ -203,7 +164,7 @@ out:
 gboolean
 ck_fd_is_a_console (int fd)
 {
-#if defined(__linux__) || defined(__OpenBSD__)
+#if defined(__linux__) || defined(__NetBSD__) || defined(__OpenBSD__)
         struct vt_stat vts;
 #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__DragonFly__)
         int vers;
@@ -211,7 +172,7 @@ ck_fd_is_a_console (int fd)
         int  kb_ok;
 
         errno = 0;
-#if defined(__linux__) || defined(__OpenBSD__)
+#if defined(__linux__) || defined(__NetBSD__) || defined(__OpenBSD__)
         kb_ok = (ioctl (fd, VT_GETSTATE, &vts) == 0);
 #elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__DragonFly__)
         kb_ok = (ioctl (fd, CONS_GETVERS, &vers) == 0);
@@ -284,6 +245,13 @@ ck_get_a_console_fd (void)
                 goto done;
         }
         fd = open_a_console ("/dev/vt/0");
+        if (fd >= 0) {
+                goto done;
+        }
+#endif
+
+#if defined(__NetBSD__)
+        fd = open_a_console ("/dev/ttyE0");
         if (fd >= 0) {
                 goto done;
         }

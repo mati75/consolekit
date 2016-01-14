@@ -8,9 +8,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: ConsoleKit2\n"
 "Report-Msgid-Bugs-To: https://github.com/ConsoleKit2/ConsoleKit2/issues\n"
-"POT-Creation-Date: 2015-08-10 09:43+0300\n"
-"PO-Revision-Date: 2015-08-02 09:21+0000\n"
-"Last-Translator: Eric Koegel <eric.koegel@gmail.com>\n"
+"POT-Creation-Date: 2016-01-13 11:50+0300\n"
+"PO-Revision-Date: 2015-08-10 06:58+0000\n"
+"Last-Translator: bizdelnick <bizdelnick@gmail.com>\n"
 "Language-Team: Russian (http://www.transifex.com/consolekit2/consolekit2/"
 "language/ru/)\n"
 "Language: ru\n"
@@ -94,109 +94,109 @@ msgstr "Требуется авторизация"
 msgid "Not Authorized"
 msgstr "Не авторизован"
 
-#: src/ck-manager.c:1232
+#: src/ck-manager.c:1294
 #, c-format
 msgid "Unable to %s system: %s"
 msgstr "Невозможно %s систему: %s"
 
-#: src/ck-manager.c:1285 src/ck-manager.c:1392 src/ck-manager.c:1647
-#: src/ck-manager.c:1779 src/ck-manager.c:1911
+#: src/ck-manager.c:1347 src/ck-manager.c:1454 src/ck-manager.c:1709
+#: src/ck-manager.c:1841 src/ck-manager.c:1973
 msgid "Attempting to perform a system action while one is in progress"
 msgstr "Попытка запустить системное действие во время его выполнения"
 
-#: src/ck-manager.c:1297
+#: src/ck-manager.c:1359
 msgid "failed to allocate memory to perform restart"
 msgstr "не удалось выделить память для перезапуска"
 
-#: src/ck-manager.c:1344 src/ck-manager.c:1444 src/ck-manager.c:1501
-#: src/ck-manager.c:1580 src/ck-manager.c:1707 src/ck-manager.c:1839
-#: src/ck-manager.c:1971
+#: src/ck-manager.c:1406 src/ck-manager.c:1506 src/ck-manager.c:1563
+#: src/ck-manager.c:1642 src/ck-manager.c:1769 src/ck-manager.c:1901
+#: src/ck-manager.c:2033
 msgid "Operation is being inhibited"
 msgstr "Операция блокируется"
 
-#: src/ck-manager.c:1404
+#: src/ck-manager.c:1466
 msgid "failed to allocate memory to perform shutdown"
 msgstr "не удалось выделить память для отключения"
 
-#: src/ck-manager.c:1659
+#: src/ck-manager.c:1721
 msgid "failed to allocate memory to perform suspend"
 msgstr "не удалось выделить память для перехода в ждущий режим"
 
-#: src/ck-manager.c:1791
+#: src/ck-manager.c:1853
 msgid "failed to allocate memory to perform hibernate"
 msgstr "не удалось выделить память для перехода в спящий режим"
 
-#: src/ck-manager.c:1923
+#: src/ck-manager.c:1985
 msgid "failed to allocate memory to perform hybrid sleep"
 msgstr "не удалось выделить память для перехода в режим гибридного сна"
 
-#: src/ck-manager.c:2064 src/ck-manager.c:2091
+#: src/ck-manager.c:2126 src/ck-manager.c:2153
 msgid "Error creating the inhibit lock"
 msgstr "Ошибка при создании блокировки"
 
-#: src/ck-manager.c:2069 src/ck-manager.c:2131
+#: src/ck-manager.c:2131 src/ck-manager.c:2193
 msgid "Inhibit manager failed to initialize"
 msgstr "Не удалось инициализировать менеджер блокировок"
 
-#: src/ck-manager.c:2085
+#: src/ck-manager.c:2147
 msgid "Invalid input when creating inhibit lock"
 msgstr "Некорректный ввод при создании блокировки"
 
-#: src/ck-manager.c:2088
+#: src/ck-manager.c:2150
 msgid "Unable to create inhibit lock, insufficient memory"
 msgstr "Невозможно создать блокировку: недостаточно памяти"
 
-#: src/ck-manager.c:2138
+#: src/ck-manager.c:2200
 msgid "There is nothing currently inhibited"
 msgstr "В данный момент ничего не блокируется"
 
-#: src/ck-manager.c:2777 src/ck-manager.c:2861 src/ck-manager.c:2909
+#: src/ck-manager.c:2839 src/ck-manager.c:2923 src/ck-manager.c:2971
 msgid "Unable to get information about the calling process"
 msgstr "Невозможно получить информацию о вызывающем процессе"
 
-#: src/ck-manager.c:2791 src/ck-manager.c:3109 src/ck-session.c:336
+#: src/ck-manager.c:2853 src/ck-manager.c:3171 src/ck-session.c:390
 #, c-format
 msgid "Unable to lookup information about calling process '%d'"
 msgstr "Невозможно получить информацию о вызывающем процессе '%d'"
 
-#: src/ck-manager.c:2802 src/ck-manager.c:2809 src/ck-manager.c:3058
+#: src/ck-manager.c:2864 src/ck-manager.c:2871 src/ck-manager.c:3120
 msgid "Unable to find session for cookie"
 msgstr "Невозможно найти сессию для cookie"
 
-#: src/ck-manager.c:2844
+#: src/ck-manager.c:2906
 msgid "pid must be > 1"
 msgstr "PID должен быть > 1"
 
-#: src/ck-manager.c:2869
+#: src/ck-manager.c:2931
 #, c-format
 msgid "Unable to lookup session information for process '%d'"
 msgstr "Невозможно получить информацию о сессии для процесса '%d'"
 
-#: src/ck-manager.c:3066
+#: src/ck-manager.c:3128
 msgid "User ID does not match the owner of cookie"
 msgstr "ID пользователя не соответствует владельцу cookie"
 
-#: src/ck-manager.c:3076
+#: src/ck-manager.c:3138
 msgid "Process ID does not match the owner of cookie"
 msgstr "ID процесса не соответствует владельцу cookie"
 
-#: src/ck-manager.c:3300
+#: src/ck-manager.c:3362
 msgid "User has no sessions"
 msgstr "У пользователя нет сессий"
 
-#: src/ck-manager.c:3336
+#: src/ck-manager.c:3398
 msgid "User has no seats"
 msgstr "У пользователя нет рабочих мест"
 
-#: src/ck-manager.c:3362
+#: src/ck-manager.c:3424
 msgid "There are no sessions"
 msgstr "Нет сессий"
 
-#: src/ck-session.c:342
+#: src/ck-session.c:396
 msgid "Only session owner may set idle hint state"
 msgstr "Только владелец сессии может устанавливать маркер простоя"
 
-#: src/ck-session.c:414
+#: src/ck-session.c:468
 msgid ""
 "Activate signal not handeled. Session not attached to seat, or the seat "
 "doesn't support activation changes"
@@ -211,7 +211,7 @@ msgstr ""
 #: src/ck-process-group.c:111
 msgid ""
 "Failed to open connection to cgmanager. Is the cgmanager daemon running?"
-msgstr ""
+msgstr "Не удалось подключиться к cgmanager. Запущен ли демон cgmanager?"
 
 #. TRANSLATORS: There is an error with cgmanager, we're just
 #. * printing it out. Please ensure you keep the %s in the
@@ -221,7 +221,7 @@ msgstr ""
 #: src/ck-process-group.c:127
 #, c-format
 msgid "There was an error while initializing cgmanager, the error was: %s"
-msgstr ""
+msgstr "При инициализации cgmanager произошла ошибка: %s"
 
 #. TRANSLATORS: Please ensure you keep the %s in the
 #. * string somewhere. It's the detailed error message from
@@ -230,7 +230,7 @@ msgstr ""
 #: src/ck-process-group.c:232
 #, c-format
 msgid "Failed to create cgroup, the error was: %s"
-msgstr ""
+msgstr "Не удалось создать cgroup: %s"
 
 #. TRANSLATORS: Please ensure you keep the %s in the
 #. * string somewhere. It's the detailed error message from
@@ -239,7 +239,7 @@ msgstr ""
 #: src/ck-process-group.c:242
 #, c-format
 msgid "Failed to move the session leader process to cgroup, the error was: %s"
-msgstr ""
+msgstr "Не удалось переместить процесс-лидер сессии в cgroup: %s"
 
 #. TRANSLATORS: Please ensure you keep the %s in the
 #. * string somewhere. It's the detailed error message from
@@ -251,6 +251,8 @@ msgid ""
 "Failed to let cgmanager know that it can remove the cgroup when it's empty, "
 "the error was: %s"
 msgstr ""
+"Не удалось сообщить cgmanager, что cgroup может быть удалена, когда станет "
+"пустой: %s"
 
 #. TRANSLATORS: Please ensure you keep the %s in the
 #. * string somewhere. It's the detailed error message from
@@ -259,7 +261,7 @@ msgstr ""
 #: src/ck-process-group.c:291
 #, c-format
 msgid "Failed to get the session id from cgmanager, the error was: %s"
-msgstr ""
+msgstr "Не удалось получить идентификатор сессии от cgmanager: %s"
 
 #: tools/ck-history.c:903 tools/list-sessions.c:350
 msgid "Version of this application"
@@ -314,7 +316,7 @@ msgstr "Показать записи начиная с указанного в�
 msgid "DATETIME"
 msgstr "ВРЕМЯ"
 
-#: tools/ck-get-x11-display-device.c:162
+#: tools/ck-get-x11-display-device.c:166
 msgid "display name"
 msgstr "показать имя"
 
