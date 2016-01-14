@@ -14,6 +14,10 @@ if CK_COMPILE_FREEBSD
 SUBDIRS += freebsd
 endif
 
+if CK_COMPILE_NETBSD
+SUBDIRS += netbsd
+endif
+
 if CK_COMPILE_OPENBSD
 SUBDIRS += openbsd
 endif
@@ -25,6 +29,7 @@ endif
 DIST_SUBDIRS = 		\
 	linux		\
 	freebsd		\
+	netbsd		\
 	openbsd		\
 	solaris		\
 	$(NULL)
@@ -131,7 +136,6 @@ ck_collect_session_info_SOURCES =	\
 	$(NULL)
 
 ck_collect_session_info_LDADD =		\
-	$(CONSOLE_KIT_LIBS)		\
 	$(TOOLS_LIBS)			\
 	$(top_builddir)/src/libck.la	\
 	$(NULL)
@@ -141,7 +145,6 @@ ck_get_x11_server_pid_SOURCES =		\
 	$(NULL)
 
 ck_get_x11_server_pid_LDADD =		\
-	$(CONSOLE_KIT_LIBS)		\
 	$(TOOLS_LIBS)			\
 	$(XLIB_LIBS)			\
 	$(top_builddir)/src/libck.la	\
@@ -152,7 +155,6 @@ ck_get_x11_display_device_SOURCES =	\
 	$(NULL)
 
 ck_get_x11_display_device_LDADD =	\
-	$(CONSOLE_KIT_LIBS)		\
 	$(TOOLS_LIBS)			\
 	$(top_builddir)/src/libck.la	\
 	$(NULL)
@@ -171,9 +173,9 @@ udev_acl_CFLAGS =       \
 	$(NULL)
 
 install-exec-hook:
-	mkdir -p $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d
+	mkdir -p $(DESTDIR)$(libdir)/ConsoleKit/run-seat.d
 	mkdir -p $(DESTDIR)$(UDEVDIR)
-	ln -sf $(libexecdir)/udev-acl $(DESTDIR)$(prefix)/lib/ConsoleKit/run-seat.d/udev-acl.ck
+	ln -sf $(libexecdir)/udev-acl $(DESTDIR)$(libdir)/ConsoleKit/run-seat.d/udev-acl.ck
 	ln -sf $(libexecdir)/udev-acl $(DESTDIR)$(UDEVDIR)/udev-acl
 endif
 

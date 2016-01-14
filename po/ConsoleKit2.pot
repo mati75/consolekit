@@ -1,14 +1,14 @@
 # SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR The ConsoleKit2 Team
-# This file is distributed under the same license as the PACKAGE package.
+# This file is distributed under the same license as the ConsoleKit2 package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: ConsoleKit2 1.0.0\n"
+"Project-Id-Version: ConsoleKit2 1.0.1\n"
 "Report-Msgid-Bugs-To: https://github.com/ConsoleKit2/ConsoleKit2/issues\n"
-"POT-Creation-Date: 2015-08-10 09:43+0300\n"
+"POT-Creation-Date: 2016-01-13 11:50+0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -90,109 +90,109 @@ msgstr ""
 msgid "Not Authorized"
 msgstr ""
 
-#: src/ck-manager.c:1232
+#: src/ck-manager.c:1294
 #, c-format
 msgid "Unable to %s system: %s"
 msgstr ""
 
-#: src/ck-manager.c:1285 src/ck-manager.c:1392 src/ck-manager.c:1647
-#: src/ck-manager.c:1779 src/ck-manager.c:1911
+#: src/ck-manager.c:1347 src/ck-manager.c:1454 src/ck-manager.c:1709
+#: src/ck-manager.c:1841 src/ck-manager.c:1973
 msgid "Attempting to perform a system action while one is in progress"
 msgstr ""
 
-#: src/ck-manager.c:1297
+#: src/ck-manager.c:1359
 msgid "failed to allocate memory to perform restart"
 msgstr ""
 
-#: src/ck-manager.c:1344 src/ck-manager.c:1444 src/ck-manager.c:1501
-#: src/ck-manager.c:1580 src/ck-manager.c:1707 src/ck-manager.c:1839
-#: src/ck-manager.c:1971
+#: src/ck-manager.c:1406 src/ck-manager.c:1506 src/ck-manager.c:1563
+#: src/ck-manager.c:1642 src/ck-manager.c:1769 src/ck-manager.c:1901
+#: src/ck-manager.c:2033
 msgid "Operation is being inhibited"
 msgstr ""
 
-#: src/ck-manager.c:1404
+#: src/ck-manager.c:1466
 msgid "failed to allocate memory to perform shutdown"
 msgstr ""
 
-#: src/ck-manager.c:1659
+#: src/ck-manager.c:1721
 msgid "failed to allocate memory to perform suspend"
 msgstr ""
 
-#: src/ck-manager.c:1791
+#: src/ck-manager.c:1853
 msgid "failed to allocate memory to perform hibernate"
 msgstr ""
 
-#: src/ck-manager.c:1923
+#: src/ck-manager.c:1985
 msgid "failed to allocate memory to perform hybrid sleep"
 msgstr ""
 
-#: src/ck-manager.c:2064 src/ck-manager.c:2091
+#: src/ck-manager.c:2126 src/ck-manager.c:2153
 msgid "Error creating the inhibit lock"
 msgstr ""
 
-#: src/ck-manager.c:2069 src/ck-manager.c:2131
+#: src/ck-manager.c:2131 src/ck-manager.c:2193
 msgid "Inhibit manager failed to initialize"
 msgstr ""
 
-#: src/ck-manager.c:2085
+#: src/ck-manager.c:2147
 msgid "Invalid input when creating inhibit lock"
 msgstr ""
 
-#: src/ck-manager.c:2088
+#: src/ck-manager.c:2150
 msgid "Unable to create inhibit lock, insufficient memory"
 msgstr ""
 
-#: src/ck-manager.c:2138
+#: src/ck-manager.c:2200
 msgid "There is nothing currently inhibited"
 msgstr ""
 
-#: src/ck-manager.c:2777 src/ck-manager.c:2861 src/ck-manager.c:2909
+#: src/ck-manager.c:2839 src/ck-manager.c:2923 src/ck-manager.c:2971
 msgid "Unable to get information about the calling process"
 msgstr ""
 
-#: src/ck-manager.c:2791 src/ck-manager.c:3109 src/ck-session.c:336
+#: src/ck-manager.c:2853 src/ck-manager.c:3171 src/ck-session.c:390
 #, c-format
 msgid "Unable to lookup information about calling process '%d'"
 msgstr ""
 
-#: src/ck-manager.c:2802 src/ck-manager.c:2809 src/ck-manager.c:3058
+#: src/ck-manager.c:2864 src/ck-manager.c:2871 src/ck-manager.c:3120
 msgid "Unable to find session for cookie"
 msgstr ""
 
-#: src/ck-manager.c:2844
+#: src/ck-manager.c:2906
 msgid "pid must be > 1"
 msgstr ""
 
-#: src/ck-manager.c:2869
+#: src/ck-manager.c:2931
 #, c-format
 msgid "Unable to lookup session information for process '%d'"
 msgstr ""
 
-#: src/ck-manager.c:3066
+#: src/ck-manager.c:3128
 msgid "User ID does not match the owner of cookie"
 msgstr ""
 
-#: src/ck-manager.c:3076
+#: src/ck-manager.c:3138
 msgid "Process ID does not match the owner of cookie"
 msgstr ""
 
-#: src/ck-manager.c:3300
+#: src/ck-manager.c:3362
 msgid "User has no sessions"
 msgstr ""
 
-#: src/ck-manager.c:3336
+#: src/ck-manager.c:3398
 msgid "User has no seats"
 msgstr ""
 
-#: src/ck-manager.c:3362
+#: src/ck-manager.c:3424
 msgid "There are no sessions"
 msgstr ""
 
-#: src/ck-session.c:342
+#: src/ck-session.c:396
 msgid "Only session owner may set idle hint state"
 msgstr ""
 
-#: src/ck-session.c:414
+#: src/ck-session.c:468
 msgid ""
 "Activate signal not handeled. Session not attached to seat, or the seat "
 "doesn't support activation changes"
@@ -307,7 +307,7 @@ msgstr ""
 msgid "DATETIME"
 msgstr ""
 
-#: tools/ck-get-x11-display-device.c:162
+#: tools/ck-get-x11-display-device.c:166
 msgid "display name"
 msgstr ""
 
