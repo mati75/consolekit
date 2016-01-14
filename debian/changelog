@@ -1,5 +1,6 @@
-consolekit (1.0.0-3) UNRELEASED; urgency=medium
+consolekit (1.0.1-1) unstable; urgency=medium
 
+  * New upstream release.
   * Drop udev depends.
 
  -- Mateusz Łukasik <mati75@debian.org>  Wed, 21 Oct 2015 18:58:22 +0200
