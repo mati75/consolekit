@@ -1,3 +1,9 @@
+consolekit (1.0.0-3) UNRELEASED; urgency=medium
+
+  * Drop udev depends.
+
+ -- Mateusz Łukasik <mati75@debian.org>  Wed, 21 Oct 2015 18:58:22 +0200
+
 consolekit (1.0.0-2) unstable; urgency=medium
 
   * Enable systemd.

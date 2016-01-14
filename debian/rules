@@ -8,12 +8,11 @@ CONFFLAGS = --enable-udev-acl
 endif
 
 override_dh_auto_configure:
-	dh_auto_configure -- $(CONFFLAGS) \
-		--libexecdir="\$$(prefix)/lib/ConsoleKit" \
+	dh_auto_configure -- --libexecdir="\$$(prefix)/lib/ConsoleKit" \
 		--enable-pam-module \
 		--enable-docbook-docs \
 		--with-pid-file=/var/run/console-kit-daemon.pid \
-		--with-systemdsystemunitdir=/lib/systemd/system \
+		--without-systemdsystemunitdir \
 		--with-pam-module-dir=/lib/$(DEB_HOST_MULTIARCH)/security
 
 override_dh_auto_install:
@@ -23,7 +22,7 @@ override_dh_auto_install:
 
 override_dh_install:
 	dh_install
-ifeq ($(DEB_HOST_ARCH_OS),linux)
-	dh_install -pconsolekit debian/tmp/lib/udev/
-endif
+#ifeq ($(DEB_HOST_ARCH_OS),linux)
+#	dh_install -pconsolekit debian/tmp/lib/udev/
+#endif
 
