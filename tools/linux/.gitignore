@@ -1,9 +1,0 @@
-*.la
-*.lo
-*.o
-.deps
-.libs
-Makefile
-Makefile.in
-ck-collect-session-info
-ck-get-x11-server-pid

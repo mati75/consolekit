@@ -1,9 +1,0 @@
-[main]
-host = https://www.transifex.com
-
-[consolekit2.consolekit2pot]
-file_filter = po/<lang>.po
-source_file = po/ConsoleKit2.pot
-source_lang = en
-type = PO
-

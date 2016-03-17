@@ -135,10 +135,36 @@ static void     ck_manager_finalize    (GObject                *object);
 static void     remove_sessions_for_connection (CkManager   *manager,
                                                 const gchar *service_name);
 static void     create_seats                   (CkManager *manager);
+static gboolean session_is_real_user           (CkSession *session,
+                                                char     **userp);
 
 static gpointer manager_object = NULL;
 
 G_DEFINE_TYPE_WITH_CODE (CkManager, ck_manager, CONSOLE_KIT_TYPE_MANAGER_SKELETON, G_IMPLEMENT_INTERFACE (CONSOLE_KIT_TYPE_MANAGER, ck_manager_iface_init));
+
+static void
+dump_manager_seat_iter (char      *id,
+                        CkSeat    *seat,
+                        GString   *str)
+{
+        char   *seat_id;
+        GError *error;
+
+        error = NULL;
+        if (! ck_seat_get_id (seat, &seat_id, &error)) {
+                g_warning ("Cannot get seat id from manager: %s", error->message);
+                g_error_free (error);
+        } else {
+                /* ; is the seperator between elements in the list.
+                 * per keyfile standards
+                 */
+                if (str->len > 0) {
+                        g_string_append_c (str, ';');
+                }
+                g_string_append (str, seat_id);
+                g_free (seat_id);
+        }
+}
 
 static void
 dump_state_seat_iter (char     *id,
@@ -164,12 +190,132 @@ dump_state_leader_iter (char            *id,
         ck_session_leader_dump (leader, key_file);
 }
 
+typedef struct {
+        GString *sessions;
+        gboolean is_local;
+} UserDataDump;
+
+static void
+dump_user_iter (guint        *uid,
+                UserDataDump *data,
+                GKeyFile     *key_file)
+{
+        gchar *user_group = NULL;
+        gchar *session_list = NULL;
+
+        TRACE ();
+
+        if (data == NULL) {
+                g_critical ("ck-manager: dump_user_iter: data == NULL");
+                return;
+        }
+
+        user_group = g_strdup_printf ("User %u", *uid);
+        if (user_group == NULL) {
+                g_critical ("ck-manager: dump_user_iter: user_group == NULL, OOM");
+                return;
+        }
+
+        session_list = g_string_free(data->sessions, FALSE);
+
+        g_key_file_set_boolean (key_file, user_group, "is_local", data->is_local);
+        g_key_file_set_string  (key_file, user_group, "sessions", session_list);
+
+        g_free (user_group);
+        g_free (session_list);
+}
+
+static void
+collect_user_data_dump (const char *ssid,
+                        CkSession  *session,
+                        GHashTable *hash)
+{
+        char         *username;
+        guint         uid;
+        gboolean      is_local;
+        UserDataDump *data;
+
+        TRACE ();
+
+        g_debug ("ssid %s", ssid);
+
+        /* ensure we filter out DMs and stuff */
+        if (session_is_real_user (session, &username)) {
+                if (username != NULL) {
+                        uid = console_kit_session_get_unix_user (CONSOLE_KIT_SESSION (session));
+                        /* Try to get the existing data */
+                        data = g_hash_table_lookup (hash, &uid);
+                        if (data == NULL) {
+                                data = g_new0 (UserDataDump, 1);
+                                if (data == NULL) {
+                                        g_critical ("ck-manager: collect_user_data_dump: OOM");
+                                        return;
+                                }
+
+                                /* allocate space for our sessions string */
+                                data->sessions = g_string_new(NULL);
+                                if (data->sessions == NULL) {
+                                        g_critical ("ck-manager: collect_user_data_dump: OOM");
+                                        return;
+                                }
+
+                                /* place the data into the hash table */
+                                g_hash_table_insert (hash, &uid, data);
+                        }
+
+                        if (data->sessions == NULL) {
+                                g_critical ("ck-manager: collect_user_data_dump: failed sanity check");
+                                return;
+                        }
+
+                        /* ; is the seperator between elements in the list.
+                         * per keyfile standards
+                         */
+                        if (data->sessions->len > 0) {
+                                g_string_append_c (data->sessions, ';');
+                        }
+
+                        /* add the new ssid to the list */
+                        g_string_append (data->sessions, ssid);
+
+                        /* update the is_local property, we set this to True
+                         * if one seat/session is local */
+                        is_local = console_kit_session_get_is_local (CONSOLE_KIT_SESSION (session));
+                        if (is_local) {
+                                data->is_local = is_local;
+                        }
+                }
+        }
+}
+
+static void
+dump_user_section (CkManager *manager,
+                   GKeyFile *key_file)
+{
+        GHashTable      *users_hash;
+
+        TRACE ();
+
+        /* using direct since there is no g_uint_hash or g_uint_equal */
+        users_hash = g_hash_table_new_full (g_direct_hash, g_direct_equal, NULL, g_free);
+
+        /* populate the users_hash filling in the user details */
+        g_hash_table_foreach (manager->priv->sessions, (GHFunc)collect_user_data_dump, users_hash);
+
+        /* now print out each entry in a user section */
+        g_hash_table_foreach (users_hash, (GHFunc)dump_user_iter, key_file);
+
+        g_hash_table_destroy (users_hash);
+}
+
 static gboolean
 do_dump (CkManager *manager,
          int        fd)
 {
         char     *str;
+        char     *s;
         gsize     str_len;
+        GString  *seats_string;
         GKeyFile *key_file;
         GError   *error;
         gboolean  ret;
@@ -180,9 +326,18 @@ do_dump (CkManager *manager,
 
         key_file = g_key_file_new ();
 
+        /* Create the [seats] section listing all the seats */
+        seats_string = g_string_new (NULL);
+        g_hash_table_foreach (manager->priv->seats, (GHFunc) dump_manager_seat_iter, seats_string);
+        s = g_string_free (seats_string, FALSE);
+        g_key_file_set_string (key_file, "Seats", "seats", s);
+        g_free (s);
+
         g_hash_table_foreach (manager->priv->seats, (GHFunc) dump_state_seat_iter, key_file);
         g_hash_table_foreach (manager->priv->sessions, (GHFunc) dump_state_session_iter, key_file);
         g_hash_table_foreach (manager->priv->leaders, (GHFunc) dump_state_leader_iter, key_file);
+
+        dump_user_section (manager, key_file);
 
         str = g_key_file_to_data (key_file, &str_len, &error);
         g_key_file_free (key_file);
@@ -1163,6 +1318,40 @@ get_system_num_users (CkManager *manager)
         g_debug ("found %u unique users", num_users);
 
         return num_users;
+}
+
+static gboolean
+session_has_user (const char *ssid,
+                  CkSession  *session,
+                  guint      *unix_user)
+{
+        guint session_user;
+
+        session_user = console_kit_session_get_unix_user (CONSOLE_KIT_SESSION (session));
+
+        if (session_user == *unix_user) {
+                g_debug ("Found session for user %d", *unix_user);
+                return TRUE;
+        }
+
+        return FALSE;
+}
+
+static const gchar *
+get_runtime_dir_for_user (CkManager *manager,
+                          guint      unix_user)
+{
+        gpointer session;
+
+        TRACE ();
+
+        session = g_hash_table_find (manager->priv->sessions, (GHRFunc)session_has_user, &unix_user);
+
+        if (session != NULL) {
+                return ck_session_get_runtime_dir (CK_SESSION (session));
+        }
+
+        return NULL;
 }
 
 #ifdef ENABLE_RBAC_SHUTDOWN
@@ -2584,6 +2773,8 @@ open_session_for_leader (CkManager             *manager,
         CkSeat         *seat;
         const char     *ssid;
         const char     *cookie;
+        char           *runtime_dir;
+        guint           unix_user;
 
         ssid = ck_session_leader_peek_session_id (leader);
         cookie = ck_session_leader_peek_cookie (leader);
@@ -2597,6 +2788,20 @@ open_session_for_leader (CkManager             *manager,
                 throw_error (context, CK_MANAGER_ERROR_GENERAL, "Unable to create new session");
                 return;
         }
+
+        unix_user = console_kit_session_get_unix_user (CONSOLE_KIT_SESSION (session));
+
+        /* If the user is already logged in, continue to use the same runtime dir.
+         * We need to do this before adding the session to the manager's table. */
+        runtime_dir = g_strdup (get_runtime_dir_for_user (manager, unix_user));
+
+        /* otherwise generate a new one */
+        if (runtime_dir == NULL) {
+                runtime_dir = ck_generate_runtime_dir_for_user (unix_user);
+        }
+
+        g_debug ("XDG_RUNTIME_DIR is %s", runtime_dir);
+        ck_session_set_runtime_dir (session, runtime_dir);
 
         /* If supported, add the session leader to a process group so we
          * can track it with something better than an environment variable */
@@ -2631,6 +2836,7 @@ open_session_for_leader (CkManager             *manager,
                           manager);
 
         g_object_unref (session);
+        g_free (runtime_dir);
 
         g_dbus_method_invocation_return_value (context , g_variant_new ("(s)", cookie));
 }
@@ -3016,6 +3222,7 @@ remove_session_for_cookie (CkManager  *manager,
         char            *orig_ssid;
         CkSessionLeader *leader;
         char            *sid;
+        guint            unix_user;
         gboolean         res;
         gboolean         ret;
 
@@ -3055,6 +3262,11 @@ remove_session_for_cookie (CkManager  *manager,
          * for seat removals doesn't work.
          */
 
+        /* Get the session's uid, we'll need this if we have to remove the
+         * runtime dir
+         */
+        unix_user = console_kit_session_get_unix_user (CONSOLE_KIT_SESSION (orig_session));
+
         /* remove from seat */
         sid = NULL;
         ck_session_get_seat_id (orig_session, &sid, NULL);
@@ -3084,6 +3296,14 @@ remove_session_for_cookie (CkManager  *manager,
         ck_manager_dump (manager);
 
         manager_update_system_idle_hint (manager);
+
+        if (get_runtime_dir_for_user (manager, unix_user) == NULL) {
+                /* We removed the session and now there's no runtime dir
+                 * associated with that user.
+                 * Remove the runtime dir from the system.
+                 */
+                ck_remove_runtime_dir_for_user (unix_user);
+        }
 
         ret = TRUE;
  out:
@@ -3341,13 +3561,33 @@ ck_manager_class_init (CkManagerClass *klass)
         g_type_class_add_private (klass, sizeof (CkManagerPrivate));
 }
 
+typedef struct {
+        guint       uid;
+        GHashTable *hash;
+} GetSessionsData;
+
+static void
+collect_sessions_for_user (char            *ssid,
+                           CkSession       *session,
+                           GetSessionsData *data)
+{
+        guint    uid;
+
+        uid = console_kit_session_get_unix_user (CONSOLE_KIT_SESSION(session));
+
+        if (uid == data->uid) {
+                g_hash_table_add (data->hash, g_strdup (ssid));
+        }
+}
+
 static gboolean
 dbus_get_sessions_for_unix_user (ConsoleKitManager     *ckmanager,
                                  GDBusMethodInvocation *context,
                                  guint                  uid)
 {
-        CkManager    *manager;
-        const gchar **sessions;
+        CkManager        *manager;
+        GetSessionsData  *data;
+        const gchar     **sessions;
 
         TRACE ();
 
@@ -3355,16 +3595,28 @@ dbus_get_sessions_for_unix_user (ConsoleKitManager     *ckmanager,
 
         g_return_val_if_fail (CK_IS_MANAGER (manager), FALSE);
 
-        sessions = (const gchar**)g_hash_table_get_keys_as_array (manager->priv->sessions, NULL);
+        data = g_new0 (GetSessionsData, 1);
+        data->uid = uid;
+
+        /* Create a new hash table that we can fill with the ssids that belong to the user */
+        data->hash = g_hash_table_new_full (g_str_hash, g_str_equal, g_free, NULL);
+
+        g_hash_table_foreach (manager->priv->sessions, (GHFunc)collect_sessions_for_user, data);
+
+        /* pull out the session ids in a format gdbus likes */
+        sessions = (const gchar**)g_hash_table_get_keys_as_array (data->hash, NULL);
 
         /* gdbus/gvariant requires that we throw an error to return NULL */
         if (sessions == NULL) {
                 throw_error (context, CK_MANAGER_ERROR_NO_SESSIONS, _("User has no sessions"));
+                g_hash_table_destroy (data->hash);
+                g_free (data);
                 return TRUE;
         }
 
         console_kit_manager_complete_get_sessions_for_unix_user (ckmanager, context, sessions);
-        g_free (sessions);
+        g_hash_table_destroy (data->hash);
+        g_free (data);
         return TRUE;
 }
 
