@@ -1,7 +1,0 @@
-Makefile
-Makefile.in
-ConsoleKit.xml
-org.freedesktop.ConsoleKit.*.ref.xml
-ConsoleKit.html
-*.o
-*~

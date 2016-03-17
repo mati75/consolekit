@@ -342,7 +342,7 @@ pam_sm_open_session (pam_handle_t *pamh,
                         ck_pam_syslog (pamh, LOG_INFO, "using '%s' as X11 display device (from CKCON_X11_DISPLAY_DEVICE)", x11_display_device);
                 }
         } else if ((s = pam_getenv (pamh, "XDG_VTNR")) != NULL) {
-                int len = strlen (s) + 9; /* room for "/dev/ttyX\0" */
+                int len = strlen (s) + 10; /* room for "/dev/ttyXX\0" */
                 xdd = malloc (len);
                 snprintf (xdd, len, "/dev/tty%s", s);
                 x11_display_device = xdd;
@@ -410,6 +410,18 @@ pam_sm_open_session (pam_handle_t *pamh,
         snprintf (buf, sizeof (buf) - 1, "XDG_SESSION_COOKIE=%s", ck_connector_get_cookie (ckc));
         if (pam_putenv (pamh, buf) != PAM_SUCCESS) {
                 ck_pam_syslog (pamh, LOG_ERR, "unable to set XDG_SESSION_COOKIE in environment");
+                /* tear down session the hard way */
+                ck_connector_unref (ckc);
+                ckc = NULL;
+
+                goto out;
+        }
+
+        /* and set the runtime dir */
+        buf[sizeof (buf) - 1] = '\0';
+        snprintf (buf, sizeof (buf) - 1, "XDG_RUNTIME_DIR=%s", ck_connector_get_runtime_dir (ckc, &error));
+        if (pam_putenv (pamh, buf) != PAM_SUCCESS) {
+                ck_pam_syslog (pamh, LOG_ERR, "unable to set XDG_RUNTIME_DIR in environment");
                 /* tear down session the hard way */
                 ck_connector_unref (ckc);
                 ckc = NULL;

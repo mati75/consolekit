@@ -3,12 +3,12 @@ AC_COPYRIGHT([Copyright 2014-2015 The ConsoleKit2 Team])
 
 AC_PREREQ([2.50])
 AC_INIT([ConsoleKit2],
-        [1.0.1],
+        [1.1.0],
         [https://github.com/ConsoleKit2/ConsoleKit2/issues],
         [ConsoleKit2])
 VERSION_MAJOR=1
-VERSION_MINOR=0
-VERSION_REVISION=1
+VERSION_MINOR=1
+VERSION_REVISION=0
 
 COPYRIGHT_YEARS="2014 2015"
 
@@ -61,11 +61,11 @@ POLKIT_REQUIRED_VERSION=0.92
 AC_CHECK_HEADERS([unistd.h paths.h sys/vt.h sys/consio.h fcntl.h limits.h \
                   sys/ioctl.h sys/param.h sys/socket.h syslog.h kvm.h \
                   sys/sysctl.h sys/user.h poll.h libintl.h locale.h \
-                  sys/wait.h sys/resource.h])
+                  sys/wait.h sys/resource.h sys/mount.h sys/param.h ftw.h])
 
 AC_CHECK_FUNCS([getpeerucred getpeereid memset setenv strchr strdup \
                 strerror strrchr strspn strstr strtol strtoul uname \
-                setlocale])
+                setlocale mount umount unmount])
 
 AC_CHECK_MEMBERS([struct stat.st_rdev])
 
