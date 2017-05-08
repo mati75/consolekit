@@ -1,16 +1,16 @@
 
-AC_COPYRIGHT([Copyright 2014-2015 The ConsoleKit2 Team])
+AC_COPYRIGHT([Copyright 2014-2017 The ConsoleKit2 Team])
 
 AC_PREREQ([2.50])
 AC_INIT([ConsoleKit2],
-        [1.1.0],
+        [1.1.1],
         [https://github.com/ConsoleKit2/ConsoleKit2/issues],
         [ConsoleKit2])
 VERSION_MAJOR=1
 VERSION_MINOR=1
-VERSION_REVISION=0
+VERSION_REVISION=1
 
-COPYRIGHT_YEARS="2014 2015"
+COPYRIGHT_YEARS="2014 2017"
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_AUX_DIR([autotools])
@@ -61,7 +61,10 @@ POLKIT_REQUIRED_VERSION=0.92
 AC_CHECK_HEADERS([unistd.h paths.h sys/vt.h sys/consio.h fcntl.h limits.h \
                   sys/ioctl.h sys/param.h sys/socket.h syslog.h kvm.h \
                   sys/sysctl.h sys/user.h poll.h libintl.h locale.h \
-                  sys/wait.h sys/resource.h sys/mount.h sys/param.h ftw.h])
+                  sys/wait.h sys/resource.h sys/mount.h sys/param.h ftw.h \
+		  sys/sysmacros.h sys/types.h libudev.h linux/input.h \
+		  sys/mkdev.h devattr.h sys/kd.h sys/kbio.h libprop/proplib.h \
+		  linux/kd.h])
 
 AC_CHECK_FUNCS([getpeerucred getpeereid memset setenv strchr strdup \
                 strerror strrchr strspn strstr strtol strtoul uname \
@@ -302,6 +305,43 @@ AS_IF([test "x$have_cgmanager" = "xyes"], [
 AM_CONDITIONAL([HAVE_CGMANAGER], [test "x$have_cgmanager" = "xyes"])
 AC_SUBST(HAVE_CGMANAGER)
 
+# libevdev - for handling VT switching with a session controller
+have_libevdev=no
+AC_ARG_ENABLE([libevdev],
+  AS_HELP_STRING([--enable-libevdev], [Enable evdev support @<:@default=auto@:>@]),
+  [enable_libevdev=$enableval],
+  [enable_libevdev=auto])
+AS_IF([test "x$enable_libevdev" != "xno"], [
+  PKG_CHECK_MODULES([LIBEVDEV], [libevdev], [have_libevdev=yes], [have_libevdev=no])
+  if test "x$enable_libevdev"  = "xyes" -a "x$have_libevdev" = "xno"; then
+    AC_MSG_ERROR([libevdev support explicitly requested but dependencies not found])
+  fi
+])
+AS_IF([test "x$have_libevdev" = "xyes"], [
+  AC_DEFINE([HAVE_LIBEVDEV], [], [Define if we have libevdev])
+])
+AM_CONDITIONAL([HAVE_LIBEVDEV], [test "x$have_libevdev" = "xyes"])
+AC_SUBST(HAVE_LIBEVDEV)
+
+# selinux
+have_selinux=no
+AC_ARG_ENABLE([selinux],
+  AS_HELP_STRING([--enable-selinux], [Enable selinux support @<:@default=auto@:>@]),
+  [enable_selinux=$enableval],
+  [enable_selinux=auto])
+AS_IF([test "x$enable_selinux" != "xno"], [
+  PKG_CHECK_MODULES([SELINUX], [libselinux], [have_selinux=yes], [have_selinux=no])
+  if test "x$enable_selinux" = "xyes" -a "x$have_selinux" = "xno"; then
+    AC_MSG_ERROR([selinux support explicitly requested but dependencies not found])
+  fi
+])
+AS_IF([test "x$have_selinux" = "xyes"], [
+  AC_DEFINE([HAVE_SELINUX], [], [Define if we have selinux])
+])
+AM_CONDITIONAL([HAVE_SELINUX], [test "x$have_selinux" = "xyes"])
+AC_SUBST(HAVE_SELINUX)
+AC_SUBST(SELINUX_LIBS)
+
 dnl ------------------------------------------------------------------------------
 dnl udev-acl - apply ACLs for users with local forground sessions
 dnl ------------------------------------------------------------------------------
@@ -320,6 +360,47 @@ AS_IF([test "x$enable_udev_acl" = "xyes"], [
 	AC_SUBST(UDEVDIR)
 ])
 AM_CONDITIONAL([ENABLE_UDEV_ACL], [test "x$enable_udev_acl" = "xyes"])
+
+# libudev - use udev as a device manager for ck-device-udev.c
+have_libudev=no
+AC_ARG_ENABLE([libudev],
+  AS_HELP_STRING([--enable-udev], [Enable udev support @<:@default=auto@:>@]),
+  [enable_udev=$enableval],
+  [enable_udev=auto])
+AS_IF([test "x$enable_udev" != "xno"], [
+  PKG_CHECK_MODULES([LIBUDEV], [libudev], [have_libudev=yes], [have_libudev=no])
+  PKG_CHECK_MODULES([LIBDRM], [libdrm], [have_libdrm=yes], [have_libdrm=no])
+  AC_CHECK_LIB([prop], [prop_dictionary_get_cstring], [have_libprop=yes], [have_libprop=no])
+  if test "x$have_libudev"  = "xno"; then
+    # DragonFly BSD supplies devattr, we already checked for the header above
+    # make sure we can find the lib
+    AC_CHECK_LIB([devattr], [udev_device_unref], [have_libudev=yes], [have_libudev=no])
+    if test "x$have_libudev"  = "xyes"; then
+	LIBUDEV_LIBS="$LIBUDEV_LIBS -ldevattr"
+    fi
+  fi
+
+  if test "x$have_libprop"  = "xyes"; then
+    LIBUDEV_LIBS="$LIBUDEV_LIBS -lprop"
+  fi
+
+  if test "x$enable_udev"  = "xyes" -a "x$have_udev" = "xno"; then
+    AC_MSG_ERROR([udev support explicitly requested but dependencies not found])
+  fi
+])
+# we need both udev and libdrm for udev support
+AS_IF([test "x$have_libudev" = "xyes" -a "x$have_libdrm" = "xyes"], [
+  AC_DEFINE([HAVE_LIBUDEV], [], [Define if we have libudev])
+])
+AM_CONDITIONAL([HAVE_LIBUDEV], [test "x$have_libudev" = "xyes" -a "x$have_libdrm" = "xyes"])
+AC_SUBST(HAVE_LIBUDEV)
+
+# but we may only require libdrm alone for a future device backend
+AS_IF([test "x$have_libdrm" = "xyes"], [
+  AC_DEFINE([HAVE_LIBDRM], [], [Define if we have libdrm])
+])
+AM_CONDITIONAL([HAVE_LIBDRM], [test "x$have_libdrm" = "xyes"])
+AC_SUBST(HAVE_LIBDRM)
 
 
 dnl ---------------------------------------------------------------------------
@@ -536,6 +617,7 @@ AC_CONFIG_FILES([
 Makefile
 src/Makefile
 tools/70-udev-acl.rules
+tools/71-udev-seat.rules
 tools/Makefile
 tools/linux/Makefile
 tools/freebsd/Makefile
@@ -582,7 +664,10 @@ echo "
         PAM module dir:           ${PAM_MODULE_DIR}
         Build PAM module:         ${msg_pam_module}
         Build udev-acl:           ${enable_udev_acl}
+	udev support:             ${have_libudev}
         cgroup support:           ${have_cgmanager}
+        libevdev support:         ${have_libevdev}
+        SELinux support:          ${have_selinux}
         Build docs:               ${enable_docbook_docs}
         xinitrc dir:              ${XINITRC_DIR}
 

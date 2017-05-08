@@ -210,6 +210,11 @@ dump_user_iter (guint        *uid,
                 return;
         }
 
+        if (uid == NULL) {
+                g_critical ("ck-manager: dump_user_iter: uid == NULL");
+                return;
+        }
+
         user_group = g_strdup_printf ("User %u", *uid);
         if (user_group == NULL) {
                 g_critical ("ck-manager: dump_user_iter: user_group == NULL, OOM");
@@ -510,6 +515,8 @@ throw_error (GDBusMethodInvocation *context,
         va_start (args, format);
         message = g_strdup_vprintf (format, args);
         va_end (args);
+
+        g_debug ("manager: throwing error: %s", message);
 
         g_dbus_method_invocation_return_error (context, CK_MANAGER_ERROR, error_code, "%s", message);
 
@@ -1267,9 +1274,12 @@ session_is_real_user (CkSession *session,
         username = get_user_name (uid);
 
         /* filter out GDM/SDDM/KDM user */
-        if (g_strcmp0 (username, "gdm")  == 0 ||
-            g_strcmp0 (username, "sddm") == 0 ||
-            g_strcmp0 (username, "kdm") == 0) {
+        if (g_strcmp0 (username, "gdm")   == 0 ||
+            g_strcmp0 (username, "_gdm")  == 0 ||
+            g_strcmp0 (username, "sddm")  == 0 ||
+            g_strcmp0 (username, "_sddm") == 0 ||
+            g_strcmp0 (username, "kdm")   == 0 ||
+            g_strcmp0 (username, "_kdm")  == 0) {
                 ret = FALSE;
                 goto out;
         }
@@ -2808,7 +2818,8 @@ open_session_for_leader (CkManager             *manager,
         pgroup = ck_process_group_get ();
         ck_process_group_create (pgroup,
                                  ck_session_leader_get_pid (leader),
-                                 ssid);
+                                 ssid,
+                                 unix_user);
 
         g_hash_table_insert (manager->priv->sessions,
                              g_strdup (ssid),
@@ -2823,9 +2834,6 @@ open_session_for_leader (CkManager             *manager,
 
         ck_seat_add_session (seat, session, NULL);
 
-        /* FIXME: connect to signals */
-        /* FIXME: add weak ref */
-
         /* set the is_local flag for the session */
         g_debug ("setting session %s is_local %s", ssid, is_local ? "TRUE" : "FALSE");
         ck_session_set_is_local (session, is_local, NULL);
@@ -2834,6 +2842,9 @@ open_session_for_leader (CkManager             *manager,
         g_signal_connect (CONSOLE_KIT_SESSION (session), "idle-hint-changed",
                           G_CALLBACK (session_idle_hint_changed),
                           manager);
+
+        /* let consumers know of the new session */
+        console_kit_manager_emit_session_new (CONSOLE_KIT_MANAGER (manager), ssid, ssid);
 
         g_object_unref (session);
         g_free (runtime_dir);
@@ -2908,6 +2919,7 @@ verify_and_open_session_for_leader (CkManager             *manager,
                 g_free (prop_name);
                 g_variant_unref (value);
         }
+        g_variant_iter_free (iter);
 
         g_debug ("CkManager: found is-local=%s", is_local ? "true" : "false");
 
@@ -3144,6 +3156,15 @@ dbus_get_session_for_unix_process (ConsoleKitManager     *ckmanager,
         return TRUE;
 }
 
+static gboolean
+dbus_get_session_by_pid (ConsoleKitManager     *ckmanager,
+                         GDBusMethodInvocation *context,
+                         guint                  pid)
+{
+        dbus_get_session_for_unix_process (ckmanager, context, pid);
+        return TRUE;
+}
+
 /*
   Example:
   dbus-send --system --dest=org.freedesktop.ConsoleKit \
@@ -3216,11 +3237,11 @@ dbus_open_session_with_parameters (ConsoleKitManager     *ckmanager,
 static gboolean
 remove_session_for_cookie (CkManager  *manager,
                            const char *cookie,
+                           CkSessionLeader *leader,
                            GError    **error)
 {
         CkSession       *orig_session;
         char            *orig_ssid;
-        CkSessionLeader *leader;
         char            *sid;
         guint            unix_user;
         gboolean         res;
@@ -3232,14 +3253,16 @@ remove_session_for_cookie (CkManager  *manager,
 
         g_debug ("Removing session for cookie: %s", cookie);
 
-        leader = g_hash_table_lookup (manager->priv->leaders, cookie);
-
         if (leader == NULL) {
+            leader = g_hash_table_lookup (manager->priv->leaders, cookie);
+
+            if (leader == NULL) {
                 g_set_error (error,
                              CK_MANAGER_ERROR,
                              CK_MANAGER_ERROR_GENERAL,
                              "Unable to find session for cookie");
                 goto out;
+            }
         }
 
         /* Need to get the original key/value */
@@ -3296,6 +3319,11 @@ remove_session_for_cookie (CkManager  *manager,
         ck_manager_dump (manager);
 
         manager_update_system_idle_hint (manager);
+
+        /* let consumers know the session is gone */
+        console_kit_manager_emit_session_removed (CONSOLE_KIT_MANAGER (manager),
+                                                  orig_ssid,
+                                                  orig_ssid);
 
         if (get_runtime_dir_for_user (manager, unix_user) == NULL) {
                 /* We removed the session and now there's no runtime dir
@@ -3402,7 +3430,7 @@ dbus_close_session (ConsoleKitManager     *ckmanager,
         }
 
         error = NULL;
-        res = remove_session_for_cookie (manager, cookie, &error);
+        res = remove_session_for_cookie (manager, cookie, NULL, &error);
         if (! res) {
                 throw_error (context, CK_MANAGER_ERROR_FAILED, "%s", error->message);
                 g_clear_error (&error);
@@ -3416,8 +3444,15 @@ dbus_close_session (ConsoleKitManager     *ckmanager,
 }
 
 typedef struct {
+    CkManager *manager;
+    const char *cookie;
+    CkSessionLeader *leader;
+} RemoveEntity;
+
+typedef struct {
         const char *service_name;
-        CkManager  *manager;
+        CkManager *manager;
+        GPtrArray *entities;
 } RemoveLeaderData;
 
 static gboolean
@@ -3432,12 +3467,28 @@ remove_leader_for_connection (const char       *cookie,
 
         name = ck_session_leader_peek_service_name (leader);
         if (strcmp (name, data->service_name) == 0) {
-                remove_session_for_cookie (data->manager, cookie, NULL);
-                ck_session_leader_cancel (leader);
-                return TRUE;
+                RemoveEntity *entity = g_malloc(sizeof(*entity));
+                if (entity) {
+                    entity->manager = data->manager;
+                    entity->cookie = cookie;
+                    entity->leader = leader;
+                    g_ptr_array_add(data->entities, entity);
+                    return TRUE;
+                }
         }
 
         return FALSE;
+}
+
+static void
+destroy_entity(gpointer data)
+{
+    RemoveEntity *ent = data;
+
+    remove_session_for_cookie (ent->manager, ent->cookie, ent->leader, NULL);
+    ck_session_leader_cancel (ent->leader);
+    g_object_unref(ent->leader);
+    g_free(ent);
 }
 
 static void
@@ -3445,16 +3496,22 @@ remove_sessions_for_connection (CkManager   *manager,
                                 const gchar *service_name)
 {
         RemoveLeaderData data;
-
-        data.service_name = service_name;
-        data.manager = manager;
+        guint n;
 
         g_debug ("Removing sessions for service name: %s", service_name);
 
-        g_hash_table_foreach_remove (manager->priv->leaders,
-                                     (GHRFunc)remove_leader_for_connection,
-                                     &data);
+        data.manager = manager;
+        data.service_name = service_name;
+        data.entities = g_ptr_array_new_with_free_func(destroy_entity);
 
+        n = g_hash_table_foreach_steal (manager->priv->leaders,
+                                        (GHRFunc)remove_leader_for_connection,
+                                        &data);
+        while (n-- > 0) {
+            g_ptr_array_remove_index_fast (data.entities, 0);
+        }
+        g_assert (data.entities->len == 0);
+        g_ptr_array_free (data.entities, TRUE);
 }
 
 #ifdef HAVE_POLKIT
@@ -3482,16 +3539,11 @@ on_name_owner_notify (GDBusConnection *connection,
         CkManager *manager = CK_MANAGER (user_data);
         gchar     *service_name, *old_service_name, *new_service_name;
 
-        TRACE ();
-
         g_variant_get (parameters, "(sss)", &service_name, &old_service_name, &new_service_name);
 
         if (strlen (new_service_name) == 0) {
                 remove_sessions_for_connection (manager, old_service_name);
         }
-
-        g_debug ("NameOwnerChanged: service_name='%s', old_service_name='%s' new_service_name='%s'",
-                 service_name, old_service_name, new_service_name);
 }
 
 static gboolean
@@ -3930,6 +3982,7 @@ ck_manager_iface_init (ConsoleKitManagerIface *iface)
         iface->handle_get_sessions_for_user        = dbus_get_sessions_for_user;
         iface->handle_get_session_for_cookie       = dbus_get_session_for_cookie;
         iface->handle_get_session_for_unix_process = dbus_get_session_for_unix_process;
+        iface->handle_get_session_by_pid           = dbus_get_session_by_pid;
         iface->handle_get_current_session          = dbus_get_current_session;
         iface->handle_open_session                 = dbus_open_session;
         iface->handle_open_session_with_parameters = dbus_open_session_with_parameters;
