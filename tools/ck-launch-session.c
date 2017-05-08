@@ -44,8 +44,26 @@
 #include <unistd.h>
 #include <libintl.h>
 #include <locale.h>
+#include <glib.h>
+#include <glib/gstdio.h>
 
 #include "ck-connector.h"
+
+
+
+static gboolean
+check_shell (const gchar *shell)
+{
+        if (shell == NULL || *shell == '\0') {
+                return FALSE;
+        }
+
+        if (!g_file_test (shell, G_FILE_TEST_IS_EXECUTABLE)) {
+                return FALSE;
+        }
+
+        return TRUE;
+}
 
 int
 main (int argc, char **argv)
@@ -58,7 +76,7 @@ main (int argc, char **argv)
 
         /* Setup for i18n */
         setlocale(LC_ALL, "");
- 
+
 #ifdef ENABLE_NLS
         bindtextdomain(PACKAGE, LOCALEDIR);
         textdomain(PACKAGE);
@@ -68,6 +86,7 @@ main (int argc, char **argv)
         if (ckc != NULL) {
                 dbus_error_init (&error);
                 if (ck_connector_open_session (ckc, &error)) {
+                        const char *runtime_dir = NULL;
                         pid = fork ();
                         switch (pid) {
                         case -1:
@@ -77,8 +96,10 @@ main (int argc, char **argv)
                                 setenv ("XDG_SESSION_COOKIE",
                                        ck_connector_get_cookie (ckc), 1);
 
-                                setenv ("XDG_RUNTIME_DIR",
-                                       ck_connector_get_runtime_dir (ckc, &error), 1);
+                                runtime_dir = ck_connector_get_runtime_dir (ckc, &error);
+                                if (runtime_dir != NULL) {
+                                        setenv ("XDG_RUNTIME_DIR", runtime_dir, 1);
+                                }
                                 break;
                         default:
                                 waitpid (pid, &status, 0);
@@ -96,7 +117,7 @@ main (int argc, char **argv)
                 execvp (argv[1], argv + 1);
         } else {
                 shell = getenv ("SHELL");
-                if (shell == NULL) {
+                if (!check_shell (shell)) {
                         shell = _PATH_BSHELL;
                 }
                 execlp (shell, shell, NULL);

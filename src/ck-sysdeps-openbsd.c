@@ -256,7 +256,7 @@ ck_unix_pid_get_env_hash (pid_t pid)
         struct kinfo_proc p;
         int               i;
 
-        kd = kvm_openfiles (NULL, NULL, NULL, O_RDONLY, errbuf);
+        kd = kvm_openfiles (NULL, NULL, NULL, KVM_NO_FILES, errbuf);
         if (kd == NULL) {
 		g_warning ("kvm_openfiles failed: %s", errbuf);
                 return NULL;
@@ -539,4 +539,15 @@ ck_remove_tmpfs (guint uid, const gchar *dest)
 #endif
 
         return FALSE;
+}
+
+gboolean
+ck_sysdeps_init (void)
+{
+        return TRUE;
+}
+
+void
+ck_sysdeps_fini (void)
+{
 }

@@ -167,7 +167,8 @@ ck_get_socket_peer_credentials   (int      socket_fd,
  */
 
 gboolean
-ck_fd_is_a_console (int fd)
+ck_fd_is_a_console (int fd,
+                    const gchar *fnam)
 {
 #if defined(__linux__) || defined(__NetBSD__) || defined(__OpenBSD__)
         struct vt_stat vts;
@@ -185,11 +186,15 @@ ck_fd_is_a_console (int fd)
         kb_ok = 1;
 #endif
 
+#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined (__DragonFly__)
+        return ((isatty (fd) || g_strcmp0 (fnam, "/dev/consolectl") == 0) && kb_ok);
+#else
         return (isatty (fd) && kb_ok);
+#endif
 }
 
-static int
-open_a_console (char *fnam)
+int
+ck_open_a_console (char *fnam)
 {
         int fd;
 
@@ -219,7 +224,7 @@ again:
         if (fd < 0)
                 return -1;
 
-        if (! ck_fd_is_a_console (fd)) {
+        if (! ck_fd_is_a_console (fd, fnam)) {
                 close (fd);
                 fd = -1;
         }
@@ -237,7 +242,7 @@ ck_get_a_console_fd (void)
 #ifdef __FreeBSD__
         /* On FreeBSD, try /dev/consolectl first as this will survive
          * /etc/ttys initialization. */
-        fd = open_a_console ("/dev/consolectl");
+        fd = ck_open_a_console ("/dev/consolectl");
         if (fd >= 0) {
                 goto done;
         }
@@ -245,25 +250,25 @@ ck_get_a_console_fd (void)
 
 #ifdef __sun
         /* On Solaris, first try Sun VT device. */
-        fd = open_a_console ("/dev/vt/active");
+        fd = ck_open_a_console ("/dev/vt/active");
         if (fd >= 0) {
                 goto done;
         }
-        fd = open_a_console ("/dev/vt/0");
+        fd = ck_open_a_console ("/dev/vt/0");
         if (fd >= 0) {
                 goto done;
         }
 #endif
 
 #if defined(__NetBSD__)
-        fd = open_a_console ("/dev/ttyE0");
+        fd = ck_open_a_console ("/dev/ttyE0");
         if (fd >= 0) {
                 goto done;
         }
 #endif
 
 #if defined(__OpenBSD__)
-        fd = open_a_console ("/dev/ttyC0");
+        fd = ck_open_a_console ("/dev/ttyC0");
         if (fd >= 0) {
                 goto done;
         }
@@ -271,36 +276,36 @@ ck_get_a_console_fd (void)
 
 
 #ifdef _PATH_TTY
-        fd = open_a_console (_PATH_TTY);
+        fd = ck_open_a_console (_PATH_TTY);
         if (fd >= 0) {
                 goto done;
         }
 #endif
 
-        fd = open_a_console ("/dev/tty");
+        fd = ck_open_a_console ("/dev/tty");
         if (fd >= 0) {
                 goto done;
         }
 
-	fd = open_a_console ("/dev/tty0");
+	fd = ck_open_a_console ("/dev/tty0");
 	if (fd >= 0) {
 		goto done;
 	}
 
 #ifdef _PATH_CONSOLE
-        fd = open_a_console (_PATH_CONSOLE);
+        fd = ck_open_a_console (_PATH_CONSOLE);
         if (fd >= 0) {
                 goto done;
         }
 #endif
 
-        fd = open_a_console ("/dev/console");
+        fd = ck_open_a_console ("/dev/console");
         if (fd >= 0) {
                 goto done;
         }
 
         for (fd = 0; fd < 3; fd++) {
-                if (ck_fd_is_a_console (fd)) {
+                if (ck_fd_is_a_console (fd, "")) {
                         goto done;
                 }
         }
@@ -408,11 +413,6 @@ ck_generate_runtime_dir_for_user (guint uid)
         struct passwd *pwent;
 
         TRACE ();
-
-        if (uid < 1) {
-                g_debug ("We do not create runtime dirs for root");
-                return NULL;
-        }
 
         errno = 0;
         pwent = getpwuid (uid);

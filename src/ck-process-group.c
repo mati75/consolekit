@@ -207,7 +207,8 @@ ck_process_group_finalize (GObject *object)
 gboolean
 ck_process_group_create (CkProcessGroup *pgroup,
                          pid_t process,
-                         const gchar *ssid)
+                         const gchar *ssid,
+                         guint unix_user)
 {
 #ifdef HAVE_CGMANAGER
         CkProcessGroupPrivate *priv = CK_PROCESS_GROUP_GET_PRIVATE (pgroup);
@@ -237,7 +238,7 @@ ck_process_group_create (CkProcessGroup *pgroup,
         }
 
         errno = 0;
-        pwent = getpwuid (ck_unix_pid_get_uid(process));
+        pwent = getpwuid (unix_user);
         if (pwent == NULL) {
                 g_warning ("Unable to lookup UID: %s", g_strerror (errno));
                 return FALSE;
@@ -255,22 +256,21 @@ ck_process_group_create (CkProcessGroup *pgroup,
 
         ret = cgmanager_move_pid_abs_sync (NULL, priv->cgmanager_proxy, "all", ssid, process);
         if (ret != 0) {
-                /* TRANSLATORS: Please ensure you keep the %s in the
-                 * string somewhere. It's the detailed error message from
-                 * cgmanager.
-                 */
-                throw_nih_warning (_("Failed to move the session leader process to cgroup, the error was: %s"));
-                return FALSE;
-        }
+                NihError *nerr = nih_error_get ();
+                nih_free (nerr);
 
-        ret = cgmanager_remove_on_empty_sync (NULL, priv->cgmanager_proxy, "all", ssid);
-        if (ret != 0) {
-                /* TRANSLATORS: Please ensure you keep the %s in the
-                 * string somewhere. It's the detailed error message from
-                 * cgmanager.
+                /* We failed to move the process into all the cgroups, but
+                 * we really only require the cpuacct for our internal use.
+                 * So try that as a fallback now.
                  */
-                throw_nih_warning (_("Failed to let cgmanager know that it can remove the cgroup when it's empty, the error was: %s"));
-                return FALSE;
+                ret = cgmanager_move_pid_abs_sync (NULL, priv->cgmanager_proxy, "cpuacct", ssid, process);
+                if (ret != 0) {
+                        /* TRANSLATORS: Please ensure you keep the %s in the
+                         * string somewhere. It's the detailed error message from
+                         * cgmanager.
+                         */
+                        throw_nih_warning (_("Failed to move the session leader process to 'cpuacct' cgroup, the error was: %s"));
+                }
         }
 
         return TRUE;

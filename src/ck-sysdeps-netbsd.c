@@ -121,7 +121,7 @@ ck_process_stat_get_tty (CkProcessStat *stat)
 {
         g_return_val_if_fail (stat != NULL, NULL);
 
-        if (stat->tty != NODEV){
+        if (stat->tty == NODEV){
                 return NULL;
         }
 
@@ -529,4 +529,15 @@ ck_remove_tmpfs (guint uid, const gchar *dest)
 #endif
 
         return FALSE;
+}
+
+gboolean
+ck_sysdeps_init (void)
+{
+        return TRUE;
+}
+
+void
+ck_sysdeps_fini (void)
+{
 }

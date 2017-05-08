@@ -29,6 +29,9 @@ G_BEGIN_DECLS
 
 typedef struct _CkProcessStat CkProcessStat;
 
+gboolean     ck_sysdeps_init                  (void);
+void         ck_sysdeps_fini                  (void);
+
 gboolean     ck_process_stat_new_for_unix_pid (pid_t           pid,
                                                CkProcessStat **stat,
                                                GError        **error);
@@ -56,7 +59,10 @@ gboolean     ck_get_socket_peer_credentials   (int             socket_fd,
 
 int          ck_get_a_console_fd              (void);
 
-gboolean     ck_fd_is_a_console               (int             fd);
+gboolean     ck_fd_is_a_console               (int             fd,
+                                               const gchar    *fnam);
+
+int          ck_open_a_console                (char *fnam);
 
 gboolean     ck_is_root_user                  (void);
 
@@ -86,6 +92,7 @@ gboolean     ck_wait_for_active_console_num   (int             console_fd,
 gboolean     ck_system_can_suspend            (void);
 gboolean     ck_system_can_hibernate          (void);
 gboolean     ck_system_can_hybrid_sleep       (void);
+
 
 #ifdef HAVE_SYS_VT_SIGNAL
 gint         ck_get_vt_signal_fd              (void);
