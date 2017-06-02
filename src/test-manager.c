@@ -157,6 +157,10 @@ validate_session (const gchar *path)
 
     print_reply (session, "GetSessionType");
 
+    print_reply (session, "GetSessionClass");
+
+    print_reply (session, "GetSessionState");
+
     print_reply (session, "GetUser");
 
     print_reply (session, "GetUnixUser");
@@ -166,6 +170,8 @@ validate_session (const gchar *path)
     print_reply (session, "GetX11DisplayDevice");
 
     print_reply (session, "GetDisplayDevice");
+
+    print_reply (session, "GetVTNr");
 
     print_reply (session, "GetRemoteHostName");
 
@@ -195,6 +201,7 @@ open_print_and_test_session (GDBusProxy *proxy, const gchar *method)
     GVariant       *open_var = NULL;
     GVariant       *ssid_var = NULL;
     GVariant       *close_var = NULL;
+    GVariant       *activate_var = NULL;
     GError         *error = NULL;
     const gchar    *cookie;
     const gchar    *ssid;
@@ -206,7 +213,8 @@ open_print_and_test_session (GDBusProxy *proxy, const gchar *method)
     g_variant_builder_init (&ck_parameters, G_VARIANT_TYPE ("(a(sv))"));
     g_variant_builder_open (&ck_parameters, G_VARIANT_TYPE ("a(sv)"));
     g_variant_builder_add (&ck_parameters, "(sv)", "unix-user", g_variant_new_int32 (9000));
-    g_variant_builder_add (&ck_parameters, "(sv)", "session-type", g_variant_new_string ("LoginWindow"));
+    g_variant_builder_add (&ck_parameters, "(sv)", "session-type", g_variant_new_string ("tty"));
+    g_variant_builder_add (&ck_parameters, "(sv)", "session-class", g_variant_new_string ("greeter"));
     g_variant_builder_add (&ck_parameters, "(sv)", "x11-display", g_variant_new_string (":0.0"));
     g_variant_builder_add (&ck_parameters, "(sv)", "x11-display-device", g_variant_new_string ("/dev/tty15"));
     g_variant_builder_add (&ck_parameters, "(sv)", "is-local", g_variant_new_boolean (TRUE));
@@ -246,6 +254,34 @@ open_print_and_test_session (GDBusProxy *proxy, const gchar *method)
 
     validate_session (ssid);
 
+    g_print ("calling LockSession (expected: GDBus.Error:org.freedesktop.DBus.Error.AccessDenied if not run as root)\n");
+    activate_var = g_dbus_proxy_call_sync (proxy, "LockSession", g_variant_new ("(s)", ssid), G_DBUS_CALL_FLAGS_NONE, 3000, NULL, &error);
+    if (activate_var == NULL) {
+        g_print ("returned NULL\t");
+
+        if (error)
+            g_print ("error %s", error->message);
+
+        g_print ("\n");
+        g_clear_error (&error);
+    }
+    if (activate_var)
+        g_variant_unref (activate_var);
+
+    g_print ("calling UnlockSession (expected: GDBus.Error:org.freedesktop.DBus.Error.AccessDenied if not run as root)\n");
+    activate_var = g_dbus_proxy_call_sync (proxy, "UnlockSession", g_variant_new ("(s)", ssid), G_DBUS_CALL_FLAGS_NONE, 3000, NULL, &error);
+    if (activate_var == NULL) {
+        g_print ("returned NULL\t");
+
+        if (error)
+            g_print ("error %s", error->message);
+
+        g_print ("\n");
+        g_clear_error (&error);
+    }
+    if (activate_var)
+        g_variant_unref (activate_var);
+
     /* test closing our session */
     g_print ("calling CloseSession\t");
     close_var = g_dbus_proxy_call_sync (proxy, "CloseSession",
@@ -275,7 +311,7 @@ out:
 }
 
 static gboolean
-validate_stuff ()
+validate_stuff (void)
 {
     gint      fd;
     GVariant *session_var = NULL, *close_var = NULL;
@@ -336,7 +372,7 @@ validate_stuff ()
     }
 
     g_variant_get (close_var, "(b)", &is_session_closed);
-    g_print ("session closed? %s", is_session_closed ? "Closed" : "Not Closed");
+    g_print ("session closed? %s\n", is_session_closed ? "Closed" : "Not Closed");
 
     g_print ("done printing stuff\n\n");
 
