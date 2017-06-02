@@ -50,6 +50,7 @@ static struct {
         { "x11-display",        "s", G_TYPE_STRING },
         { "remote-host-name",   "s", G_TYPE_STRING },
         { "session-type",       "s", G_TYPE_STRING },
+        { "session-class",      "s", G_TYPE_STRING },
         { "is-local",           "b", G_TYPE_BOOLEAN },
         { "unix-user",          "i", G_TYPE_INT },
         { "user",               "i", G_TYPE_INT },
@@ -74,8 +75,7 @@ enum {
         PROP_0,
 };
 
-static void     ck_session_leader_class_init  (CkSessionLeaderClass *klass);
-static void     ck_session_leader_init        (CkSessionLeader      *session_leader);
+
 static void     ck_session_leader_finalize    (GObject              *object);
 
 G_DEFINE_TYPE (CkSessionLeader, ck_session_leader, G_TYPE_OBJECT)
@@ -146,7 +146,7 @@ have_override_parameter (CkSessionLeader *leader,
 static void
 lookup_parameter_type (const char *name, const char **variant_type, GType *gtype)
 {
-        int i;
+        guint i;
 
         *gtype = G_TYPE_INVALID;
 

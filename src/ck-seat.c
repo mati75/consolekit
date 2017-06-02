@@ -76,8 +76,6 @@ enum {
 
 static guint signals [LAST_SIGNAL] = { 0, };
 
-static void     ck_seat_class_init  (CkSeatClass *klass);
-static void     ck_seat_init        (CkSeat      *seat);
 static void     ck_seat_finalize    (GObject     *object);
 static void     ck_seat_iface_init  (ConsoleKitSeatIface *iface);
 
@@ -247,18 +245,22 @@ activated_cb (CkVtMonitor    *vt_monitor,
               ActivateData   *adata)
 {
         if (adata->num == num) {
-                g_dbus_method_invocation_return_value (adata->context, g_variant_new_boolean (TRUE));
+                if (adata->context != NULL) {
+                        g_dbus_method_invocation_return_value (adata->context, g_variant_new_boolean (TRUE));
+                }
         } else {
-                throw_error (adata->context, CK_SEAT_ERROR_GENERAL, _("Another session was activated while waiting"));
+                if (adata->context != NULL) {
+                        throw_error (adata->context, CK_SEAT_ERROR_GENERAL, _("Another session was activated while waiting"));
+                }
         }
 
         g_signal_handler_disconnect (vt_monitor, adata->handler_id);
 }
 
-static gpointer
-_seat_activate_session (CkSeat                *seat,
-                        CkSession             *session,
-                        GDBusMethodInvocation *context)
+gpointer
+ck_seat_activate_session (CkSeat                *seat,
+                          CkSession             *session,
+                          GDBusMethodInvocation *context)
 {
         gboolean      res;
         gboolean      ret;
@@ -378,7 +380,7 @@ dbus_activate_session (ConsoleKitSeat        *ckseat,
                 session = g_hash_table_lookup (seat->priv->sessions, ssid);
         }
 
-        error = _seat_activate_session (seat, session, context);
+        error = ck_seat_activate_session (seat, session, context);
 
         if (error != NULL) {
                 throw_error (context, error->code, error->message);
@@ -699,7 +701,7 @@ session_activate (CkSession             *session,
 {
         TRACE ();
 
-        return _seat_activate_session (seat, session, context);
+        return ck_seat_activate_session (seat, session, context);
 
 }
 
@@ -832,7 +834,7 @@ ck_seat_has_device (CkSeat      *seat,
                     gboolean    *result,
                     GError      *error)
 {
-        int i;
+        guint i;
 
         g_return_val_if_fail (CK_IS_SEAT (seat), FALSE);
 
@@ -1330,7 +1332,7 @@ ck_seat_new_with_devices (const char            *sid,
                           GDBusConnection       *connection)
 {
         GObject *object;
-        int      i;
+        guint    i;
 
         object = g_object_new (CK_TYPE_SEAT,
                                "id", sid,
@@ -1511,7 +1513,7 @@ ck_seat_run_programs (CkSeat    *seat,
 
         extra_env[n++] = NULL;
 
-        g_assert(n <= G_N_ELEMENTS(extra_env));
+        g_assert((guint)n <= G_N_ELEMENTS(extra_env));
 
         ck_run_programs (SYSCONFDIR "/ConsoleKit/run-seat.d", action, extra_env);
         ck_run_programs (LIBDIR "/ConsoleKit/run-seat.d", action, extra_env);
@@ -1549,7 +1551,7 @@ ck_seat_dump (CkSeat   *seat,
         char    *group_name;
         GString *str;
         char    *s;
-        int      n;
+        guint    n;
 
         group_name = g_strdup_printf ("Seat %s", seat->priv->id);
 
@@ -1564,7 +1566,7 @@ ck_seat_dump (CkSeat   *seat,
         str = g_string_new (NULL);
         if (seat->priv->devices != NULL) {
                 for (n = 0; n < seat->priv->devices->len; n++) {
-                        int          m;
+                        guint        m;
                         GValueArray *va;
 
                         va = seat->priv->devices->pdata[n];
