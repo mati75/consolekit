@@ -33,7 +33,7 @@
 #include <sys/ioctl.h>
 #include <pwd.h>
 
-#ifdef __linux__
+#ifdef HAVE_LINUX_KD_H
 #include <linux/kd.h>
 #endif
 
@@ -57,6 +57,26 @@
 #include <ucred.h>
 #endif
 
+#ifdef HAVE_KVM_H
+#include <kvm.h>
+#endif
+
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+
+#ifdef HAVE_SYS_SYSCTL_H
+#include <sys/sysctl.h>
+#endif
+
+#ifdef HAVE_SYS_USER_H
+#include <sys/user.h>
+#endif
+
+#ifdef HAVE_PATHS_H
+#include <paths.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -74,9 +94,9 @@ ck_get_socket_peer_credentials   (int      socket_fd,
                                   uid_t   *uid,
                                   GError **error)
 {
-        gboolean ret;
-        uid_t    uid_read;
-        pid_t    pid_read;
+        gboolean ret = FALSE;
+        uid_t    uid_read = 0;
+        pid_t    pid_read = 0;
 
 #ifdef SO_PEERCRED
 #ifndef __OpenBSD__
@@ -88,7 +108,6 @@ ck_get_socket_peer_credentials   (int      socket_fd,
 
         pid_read = -1;
         uid_read = -1;
-        ret = FALSE;
 
         cr_len = sizeof (cr);
 
@@ -135,6 +154,10 @@ ck_get_socket_peer_credentials   (int      socket_fd,
         }
 #elif defined(HAVE_GETPEEREID)
 	gid_t dummy;
+        char errbuf[_POSIX2_LINE_MAX];
+        int cnt = 0;
+        kvm_t* kd;
+        struct kinfo_proc * prc;
 
         if (getpeereid (socket_fd, &uid_read, &dummy) == 0) {
                 ret = TRUE;
@@ -142,6 +165,23 @@ ck_get_socket_peer_credentials   (int      socket_fd,
                 g_warning ("Failed to getpeereid() credentials: %s\n",
                            g_strerror (errno));
         }
+#ifdef __FreeBSD__
+        kd = kvm_openfiles (NULL, _PATH_DEVNULL, NULL, O_RDONLY, errbuf);
+        if (kd == NULL) {
+                g_warning ("kvm_openfiles failed: %s", errbuf);
+                return FALSE;
+        }
+
+        prc = kvm_getprocs (kd, KERN_PROC_UID, uid_read, &cnt);
+        for (int i = 0; i < cnt; i++) {
+                if(strncmp (prc[i].ki_comm, "Xorg", 4) == 0) {
+                        pid_read = prc[i].ki_pid;
+                        break;
+                }
+        }
+
+        kvm_close(kd);
+#endif /* __FreeBSD__ */
 #else /* !SO_PEERCRED && !HAVE_GETPEERUCRED */
         g_warning ("Socket credentials not supported on this OS\n");
 #endif
@@ -238,15 +278,6 @@ ck_get_a_console_fd (void)
         int fd;
 
         fd = -1;
-
-#ifdef __FreeBSD__
-        /* On FreeBSD, try /dev/consolectl first as this will survive
-         * /etc/ttys initialization. */
-        fd = ck_open_a_console ("/dev/consolectl");
-        if (fd >= 0) {
-                goto done;
-        }
-#endif
 
 #ifdef __sun
         /* On Solaris, first try Sun VT device. */

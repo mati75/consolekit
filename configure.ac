@@ -3,13 +3,13 @@ AC_COPYRIGHT([Copyright 2014-2017 The ConsoleKit2 Team])
 
 AC_PREREQ([2.62])
 AC_INIT([ConsoleKit2],
-        [1.1.2],
+        [1.2.0],
         [https://github.com/ConsoleKit2/ConsoleKit2/issues],
         [ConsoleKit2],
         [https://github.com/ConsoleKit2/ConsoleKit2])
 VERSION_MAJOR=1
-VERSION_MINOR=1
-VERSION_REVISION=2
+VERSION_MINOR=2
+VERSION_REVISION=0
 
 
 COPYRIGHT_YEARS="2014 - 2017"
@@ -61,6 +61,8 @@ m4_define([x11_minimum_version], [1.0.0])
 m4_define([polkit_minimum_version], [0.92])
 m4_define([cgmanager_minimum_version], [0.0.0])
 m4_define([libevdev_minimum_version], [0.2])
+m4_define([libdrm_minimum_version], [2.4.60])
+m4_define([libudev_minimum_version], [190])
 m4_define([selinux_minimum_version], [1.0])
 
 AC_CHECK_HEADERS([unistd.h paths.h sys/vt.h sys/consio.h fcntl.h limits.h \
@@ -69,7 +71,8 @@ AC_CHECK_HEADERS([unistd.h paths.h sys/vt.h sys/consio.h fcntl.h limits.h \
                   sys/wait.h sys/resource.h sys/mount.h sys/param.h ftw.h \
 		  sys/sysmacros.h sys/types.h libudev.h linux/input.h \
 		  sys/mkdev.h devattr.h sys/kd.h sys/kbio.h libprop/proplib.h \
-		  linux/kd.h])
+		  linux/kd.h sys/queue.h sys/stat.h sys/fcntl.h \
+		  dev/wscons/wsdisplay_usl_io.h dev/wscons/wsconsio.h])
 
 AC_CHECK_FUNCS([getpeerucred getpeereid memset setenv strchr strdup \
                 strerror strrchr strspn strstr strtol strtoul uname \
@@ -201,6 +204,11 @@ case "$host" in
         if test "x$have_kvm" = "xyes"; then
                 KVM_LIBS="-lkvm"
         fi
+	AC_CHECK_LIB(procstat, procstat_open_sysctl, have_procstat=yes,
+                AC_MSG_WARN([Unable to find libprocstat which is used on FreeBSD]))
+	if test "x$have_procstat" = "xyes"; then
+                KVM_LIBS="${KVM_LIBS} -lprocstat"
+        fi
         ;;
         *-*-netbsd*)
         CK_BACKEND="netbsd"
@@ -280,6 +288,16 @@ XDT_CHECK_OPTIONAL_PACKAGE([LIBEVDEV], [libevdev], [libevdev_minimum_version],
     [libevdev],
     [libevdev - for device management with a sessions controller])
 
+# libdrm - for device management with a session controller
+XDT_CHECK_OPTIONAL_PACKAGE([LIBDRM], [libdrm], [libdrm_minimum_version],
+    [libdrm],
+    [libdrm - for device management with a sessions controller])
+
+# libudev - use udev as a device manager for ck-device-udev.c
+XDT_CHECK_OPTIONAL_PACKAGE([LIBUDEV], [libudev], [libudev_minimum_version],
+    [libudev],
+    [libudev - use udev as a device manager for ck-device-udev.c])
+
 # selinux
 XDT_CHECK_OPTIONAL_PACKAGE([SELINUX], [libselinux], [selinux_minimum_version], [libselinux],
                            [Security-Enhanced Linux support])
@@ -304,46 +322,41 @@ AS_IF([test "x$enable_udev_acl" = "xyes"], [
 ])
 AM_CONDITIONAL([ENABLE_UDEV_ACL], [test "x$enable_udev_acl" = "xyes"])
 
-# libudev - use udev as a device manager for ck-device-udev.c
-have_libudev=no
-AC_ARG_ENABLE([libudev],
-  AS_HELP_STRING([--enable-libudev], [Enable udev support @<:@default=auto@:>@]),
-  [enable_libudev=$enableval],
-  [enable_libudev=auto])
-AS_IF([test "x$enable_libudev" != "xno"], [
-  PKG_CHECK_MODULES([LIBUDEV], [libudev], [have_libudev=yes], [have_libudev=no])
-  PKG_CHECK_MODULES([LIBDRM], [libdrm], [have_libdrm=yes], [have_libdrm=no])
-  AC_CHECK_LIB([prop], [prop_dictionary_get_cstring], [have_libprop=yes], [have_libprop=no])
-  if test "x$have_libudev"  = "xno"; then
-    # DragonFly BSD supplies devattr, we already checked for the header above
-    # make sure we can find the lib
-    AC_CHECK_LIB([devattr], [udev_device_unref], [have_libudev=yes], [have_libudev=no])
-    if test "x$have_libudev"  = "xyes"; then
-	LIBUDEV_LIBS="$LIBUDEV_LIBS -ldevattr"
-    fi
-  fi
 
-  if test "x$have_libprop"  = "xyes"; then
-    LIBUDEV_LIBS="$LIBUDEV_LIBS -lprop"
-  fi
 
-  if test "x$enable_libudev"  = "xyes" -a "x$have_libudev" = "xno"; then
-    AC_MSG_ERROR([udev support explicitly requested but dependencies not found])
-  fi
-])
-# we need both udev and libdrm for udev support
-AS_IF([test "x$have_libudev" = "xyes" -a "x$have_libdrm" = "xyes"], [
-  AC_DEFINE([HAVE_LIBUDEV], [], [Define if we have libudev])
-])
-AM_CONDITIONAL([HAVE_LIBUDEV], [test "x$have_libudev" = "xyes" -a "x$have_libdrm" = "xyes"])
-AC_SUBST(HAVE_LIBUDEV)
 
-# but we may only require libdrm alone for a future device backend
-AS_IF([test "x$have_libdrm" = "xyes"], [
-  AC_DEFINE([HAVE_LIBDRM], [], [Define if we have libdrm])
+# DragonFly BSD supplies devattr, we already checked for the header above
+# make sure we can find the lib
+have_devattr=no
+AC_CHECK_LIB([devattr], [udev_device_unref], [
+	LIBS="$LIBS -ldevattr"
+	have_devattr=yes
+	])
+
+have_libprop=no
+AC_CHECK_LIB([prop], [prop_dictionary_get_cstring], [
+	LIBS="$LIBS -lprop"
+	have_libprop=yes
+	])
+
+
+use_udev=no
+if test ["x$LIBUDEV_FOUND" = "xyes" -a "x$LIBDRM_FOUND" = "xyes"]; then
+	use_udev=yes
+fi
+if test ["$have_devattr" = "yes" -a "$have_libprop" = "yes"]; then
+	use_udev=yes
+fi
+
+
+
+# we need both udev/devattr and libdrm for udev support
+AS_IF(test ["$use_udev" = "yes"], [
+  AC_DEFINE([USE_UDEV_BACKEND], [1], [Define if we meet requirements to use the udev backend])
 ])
-AM_CONDITIONAL([HAVE_LIBDRM], [test "x$have_libdrm" = "xyes"])
-AC_SUBST(HAVE_LIBDRM)
+AM_CONDITIONAL([USE_UDEV_BACKEND], [test ["$use_udev" = "yes"]])
+AC_SUBST(USE_UDEV_BACKEND)
+
 
 
 dnl ---------------------------------------------------------------------------
@@ -561,8 +574,13 @@ echo "
         Build backend:            ${CK_BACKEND}
         PAM module dir:           ${PAM_MODULE_DIR}
         Build PAM module:         ${msg_pam_module}
-        Build udev-acl:           ${enable_udev_acl}
-	udev support:             ${have_libudev}"
+        Build udev-acl:           ${enable_udev_acl}"
+
+if test x"$LIBUDEV_FOUND" = x"yes"; then
+echo "        udev support              yes"
+else
+echo "        udev support              no"
+fi
 
 if test x"$CGMANAGER_FOUND" = x"yes"; then
 echo "        cgroup support            yes"
@@ -574,6 +592,18 @@ if test x"$LIBEVDEV_FOUND" = x"yes"; then
 echo "        libevdev support          yes"
 else
 echo "        libevdev support          no"
+fi
+
+if test x"$LIBDRM_FOUND" = x"yes"; then
+echo "        libdrm support            yes"
+else
+echo "        libdrm support            no"
+fi
+
+if test "$use_udev" = "yes"; then
+echo "        session controller        udev"
+else
+echo "        session controller        none"
 fi
 
 if test x"$POLKIT_FOUND" = x"yes"; then
