@@ -46,6 +46,14 @@
 #include <sys/kbio.h>
 #endif
 
+#ifdef HAVE_DEV_WSCONS_WSCONSIO_H
+#include <dev/wscons/wsconsio.h>
+#endif
+
+#ifdef HAVE_DEV_WSCONS_WSDISPLAY_USL_IO_H
+#include <dev/wscons/wsdisplay_usl_io.h>
+#endif
+
 #include <glib.h>
 #include <glib-unix.h>
 #include <glib/gi18n.h>
@@ -1380,7 +1388,9 @@ vt_leave_handler (gpointer data)
         ck_session_pause_all_devices (session, TRUE);
 
         /* release control */
+#if defined(VT_RELDISP)
         ioctl (session->priv->tty_fd, VT_RELDISP, 1);
+#endif
 
         return TRUE;
 }
@@ -1397,7 +1407,9 @@ vt_acquire_handler (gpointer data)
 
         /* ack that we are getting control, but let the normal
          * process handle granting access */
+#if defined(VT_RELDISP)
         ioctl (session->priv->tty_fd, VT_RELDISP, VT_ACKACQ);
+#endif
 
         return TRUE;
 }
@@ -1406,8 +1418,9 @@ static void
 ck_session_setup_vt_signal (CkSession *session,
                             guint      vtnr)
 {
+#if defined(KDGKBMODE) && defined(KDSETMODE) && defined(KD_GRAPHICS)
         struct vt_mode mode = { 0 };
-        int    graphical_mode;
+        int    graphical_mode = KD_TEXT;
 
         session->priv->tty_fd = ck_open_a_console (ck_get_console_device_for_num (vtnr));
 
@@ -1419,10 +1432,12 @@ ck_session_setup_vt_signal (CkSession *session,
 
         /* So during setup here, we need to ensure we're in graphical mode,
          * otherwise it will try to draw stuff in the background */
+#if defined(KDGETMODE)
         if (ioctl (session->priv->tty_fd, KDGETMODE, &graphical_mode) != 0) {
                 g_warning ("failed to get current VT mode");
                 return;
         }
+#endif
 
         if (graphical_mode == KD_TEXT) {
                 if (ioctl (session->priv->tty_fd, KDSETMODE, KD_GRAPHICS) != 0) {
@@ -1434,15 +1449,18 @@ ck_session_setup_vt_signal (CkSession *session,
                 return;
         }
 
+/* We define KDSKBMUTE above so we can't do the usual check */
 #if defined(__linux__)
         if (ioctl (session->priv->tty_fd, KDSKBMUTE, 1) != 0) {
                 g_warning ("failed to mute FD with KDSKBMUTE");
         }
-#endif
+#endif /* defined(__linux__) */
 
+#if defined(KDSKBMODE)
         if (ioctl (session->priv->tty_fd, KDSKBMODE, KBD_OFF_MODE) != 0) {
                 g_warning ("failed to turn off keyboard");
         }
+#endif
 
         mode.mode = VT_PROCESS;
         mode.relsig = SIGUSR1;
@@ -1464,6 +1482,7 @@ ck_session_setup_vt_signal (CkSession *session,
                                                               (GSourceFunc)vt_acquire_handler,
                                                               session,
                                                               NULL);
+#endif /* defined(KDGKBMODE) && defined(KDSETMODE) && defined(KD_GRAPHICS) */
 }
 
 static void
@@ -1502,20 +1521,25 @@ ck_session_controller_cleanup (CkSession *session)
 
         ck_session_remove_all_devices (session);
 
+#if defined(VT_SETMODE)
         /* Remove the old signal call backs, restore VT switching to auto
          * and text mode (put it back the way we found it) */
         if (session->priv->sig_watch_s1 != 0) {
                 struct vt_mode mode = { 0 };
                 mode.mode = VT_AUTO;
 
+/* We define KDSKBMUTE above so we can't do the usual check */
 #if defined(__linux__)
                 if (ioctl (session->priv->tty_fd, KDSKBMUTE, 0) != 0) {
                         g_warning ("failed to unmute FD with KDSKBMUTE");
                 }
-#endif
+#endif /* defined(__linux__) */
+
+#if defined(KDSKBMODE)
                 if (ioctl(session->priv->tty_fd, KDSKBMODE, session->priv->old_kbd_mode) != 0) {
                         g_warning ("failed to restore old keyboard mode");
                 }
+#endif /* defined(KDSKBMODE) */
 
                 if (ioctl (session->priv->tty_fd, VT_SETMODE, &mode) < 0) {
                         g_warning ("failed to return control of vt handling");
@@ -1536,6 +1560,7 @@ ck_session_controller_cleanup (CkSession *session)
                 g_close (session->priv->tty_fd, NULL);
                 session->priv->tty_fd = -1;
         }
+#endif /* defined(VT_SETMODE) */
 }
 
 void
