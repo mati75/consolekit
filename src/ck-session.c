@@ -1247,6 +1247,7 @@ ck_session_set_seat_id (CkSession      *session,
                         GError        **error)
 {
         GVariant *seat = NULL;
+        gchar **seat_split;
 
         g_return_val_if_fail (CK_IS_SESSION (session), FALSE);
 
@@ -1254,7 +1255,16 @@ ck_session_set_seat_id (CkSession      *session,
         session->priv->seat_id = g_strdup (id);
 
         if (id != NULL) {
-                seat = g_variant_new ("(so)", id, id);
+                /* we need to remove the prefix from the first seat_id returned */
+                seat_split = g_strsplit (id, "/org/freedesktop/ConsoleKit/", 2);
+
+                if (seat_split[0] == NULL) {
+                        g_critical ("id %s is invalid or g_strsplit has changed", id);
+                        return FALSE;
+                }
+
+                seat = g_variant_new ("(so)", seat_split[1], id);
+                g_strfreev (seat_split);
         }
 
         console_kit_session_set_seat (CONSOLE_KIT_SESSION (session), seat);
@@ -1599,6 +1609,14 @@ ck_session_set_session_controller (CkSession   *session,
         if (vtnr > 0) {
                 ck_session_setup_vt_signal (session, vtnr);
         }
+}
+
+static gboolean
+dbus_can_control_session (ConsoleKitSession *object,
+                          GDBusMethodInvocation *invocation)
+{
+        console_kit_session_complete_can_control_session (object, invocation, ck_device_is_server_managed ());
+        return TRUE;
 }
 
 static gboolean
@@ -2079,6 +2097,7 @@ ck_session_iface_init (ConsoleKitSessionIface *iface)
         iface->handle_unlock                 = dbus_unlock;
         iface->handle_get_idle_hint          = dbus_get_idle_hint;
         iface->handle_get_xdgruntime_dir     = dbus_get_runtime_dir;
+        iface->handle_can_control_session    = dbus_can_control_session;
         iface->handle_take_control           = dbus_take_control;
         iface->handle_release_control        = dbus_release_control;
         iface->handle_take_device            = dbus_take_device;

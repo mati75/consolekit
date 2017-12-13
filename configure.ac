@@ -3,13 +3,13 @@ AC_COPYRIGHT([Copyright 2014-2017 The ConsoleKit2 Team])
 
 AC_PREREQ([2.62])
 AC_INIT([ConsoleKit2],
-        [1.2.0],
+        [1.2.1],
         [https://github.com/ConsoleKit2/ConsoleKit2/issues],
         [ConsoleKit2],
         [https://github.com/ConsoleKit2/ConsoleKit2])
 VERSION_MAJOR=1
 VERSION_MINOR=2
-VERSION_REVISION=0
+VERSION_REVISION=1
 
 
 COPYRIGHT_YEARS="2014 - 2017"
@@ -30,8 +30,7 @@ AC_SEARCH_LIBS([strerror],[cposix])
 AC_PROG_CC
 AM_PROG_CC_C_O
 AC_HEADER_STDC
-AC_DISABLE_STATIC
-LT_INIT
+LT_INIT([disable-static])
 AC_HEADER_STDC
 AC_FUNC_FORK
 AC_FUNC_MALLOC
@@ -72,7 +71,8 @@ AC_CHECK_HEADERS([unistd.h paths.h sys/vt.h sys/consio.h fcntl.h limits.h \
 		  sys/sysmacros.h sys/types.h libudev.h linux/input.h \
 		  sys/mkdev.h devattr.h sys/kd.h sys/kbio.h libprop/proplib.h \
 		  linux/kd.h sys/queue.h sys/stat.h sys/fcntl.h \
-		  dev/wscons/wsdisplay_usl_io.h dev/wscons/wsconsio.h])
+		  dev/wscons/wsdisplay_usl_io.h dev/wscons/wsconsio.h \
+		  vfs/tmpfs/tmpfs_mount.h])
 
 AC_CHECK_FUNCS([getpeerucred getpeereid memset setenv strchr strdup \
                 strerror strrchr strspn strstr strtol strtoul uname \
@@ -197,7 +197,7 @@ case "$host" in
                 KVM_LIBS="-lkvm"
         fi
         ;;
-        *-*-freebsd* | *-*-kfreebsd*-gnu | *-*-dragonfly*)
+        *-*-freebsd* | *-*-kfreebsd*-gnu )
         CK_BACKEND="freebsd"
         AC_CHECK_LIB(kvm, kvm_openfiles, have_kvm=yes,
                 AC_MSG_ERROR([Unable to find libkvm which is needed on FreeBSD/DragonflyBSD]))
@@ -208,6 +208,19 @@ case "$host" in
                 AC_MSG_WARN([Unable to find libprocstat which is used on FreeBSD]))
 	if test "x$have_procstat" = "xyes"; then
                 KVM_LIBS="${KVM_LIBS} -lprocstat"
+        fi
+        ;;
+        *-*-dragonfly*)
+        CK_BACKEND="dragonfly"
+        AC_CHECK_LIB(kvm, kvm_openfiles, have_kvm=yes,
+        AC_MSG_ERROR([Unable to find libkvm which is needed on DragonflyBSD]))
+        if test "x$have_kvm" = "xyes"; then
+        KVM_LIBS="-lkvm"
+        fi
+	      AC_CHECK_LIB(procstat, procstat_open_sysctl, have_procstat=yes,
+        AC_MSG_WARN([Unable to find libprocstat which is used on FreeBSD]))
+	      if test "x$have_procstat" = "xyes"; then
+        KVM_LIBS="${KVM_LIBS} -lprocstat"
         fi
         ;;
         *-*-netbsd*)
@@ -236,6 +249,7 @@ AC_SUBST(KVM_LIBS)
 
 AM_CONDITIONAL(CK_COMPILE_LINUX, test x$CK_BACKEND = xlinux, [Compiling for Linux])
 AM_CONDITIONAL(CK_COMPILE_FREEBSD, test x$CK_BACKEND = xfreebsd, [Compiling for FreeBSD])
+AM_CONDITIONAL(CK_COMPILE_DRAGONFLY, test x$CK_BACKEND = xdragonfly, [Compiling for DragonFly])
 AM_CONDITIONAL(CK_COMPILE_NETBSD, test x$CK_BACKEND = xnetbsd, [Compiling for NetBSD])
 AM_CONDITIONAL(CK_COMPILE_OPENBSD, test x$CK_BACKEND = xopenbsd, [Compiling for OpenBSD])
 AM_CONDITIONAL(CK_COMPILE_SOLARIS, test x$CK_BACKEND = xsolaris, [Compiling for Solaris])
@@ -606,7 +620,7 @@ else
 echo "        session controller        none"
 fi
 
-if test x"$POLKIT_FOUND" = x"yes"; then
+if test x"$SELINUX_FOUND" = x"yes"; then
 echo "        SELinux support:          yes"
 else
 echo "        SELinux support:          no"

@@ -49,6 +49,10 @@
 #include <sys/mount.h>
 #endif
 
+#ifdef HAVE_VFS_TMPFS_TMPFS_MOUNT_H
+#include <vfs/tmpfs/tmpfs_mount.h>
+#endif
+
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -158,7 +162,7 @@ stat2proc (pid_t        pid,
 {
         struct kinfo_proc p;
         char              *ttname;
-        guint             num;
+        int               num;
         int               tty_maj;
         int               tty_min;
 
@@ -166,41 +170,41 @@ stat2proc (pid_t        pid,
                 return FALSE;
         }
 
-        num = OCOMMLEN;
+        num = MAXCOMLEN;
         if (num >= sizeof P->cmd) {
                 num = sizeof P->cmd - 1;
         }
 
-        memcpy (P->cmd, p.ki_ocomm, num);
+        memcpy (P->cmd, p.kp_comm, num);
 
         P->cmd[num]   = '\0';
-        P->pid        = p.ki_pid;
-        P->ppid       = p.ki_ppid;
-        P->pgrp       = p.ki_pgid;
-        P->session    = p.ki_sid;
-        P->rss        = p.ki_rssize;
-        P->vsize      = p.ki_size;
-        P->start_time = p.ki_start.tv_sec;
-        P->wchan      = (unsigned long) p.ki_wchan;
-        P->state      = p.ki_stat;
-        P->nice       = p.ki_nice;
-        P->flags      = p.ki_sflag;
-        P->tpgid      = p.ki_tpgid;
-        P->processor  = p.ki_oncpu;
-        P->nlwp       = p.ki_numthreads;
+        P->pid        = p.kp_pid;
+        P->ppid       = p.kp_ppid;
+        P->pgrp       = p.kp_pgid;
+        P->session    = p.kp_sid;
+        P->rss        = p.kp_vm_rssize;
+        P->vsize      = p.kp_vm_map_size;
+        P->start_time = p.kp_start.tv_sec;
+        P->wchan      = (unsigned long) p.kp_lwp.kl_wchan;
+        P->state      = p.kp_stat;
+        P->nice       = p.kp_nice;
+        P->flags      = p.kp_flags;
+        P->tpgid      = p.kp_tpgid;
+        P->processor  = p.kp_lwp.kl_cpuid;
+        P->nlwp       = p.kp_nthreads;
 
         /* we like it Linux-encoded :-) */
-        tty_maj = major (p.ki_tdev);
-        tty_min = minor (p.ki_tdev);
+        tty_maj = major (p.kp_tdev);
+        tty_min = minor (p.kp_tdev);
         P->tty = DEV_ENCODE (tty_maj,tty_min);
 
         snprintf (P->tty_text, sizeof P->tty_text, "%3d,%-3d", tty_maj, tty_min);
 
-        if (p.ki_tdev != NODEV && (ttname = devname (p.ki_tdev, S_IFCHR)) != NULL) {
+        if (p.kp_tdev != NODEV && (ttname = devname (p.kp_tdev, S_IFCHR)) != NULL) {
                 memcpy (P->tty_text, ttname, sizeof (P->tty_text));
         }
 
-        if (p.ki_tdev == NODEV) {
+        if (p.kp_tdev == NODEV) {
                 memcpy (P->tty_text, "   ?   ", sizeof (P->tty_text));
         }
 
@@ -330,7 +334,7 @@ ck_unix_pid_get_uid (pid_t pid)
         res = get_kinfo_proc (pid, &p);
 
         if (res) {
-                uid = p.ki_uid;
+                uid = p.kp_uid;
         }
 
         return uid;
@@ -475,87 +479,42 @@ ck_get_active_console_num (int    console_fd,
         return ret;
 }
 
-static gchar *
-get_string_sysctl (GError **err, const gchar *format, ...)
-{
-        va_list args;
-        gchar *name;
-        size_t value_len;
-        gchar *str = NULL;
-
-        g_return_val_if_fail(format != NULL, FALSE);
-
-        va_start (args, format);
-        name = g_strdup_vprintf (format, args);
-        va_end (args);
-
-        if (sysctlbyname (name, NULL, &value_len, NULL, 0) == 0) {
-                str = g_new (char, value_len + 1);
-                if (sysctlbyname (name, str, &value_len, NULL, 0) == 0) {
-                        str[value_len] = 0;
-                } else {
-                        g_free (str);
-                        str = NULL;
-                }
-        }
-
-        if (!str)
-                g_set_error (err, 0, 0, "%s", g_strerror(errno));
-
-        g_free(name);
-        return str;
-}
-
-static gboolean
-freebsd_supports_sleep_state (const gchar *state)
-{
-        gboolean ret = FALSE;
-        gchar *sleep_states;
-
-        sleep_states = get_string_sysctl (NULL, "hw.acpi.supported_sleep_state");
-        if (sleep_states != NULL) {
-                if (strstr (sleep_states, state) != NULL)
-                        ret = TRUE;
-        }
-
-        g_free (sleep_states);
-
-        return ret;
-}
-
+/* DragonFly has no support for suspend, hibernate, or sleep */
 gboolean
 ck_system_can_suspend (void)
 {
-        return freebsd_supports_sleep_state ("S3");
+        return FALSE;
 }
 
 gboolean
 ck_system_can_hibernate (void)
 {
-        return freebsd_supports_sleep_state ("S4");
+        return FALSE;
 }
 
 gboolean
 ck_system_can_hybrid_sleep (void)
 {
-        /* TODO: not implemented */
         return FALSE;
 }
 
 gboolean
 ck_make_tmpfs (guint uid, guint gid, const gchar *dest)
 {
-#ifdef HAVE_SYS_MOUNT_H
-        gchar        *opts;
-        int           result;
-
+#ifdef HAVE_VFS_TMPFS_TMPFS_MOUNT_H
+        int                     result;
+        struct tmpfs_mount_info opts;
         TRACE ();
 
-        opts = g_strdup_printf ("mode=0700,uid=%d", uid);
+        opts.ta_version = TMPFS_ARGS_VERSION;
+        opts.ta_size_max = 0;
+        opts.ta_nodes_max = 0;
+        opts.ta_maxfsize_max = 0;
+        opts.ta_root_uid = uid;
+        opts.ta_root_gid = gid;
+        opts.ta_root_mode = 0x1c0; /* 0700 */
 
-        result = mount("tmpfs", dest, 0, opts);
-
-        g_free (opts);
+        result = mount("tmpfs", dest, 0, &opts);
 
         if (result == 0) {
                 return TRUE;
@@ -572,7 +531,7 @@ ck_make_tmpfs (guint uid, guint gid, const gchar *dest)
 gboolean
 ck_remove_tmpfs (guint uid, const gchar *dest)
 {
-#ifdef HAVE_SYS_MOUNT_H
+#ifdef HAVE_VFS_TMPFS_TMPFS_MOUNT_H
         int           result;
 
         TRACE ();
