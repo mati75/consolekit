@@ -7,7 +7,12 @@ ifeq ($(DEB_HOST_ARCH_OS),linux)
 CONFFLAGS = --enable-udev-acl
 endif
 
+override_dh_autoreconf:
+	[ ! -x "./autogen.sh" ] || ./autogen.sh
+	dh_autoreconf
+
 override_dh_auto_configure:
+	./autogen.sh
 	dh_auto_configure -- --libexecdir="\$$(prefix)/lib/ConsoleKit" \
 		--enable-pam-module \
 		--enable-docbook-docs \

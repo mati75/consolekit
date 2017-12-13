@@ -1,9 +1,8 @@
 Source: consolekit
 Section: admin
 Priority: optional
-Maintainer: Mateusz Łukasik <mati75@debian.org>
-Build-Depends: debhelper (>= 9),
- autotools-dev,
+Maintainer: Mateusz Łukasik <mati75@linuxmint.pl>
+Build-Depends: debhelper (>= 10),
  pkg-config,
  libdbus-glib-1-dev (>= 0.30),
  libglib2.0-dev (>= 2.22.0),
@@ -15,8 +14,9 @@ Build-Depends: debhelper (>= 9),
  libpolkit-gobject-1-dev (>= 0.92),
  zlib1g-dev,
  libbsd-dev (>= 0.3.0~) [kfreebsd-any],
- dh-autoreconf
-Standards-Version: 3.9.6
+ gtk-doc-tools,
+ intltool
+Standards-Version: 4.1.1
 Vcs-Git: https://github.com/mati75/consolekit.git
 Vcs-Browser: https://github.com/mati75/consolekit
 Homepage: https://github.com/ConsoleKit2/ConsoleKit2
