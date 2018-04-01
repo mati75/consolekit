@@ -16,13 +16,12 @@ Build-Depends: debhelper (>= 10),
  libbsd-dev (>= 0.3.0~) [kfreebsd-any],
  gtk-doc-tools,
  intltool
-Standards-Version: 4.1.1
+Standards-Version: 4.1.2
 Vcs-Git: https://github.com/mati75/consolekit.git
 Vcs-Browser: https://github.com/mati75/consolekit
 Homepage: https://github.com/ConsoleKit2/ConsoleKit2
 
 Package: consolekit
-Section: admin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libck-connector0 (= ${binary:Version}), dbus (>= 1.1.2)
 Recommends: libpam-ck-connector
@@ -63,7 +62,6 @@ Description: ConsoleKit development files
  This package provides the development libraries and headers.
 
 Package: libpam-ck-connector
-Section: admin
 Architecture: any
 Multi-Arch: same
 Depends: ${shlibs:Depends}, ${misc:Depends}, libck-connector0 (= ${binary:Version}), libpam-runtime (>= 1.0.1-6)

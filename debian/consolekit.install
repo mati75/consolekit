@@ -3,6 +3,7 @@ etc/ConsoleKit/
 usr/share/dbus-1/system-services/
 usr/share/polkit-1/
 usr/lib/ConsoleKit/
+usr/lib/*/ConsoleKit/
 var/log/ConsoleKit/
 usr/sbin/
 usr/bin/

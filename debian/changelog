@@ -1,3 +1,15 @@
+consolekit (1.2.1-2) UNRELEASED; urgency=medium
+
+  * Fix install #1
+
+ -- Mateusz Łukasik <mati75@linuxmint.pl>  Sun, 01 Apr 2018 23:16:58 +0200
+
+consolekit (1.2.1-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Mateusz Łukasik <mati75@linuxmint.pl>  Wed, 13 Dec 2017 15:54:36 +0100
+
 consolekit (1.2.0-1) unstable; urgency=medium
 
   * New upstream release.
@@ -414,8 +426,8 @@ consolekit (0.3.0-1) unstable; urgency=low
 
 consolekit (0.2.10-5) unstable; urgency=high
 
-  * debian/watch 
-    - Fix the regex to not use the second Perl group. 
+  * debian/watch
+    - Fix the regex to not use the second Perl group.
   * Urgency high as it still blocks #503532.
 
  -- Michael Biebl <biebl@debian.org>  Thu, 08 Jan 2009 16:56:40 +0100
@@ -477,7 +489,7 @@ consolekit (0.2.10-1) unstable; urgency=low
     - Add run-session.d script which creates pam_console compatible tag files.
       Script shamelessly taken from Ubuntu. (Closes: #422349)
   * debian/rules
-    - Install pam-foreground-compat.ck into /usr/lib/ConsoleKit/run-session.d. 
+    - Install pam-foreground-compat.ck into /usr/lib/ConsoleKit/run-session.d.
     - Include patchsys-quilt.mk for patch management.
   * debian/90consolekit
     - Xsession ConsoleKit integration. Script is taken from Ubuntu but renamed
@@ -525,7 +537,7 @@ consolekit (0.2.3-2) unstable; urgency=low
 consolekit (0.2.3-1) unstable; urgency=low
 
   * New upstream release.
-  * debian/consolekit.install 
+  * debian/consolekit.install
     - Install the ck-get-x11-display-device binary.
     - Install the configuration files in /etc/ConsoleKit/.
   * debian/consolekit.docs
@@ -535,7 +547,7 @@ consolekit (0.2.3-1) unstable; urgency=low
 
 consolekit (0.2.1-2) unstable; urgency=low
 
-  * Upload to unstable. 
+  * Upload to unstable.
 
  -- Michael Biebl <biebl@debian.org>  Fri, 10 Aug 2007 00:22:56 +0200
 
